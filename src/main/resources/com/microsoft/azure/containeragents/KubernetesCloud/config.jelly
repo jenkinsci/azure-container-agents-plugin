@@ -1,0 +1,41 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
+
+    <f:entry title="${%Name}" field="name">
+        <f:textbox default="kubernetes"/>
+    </f:entry>
+
+    <f:entry title="${%Kubernetes URL}" field="managementUrl">
+        <f:textbox default="https://kubernetes.default.svc.cluster.local"/>
+    </f:entry>
+
+    <f:entry title="${%Kubernetes server certificate key}" field="serverCertificate">
+        <f:textarea/>
+    </f:entry>
+
+    <f:entry title="${%Kubernetes Namespace}" field="namespace">
+        <f:textbox default="default"/>
+    </f:entry>
+
+    <f:entry title="Username" field="username">
+        <f:textbox/>
+    </f:entry>
+
+    <f:entry title="Client Certificate" field="clientCertificate">
+        <f:textarea/>
+    </f:entry>
+
+    <f:entry title="Client Key Data" field="clientPrivateKey">
+        <f:textarea/>
+    </f:entry>
+
+    <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection"
+                      with="managementUrl,credentialsId,serverCertificate,namespace"/>
+
+    <f:entry title="${%Images}" description="${%List of Images to be launched as slaves}">
+        <f:repeatableHeteroProperty field="templates" hasHeader="true" addCaption="Add Pod Template"
+                                    deleteCaption="Delete Template"/>
+    </f:entry>
+
+</j:jelly>

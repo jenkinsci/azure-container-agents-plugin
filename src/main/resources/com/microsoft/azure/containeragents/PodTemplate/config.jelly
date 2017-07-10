@@ -1,0 +1,25 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+
+    <f:entry field="name" title="${%Name}">
+        <f:textbox/>
+    </f:entry>
+
+    <f:entry field="label" title="${%Labels}">
+        <f:textbox/>
+    </f:entry>
+
+    <f:entry field="image" title="${%Docker image}">
+        <f:textbox clazz="required" default="jenkinsci/jnlp-slave"/>
+    </f:entry>
+
+    <f:entry field="command" title="${%Command to run slave agent}">
+        <f:textbox default="-url $${rootUrl} $${secret} $${nodeName}"/>
+    </f:entry>
+
+    <f:entry field="idleMinutesStr" title="${%Time in minutes to retain slave when idle}">
+        <f:textbox/>
+    </f:entry>
+
+</j:jelly>
