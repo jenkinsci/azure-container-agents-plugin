@@ -92,7 +92,15 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
 
     public Pod buildPod(KubernetesAgent agent) {
         // Build volumes and volume mounts.
-//        List<Volume> volumes = new ArrayList<>();
+        Volume emptyDir = new VolumeBuilder()
+                .withName("workspace")
+                .withNewEmptyDir()
+                .endEmptyDir()
+                .build();
+        VolumeMount mount = new VolumeMountBuilder()
+                .withName("workspace")
+                .withMountPath("/workspace")
+                .build();
         String serverUrl = Jenkins.getInstance().getRootUrl();
         String nodeName = agent.getNodeName();
         String secret = agent.getComputer().getJnlpMac();
@@ -100,8 +108,8 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
         Container container = new ContainerBuilder()
                 .withName(agent.getNodeName())
                 .withImage(image)
-                .withCommand(envs.expand(command))
-//                .withVolumeMounts()
+                .withArgs(envs.expand(command).split(" "))
+                .withVolumeMounts(mount)
                 .build();
 
         return new PodBuilder()
@@ -109,8 +117,9 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
                 .withName(agent.getNodeName())
                 .endMetadata()
                 .withNewSpec()
-//                .withVolumes(volumes)
+                .withVolumes(emptyDir)
                 .withContainers(container)
+                .withRestartPolicy("Never")
                 .endSpec()
                 .build();
     }

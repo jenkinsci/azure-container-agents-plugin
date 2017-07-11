@@ -26,7 +26,7 @@ public class KubernetesAgent extends AbstractCloudSlave {
 
     @Override
     public AbstractCloudComputer createComputer() {
-        return null;
+        return new KubernetesComputer(this);
     }
 
     @Override
