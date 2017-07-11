@@ -48,15 +48,12 @@ public class KubernetesCloud extends Cloud {
 
     private List<PodTemplate> templates = new ArrayList<>();
 
-    private transient KubernetesClient k8sClient;
-
     @DataBoundConstructor
     public KubernetesCloud(String name) {
         super(name);
     }
 
-    @PostConstruct
-    private void init() {
+    private KubernetesClient connect() {
         ConfigBuilder builder = new ConfigBuilder();
         builder.withMasterUrl(getManagementUrl())
                 .withCaCertData(getServerCertificate())
@@ -64,7 +61,7 @@ public class KubernetesCloud extends Cloud {
                 .withClientCertData(getClientCertificate())
                 .withClientKeyData(getClientPrivateKey())
                 .withWebsocketPingInterval(0);
-        k8sClient = new DefaultKubernetesClient(builder.build());
+        return new DefaultKubernetesClient(builder.build());
     }
 
     @Override
@@ -95,14 +92,25 @@ public class KubernetesCloud extends Cloud {
 
                                 String podId = pod.getMetadata().getName();
 
-                                pod = k8sClient.pods().inNamespace(getNamespace()).create(pod);
-                                LOGGER.info("Created Pod: {}", podId);
+                                try (KubernetesClient k8sClient = connect()) {
+                                    pod = k8sClient.pods().inNamespace(getNamespace()).create(pod);
+                                    LOGGER.info("Created Pod: {}", podId);
 
-                                String status = pod.getStatus().getPhase();
-                                if (!status.equals("Running")) {
-                                    throw new IllegalStateException("Container is not running, status: " + status);
+                                    // wait the pod to be running
+                                    while (true) {
+                                        pod = k8sClient.pods().inNamespace(namespace).withName(podId).get();
+                                        String status = pod.getStatus().getPhase();
+                                        if (status.equals("Running")) {
+                                            break;
+                                        } else if (status.equals("Pending")) {
+                                            Thread.sleep(1000);
+                                        } else {
+                                            throw new IllegalStateException("Container is not running, status: " + status);
+                                        }
+                                    }
                                 }
 
+                                // wait the slave to be online
                                 while (true) {
                                     if (slave.getComputer() == null) {
                                         throw new IllegalStateException("Node was deleted, computer is null");
@@ -125,14 +133,20 @@ public class KubernetesCloud extends Cloud {
                         1));
             }
             return r;
-        } catch (KubernetesClientException e) {
+        } catch (
+                KubernetesClientException e)
+
+        {
             Throwable cause = e.getCause();
             if (cause instanceof SocketTimeoutException || cause instanceof ConnectException) {
                 LOGGER.warn("Failed to connect to Kubernetes at {}: {}", getManagementUrl(), cause.getMessage());
             } else {
                 LOGGER.warn("Failed to count the # of live instances on Kubernetes", cause != null ? cause : e);
             }
-        } catch (Exception e) {
+        } catch (
+                Exception e)
+
+        {
             LOGGER.warn("Failed to count the # of live instances on Kubernetes", e);
         }
         return Collections.emptyList();
