@@ -1,20 +1,28 @@
 package com.microsoft.azure.containeragents;
 
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
+import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.google.common.base.Throwables;
+import com.microsoft.azure.containeragents.helper.AzureCredentials;
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
 import hudson.model.Label;
+import hudson.security.ACL;
 import hudson.slaves.Cloud;
 import hudson.slaves.CloudRetentionStrategy;
 import hudson.slaves.NodeProvisioner;
 import hudson.slaves.RetentionStrategy;
+import hudson.util.ListBoxModel;
+import hudson.model.Item;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import jenkins.model.Jenkins;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.slf4j.LoggerFactory;
@@ -38,13 +46,11 @@ public class KubernetesCloud extends Cloud {
 
     private String namespace;
 
-    private String serverCertificate;
+    private String acsCredentialsId;
 
-    private String username;
+    private String azureCredentialsId;
 
-    private String clientCertificate;
-
-    private String clientPrivateKey;
+    private transient AzureCredentials.KubernetesCredential acsCredentials;
 
     private List<PodTemplate> templates = new ArrayList<>();
 
@@ -54,12 +60,13 @@ public class KubernetesCloud extends Cloud {
     }
 
     private KubernetesClient connect() {
+        AzureCredentials.KubernetesCredential creds = AzureCredentials.getKubernetesCredential(acsCredentialsId);
         ConfigBuilder builder = new ConfigBuilder();
         builder.withMasterUrl(getManagementUrl())
-                .withCaCertData(getServerCertificate())
+                .withCaCertData(creds.getServerCertificate())
                 .withNamespace(getNamespace())
-                .withClientCertData(getClientCertificate())
-                .withClientKeyData(getClientPrivateKey())
+                .withClientCertData(creds.getClientCertificate())
+                .withClientKeyData(creds.getClientKey())
                 .withWebsocketPingInterval(0);
         return new DefaultKubernetesClient(builder.build());
     }
@@ -175,6 +182,25 @@ public class KubernetesCloud extends Cloud {
         this.name = name;
     }
 
+    @DataBoundSetter
+    public void setAcsCredentialsId(String acsCredentialsId) {
+        this.acsCredentialsId = acsCredentialsId;
+        this.acsCredentials = AzureCredentials.getKubernetesCredential(acsCredentialsId);
+    }
+
+    public String getAcsCredentialsId() {
+        return acsCredentialsId;
+    }
+
+    @DataBoundSetter
+    public void setAzureCredentialsId(String azureCredentialsId) {
+        this.azureCredentialsId = azureCredentialsId;
+    }
+
+    public String getAzureCredentialsId() {
+        return azureCredentialsId;
+    }
+
     public String getManagementUrl() {
         return managementUrl;
     }
@@ -193,42 +219,6 @@ public class KubernetesCloud extends Cloud {
         this.namespace = namespace;
     }
 
-    public String getServerCertificate() {
-        return serverCertificate;
-    }
-
-    @DataBoundSetter
-    public void setServerCertificate(String serverCertificate) {
-        this.serverCertificate = serverCertificate;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    @DataBoundSetter
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getClientCertificate() {
-        return clientCertificate;
-    }
-
-    @DataBoundSetter
-    public void setClientCertificate(String clientCertificate) {
-        this.clientCertificate = clientCertificate;
-    }
-
-    public String getClientPrivateKey() {
-        return clientPrivateKey;
-    }
-
-    @DataBoundSetter
-    public void setClientPrivateKey(String clientPrivateKey) {
-        this.clientPrivateKey = clientPrivateKey;
-    }
-
     public List<PodTemplate> getTemplates() {
         return templates;
     }
@@ -243,6 +233,16 @@ public class KubernetesCloud extends Cloud {
         @Override
         public String getDisplayName() {
             return "Azure Container Service(Kubernetes)";
+        }
+
+        public ListBoxModel doFillAcsCredentialsIdItems(@AncestorInPath Item owner) {
+            StandardListBoxModel listBoxModel = new StandardListBoxModel();
+            listBoxModel.withAll(CredentialsProvider.lookupCredentials(AzureCredentials.class, owner, ACL.SYSTEM, Collections.<DomainRequirement>emptyList()));
+            return listBoxModel;
+        }
+
+        public ListBoxModel doFillAzureCredentialsIdItems(@AncestorInPath Item owner) {
+            return new StandardListBoxModel().withAll(CredentialsProvider.lookupCredentials(com.microsoft.azure.util.AzureCredentials.class, owner, ACL.SYSTEM, Collections.<DomainRequirement>emptyList()));
         }
     }
 }

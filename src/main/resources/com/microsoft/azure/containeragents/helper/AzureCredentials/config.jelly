@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:st="jelly:stapler" xmlns:d="jelly:define">
+    <j:set var="uniqueId" value="${h.generateId()}" />
+    <f:entry title="Server Certificate Authority" field="serverCertificate">
+        <f:password />
+    </f:entry>
+    <f:entry title="Username" field="username">
+        <f:textbox />
+    </f:entry>
+    <f:entry title="Client Certificate" field="clientCertificate">
+        <f:password />
+    </f:entry>
+    <f:entry title="Client Key" field="clientKey">
+        <f:password />
+    </f:entry>
+    <st:include page="id-and-description" class="${descriptor.clazz}"/>
+</j:jelly>

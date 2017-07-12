@@ -6,28 +6,20 @@
         <f:textbox default="kubernetes"/>
     </f:entry>
 
-    <f:entry title="${%Kubernetes URL}" field="managementUrl">
-        <f:textbox default="https://kubernetes.default.svc.cluster.local"/>
+    <f:entry title="Azure Service Principal" field="azureCredentialsId">
+        <c:select expressionAllowed="false"/>
     </f:entry>
 
-    <f:entry title="${%Kubernetes server certificate key}" field="serverCertificate">
-        <f:textarea/>
+    <f:entry title="${%Kubernetes URL}" field="managementUrl">
+        <f:textbox default="https://kubernetes.default.svc.cluster.local"/>
     </f:entry>
 
     <f:entry title="${%Kubernetes Namespace}" field="namespace">
         <f:textbox default="default"/>
     </f:entry>
 
-    <f:entry title="Username" field="username">
-        <f:textbox/>
-    </f:entry>
-
-    <f:entry title="Client Certificate" field="clientCertificate">
-        <f:textarea/>
-    </f:entry>
-
-    <f:entry title="Client Key Data" field="clientPrivateKey">
-        <f:textarea/>
+    <f:entry title="ACS Credentials" field="acsCredentialsId">
+        <c:select expressionAllowed="false"/>
     </f:entry>
 
     <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection"
