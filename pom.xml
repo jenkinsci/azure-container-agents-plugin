@@ -17,7 +17,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <azuresdk.version>1.0.0-beta5</azuresdk.version>
+        <azuresdk.version>1.1.0</azuresdk.version>
         <jackson.version>2.7.2</jackson.version>
         <jenkins.version>1.653</jenkins.version>
         <java.level>8</java.level>
@@ -56,11 +56,24 @@
             <version>${azuresdk.version}</version>
             <type>jar</type>
         </dependency>
+        <dependency>
+            <groupId>com.microsoft.azure</groupId>
+            <artifactId>azure-mgmt-compute</artifactId>
+            <version>${azuresdk.version}</version>
+            <type>jar</type>
+        </dependency>
+
 
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>azure-credentials</artifactId>
             <version>${azure-credentials.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.microsoft.azure</groupId>
+                    <artifactId>azure</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -151,6 +164,9 @@
             <plugin>
                 <groupId>org.jenkins-ci.tools</groupId>
                 <artifactId>maven-hpi-plugin</artifactId>
+                <configuration>
+                    <pluginFirstClassLoader>true</pluginFirstClassLoader>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

@@ -1,7 +1,6 @@
 package com.microsoft.azure.containeragents;
 
 import hudson.model.Descriptor;
-import hudson.model.Node;
 import hudson.model.TaskListener;
 import hudson.slaves.*;
 import org.apache.commons.lang.RandomStringUtils;
@@ -9,7 +8,6 @@ import org.apache.commons.lang.StringUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 
 public class KubernetesAgent extends AbstractCloudSlave {
     public KubernetesAgent(PodTemplate template, RetentionStrategy retentionStrategy) throws Descriptor.FormException, IOException {

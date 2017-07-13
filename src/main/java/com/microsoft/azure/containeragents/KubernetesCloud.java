@@ -4,7 +4,13 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.google.common.base.Throwables;
-import com.microsoft.azure.containeragents.helper.AzureCredentials;
+import com.microsoft.azure.containeragents.helper.AzureContainerServiceCredentials;
+import com.microsoft.azure.containeragents.util.TokenCache;
+import com.microsoft.azure.management.Azure;
+import com.microsoft.azure.management.compute.ContainerService;
+import com.microsoft.azure.management.compute.ContainerServiceOchestratorTypes;
+import com.microsoft.azure.management.resources.ResourceGroup;
+import com.microsoft.azure.util.AzureCredentials;
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
@@ -22,27 +28,32 @@ import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import jenkins.model.Jenkins;
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
-import org.slf4j.LoggerFactory;
+import org.kohsuke.stapler.QueryParameter;
 
-import javax.annotation.PostConstruct;
+import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 public class KubernetesCloud extends Cloud {
 
-    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(KubernetesCloud.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(KubernetesCloud.class.getName());
 
     private String name;
 
-    private String managementUrl;
+    private String resourceGroup;
+
+    private String serviceName;
 
     private String namespace;
 
@@ -50,7 +61,7 @@ public class KubernetesCloud extends Cloud {
 
     private String azureCredentialsId;
 
-    private transient AzureCredentials.KubernetesCredential acsCredentials;
+    private transient AzureContainerServiceCredentials.KubernetesCredential acsCredentials;
 
     private List<PodTemplate> templates = new ArrayList<>();
 
@@ -60,7 +71,7 @@ public class KubernetesCloud extends Cloud {
     }
 
     private KubernetesClient connect() {
-        AzureCredentials.KubernetesCredential creds = AzureCredentials.getKubernetesCredential(acsCredentialsId);
+        AzureContainerServiceCredentials.KubernetesCredential creds = AzureContainerServiceCredentials.getKubernetesCredential(acsCredentialsId);
         ConfigBuilder builder = new ConfigBuilder();
         builder.withMasterUrl(getManagementUrl())
                 .withCaCertData(creds.getServerCertificate())
@@ -92,7 +103,7 @@ public class KubernetesCloud extends Cloud {
 
                                 slave = new KubernetesAgent(template, retentionStrategy);
 
-                                LOGGER.info("Adding Jenkins node: {}", slave.getNodeName());
+                                LOGGER.log(Level.INFO,"Adding Jenkins node: {0}", slave.getNodeName());
                                 Jenkins.getInstance().addNode(slave);
 
                                 Pod pod = template.buildPod(slave);
@@ -101,7 +112,7 @@ public class KubernetesCloud extends Cloud {
 
                                 try (KubernetesClient k8sClient = connect()) {
                                     pod = k8sClient.pods().inNamespace(getNamespace()).create(pod);
-                                    LOGGER.info("Created Pod: {}", podId);
+                                    LOGGER.log(Level.INFO, "Created Pod: {}", podId);
 
                                     // wait the pod to be running
                                     while (true) {
@@ -129,9 +140,9 @@ public class KubernetesCloud extends Cloud {
                                 }
                                 return slave;
                             } catch (Throwable ex) {
-                                LOGGER.error("Error in provisioning; slave={}, template={}", slave, template);
+                                LOGGER.log(Level.WARNING, "Error in provisioning; slave={0}, template={1}", new Object[]{slave, template});
                                 if (slave != null) {
-                                    LOGGER.info("Removing Jenkins node: {0}", slave.getNodeName());
+                                    LOGGER.log(Level.INFO, "Removing Jenkins node: {0}", slave.getNodeName());
                                     Jenkins.getInstance().removeNode(slave);
                                 }
                                 throw Throwables.propagate(ex);
@@ -146,15 +157,15 @@ public class KubernetesCloud extends Cloud {
         {
             Throwable cause = e.getCause();
             if (cause instanceof SocketTimeoutException || cause instanceof ConnectException) {
-                LOGGER.warn("Failed to connect to Kubernetes at {}: {}", getManagementUrl(), cause.getMessage());
+                LOGGER.log(Level.WARNING, "Failed to connect to Kubernetes at {}: {}", new Object[]{getManagementUrl(), cause.getMessage()});
             } else {
-                LOGGER.warn("Failed to count the # of live instances on Kubernetes", cause != null ? cause : e);
+                LOGGER.log(Level.WARNING, "Failed to count the # of live instances on Kubernetes", cause != null ? cause : e);
             }
         } catch (
                 Exception e)
 
         {
-            LOGGER.warn("Failed to count the # of live instances on Kubernetes", e);
+            LOGGER.log(Level.WARNING, "Failed to count the # of live instances on Kubernetes", e);
         }
         return Collections.emptyList();
     }
@@ -185,7 +196,7 @@ public class KubernetesCloud extends Cloud {
     @DataBoundSetter
     public void setAcsCredentialsId(String acsCredentialsId) {
         this.acsCredentialsId = acsCredentialsId;
-        this.acsCredentials = AzureCredentials.getKubernetesCredential(acsCredentialsId);
+        this.acsCredentials = AzureContainerServiceCredentials.getKubernetesCredential(acsCredentialsId);
     }
 
     public String getAcsCredentialsId() {
@@ -201,17 +212,30 @@ public class KubernetesCloud extends Cloud {
         return azureCredentialsId;
     }
 
-    public String getManagementUrl() {
-        return managementUrl;
+    public String getResourceGroup() {
+        return resourceGroup;
     }
 
     @DataBoundSetter
-    public void setManagementUrl(String managementUrl) {
-        this.managementUrl = managementUrl;
+    public void setResourceGroup(String resourceGroup) {
+        this.resourceGroup = resourceGroup;
+    }
+
+    public String getServiceName() {
+        return serviceName;
+    }
+
+    @DataBoundSetter
+    public void setServiceName(String serviceName) {
+        this.serviceName = serviceName;
     }
 
     public String getNamespace() {
         return namespace;
+    }
+
+    public String getManagementUrl() {
+        return "https://chenylmgmt.southeastasia.cloudapp.azure.com";
     }
 
     @DataBoundSetter
@@ -235,14 +259,55 @@ public class KubernetesCloud extends Cloud {
             return "Azure Container Service(Kubernetes)";
         }
 
+        public ListBoxModel doFillAzureCredentialsIdItems(@AncestorInPath Item owner) {
+            return new StandardListBoxModel().withAll(CredentialsProvider.lookupCredentials(AzureCredentials.class, owner, ACL.SYSTEM, Collections.<DomainRequirement>emptyList()));
+        }
+
         public ListBoxModel doFillAcsCredentialsIdItems(@AncestorInPath Item owner) {
             StandardListBoxModel listBoxModel = new StandardListBoxModel();
-            listBoxModel.withAll(CredentialsProvider.lookupCredentials(AzureCredentials.class, owner, ACL.SYSTEM, Collections.<DomainRequirement>emptyList()));
+            listBoxModel.withAll(CredentialsProvider.lookupCredentials(AzureContainerServiceCredentials.class, owner, ACL.SYSTEM, Collections.<DomainRequirement>emptyList()));
             return listBoxModel;
         }
 
-        public ListBoxModel doFillAzureCredentialsIdItems(@AncestorInPath Item owner) {
-            return new StandardListBoxModel().withAll(CredentialsProvider.lookupCredentials(com.microsoft.azure.util.AzureCredentials.class, owner, ACL.SYSTEM, Collections.<DomainRequirement>emptyList()));
+        public ListBoxModel doFillResourceGroupItems(@QueryParameter String azureCredentialsId) throws IOException {
+            ListBoxModel model = new ListBoxModel();
+            if (StringUtils.isBlank(azureCredentialsId)) {
+                return model;
+            }
+
+            try {
+                AzureCredentials.ServicePrincipal servicePrincipal = AzureCredentials.getServicePrincipal(azureCredentialsId);
+                final Azure azureClient = TokenCache.getInstance(servicePrincipal).getAzureClient();
+
+                List<ResourceGroup> list = azureClient.resourceGroups().list();
+                for (ResourceGroup resourceGroup : list) {
+                    model.add(resourceGroup.name());
+                }
+                return model;
+            } catch (Exception e) {
+                LOGGER.log(Level.WARNING, "Cannot list resource group name", e);
+                return model;
+            }
+        }
+
+        public ListBoxModel doFillServiceNameItems(@QueryParameter String azureCredentialsId,
+                                                   @QueryParameter String resourceGroup) throws IOException {
+            ListBoxModel model = new ListBoxModel();
+            if (StringUtils.isBlank(azureCredentialsId) || StringUtils.isBlank(resourceGroup)) {
+                return model;
+            }
+
+            AzureCredentials.ServicePrincipal servicePrincipal = AzureCredentials.getServicePrincipal(azureCredentialsId);
+            final Azure azureClient = TokenCache.getInstance(servicePrincipal).getAzureClient();
+
+            List<ContainerService> list = azureClient.containerServices().listByResourceGroup(resourceGroup);
+            for (ContainerService containerService : list) {
+                if (containerService.orchestratorType().equals(ContainerServiceOchestratorTypes.KUBERNETES)) {
+                    model.add(containerService.name());
+                }
+            }
+
+            return model;
         }
     }
 }

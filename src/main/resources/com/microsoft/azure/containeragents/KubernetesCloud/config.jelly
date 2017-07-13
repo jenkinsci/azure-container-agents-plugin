@@ -10,8 +10,12 @@
         <c:select expressionAllowed="false"/>
     </f:entry>
 
-    <f:entry title="${%Kubernetes URL}" field="managementUrl">
-        <f:textbox default="https://kubernetes.default.svc.cluster.local"/>
+    <f:entry title="Resource Group" field="resourceGroup">
+        <f:select/>
+    </f:entry>
+
+    <f:entry title="Container Service Name" field="serviceName">
+        <f:select/>
     </f:entry>
 
     <f:entry title="${%Kubernetes Namespace}" field="namespace">

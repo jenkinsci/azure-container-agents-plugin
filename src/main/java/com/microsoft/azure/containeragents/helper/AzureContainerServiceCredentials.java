@@ -4,17 +4,15 @@ import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
-import com.microsoft.azure.management.Azure;
 import hudson.Extension;
 import hudson.security.ACL;
 import jenkins.model.Jenkins;
-import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import hudson.util.Secret;
 
 import java.util.Collections;
 
-public class AzureCredentials extends BaseStandardCredentials {
+public class AzureContainerServiceCredentials extends BaseStandardCredentials {
 
     public static class KubernetesCredential implements java.io.Serializable {
 
@@ -61,7 +59,7 @@ public class AzureCredentials extends BaseStandardCredentials {
     private final KubernetesCredential kubernetesCredentialData;
 
     @DataBoundConstructor
-    public AzureCredentials(
+    public AzureContainerServiceCredentials(
             final CredentialsScope scope,
             final String id,
             final String description,
@@ -73,16 +71,16 @@ public class AzureCredentials extends BaseStandardCredentials {
         kubernetesCredentialData = new KubernetesCredential(serverCertificate, username, clientCertificate, clientKey);
     }
 
-    public static AzureCredentials.KubernetesCredential getKubernetesCredential(final String kubernetesCredentialId) {
-        AzureCredentials creds = CredentialsMatchers.firstOrNull(
+    public static AzureContainerServiceCredentials.KubernetesCredential getKubernetesCredential(final String kubernetesCredentialId) {
+        AzureContainerServiceCredentials creds = CredentialsMatchers.firstOrNull(
                 CredentialsProvider.lookupCredentials(
-                        AzureCredentials.class,
+                        AzureContainerServiceCredentials.class,
                         Jenkins.getInstance(),
                         ACL.SYSTEM,
                         Collections.emptyList()),
                 CredentialsMatchers.withId(kubernetesCredentialId));
         if (creds == null) {
-            return new AzureCredentials.KubernetesCredential();
+            return new AzureContainerServiceCredentials.KubernetesCredential();
         }
         return creds.kubernetesCredentialData;
     }
