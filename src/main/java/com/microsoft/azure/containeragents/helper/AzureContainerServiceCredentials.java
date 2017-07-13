@@ -89,6 +89,7 @@ public class AzureContainerServiceCredentials extends BaseStandardCredentials {
         return kubernetesCredentialData.serverCertificate.getEncryptedValue();
     }
 
+
     public String getUsername() {
         return kubernetesCredentialData.username;
     }

@@ -27,7 +27,7 @@
     </f:entry>
 
     <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection"
-                      with="managementUrl,credentialsId,serverCertificate,namespace"/>
+                      with="azureCredentialsId,resourceGroup,serviceName,namespace,acsCredentialsId"/>
 
     <f:entry title="${%Images}" description="${%List of Images to be launched as slaves}">
         <f:repeatableHeteroProperty field="templates" hasHeader="true" addCaption="Add Pod Template"

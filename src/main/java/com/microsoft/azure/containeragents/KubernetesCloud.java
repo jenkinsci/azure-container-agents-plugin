@@ -20,6 +20,7 @@ import hudson.slaves.Cloud;
 import hudson.slaves.CloudRetentionStrategy;
 import hudson.slaves.NodeProvisioner;
 import hudson.slaves.RetentionStrategy;
+import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import hudson.model.Item;
 import io.fabric8.kubernetes.api.model.Pod;
@@ -33,6 +34,7 @@ import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
+import retrofit2.http.Url;
 
 import java.io.IOException;
 import java.net.ConnectException;
@@ -285,7 +287,7 @@ public class KubernetesCloud extends Cloud {
                 }
                 return model;
             } catch (Exception e) {
-                LOGGER.log(Level.WARNING, "Cannot list resource group name", e);
+                LOGGER.log(Level.WARNING, "Cannot list resource group name: {0}", e);
                 return model;
             }
         }
@@ -308,6 +310,46 @@ public class KubernetesCloud extends Cloud {
             }
 
             return model;
+        }
+
+        public FormValidation doTestConnection(@QueryParameter String azureCredentialsId,
+                                               @QueryParameter String resourceGroup,
+                                               @QueryParameter String serviceName,
+                                               @QueryParameter String namespace,
+                                               @QueryParameter String acsCredentialsId) {
+            if (StringUtils.isBlank(azureCredentialsId)
+                    || StringUtils.isBlank(resourceGroup)
+                    || StringUtils.isBlank(serviceName)
+                    || StringUtils.isBlank(namespace)
+                    || StringUtils.isBlank(acsCredentialsId)) {
+                return FormValidation.error("Configurations cannot be empty");
+            }
+
+            AzureCredentials.ServicePrincipal servicePrincipal = AzureCredentials.getServicePrincipal(azureCredentialsId);
+            String Url = "Unknown Server";
+            try {
+                final Azure azureClient = TokenCache.getInstance(servicePrincipal).getAzureClient();
+                ContainerService containerService = azureClient.containerServices().getByResourceGroup(resourceGroup, serviceName);
+
+                AzureContainerServiceCredentials.KubernetesCredential acsCredentials = AzureContainerServiceCredentials.getKubernetesCredential(acsCredentialsId);
+
+                Url = "https://" + containerService.masterFqdn();
+
+                ConfigBuilder builder = new ConfigBuilder();
+                builder.withMasterUrl(Url)
+                        .withCaCertData(acsCredentials.getServerCertificate())
+                        .withNamespace(namespace)
+                        .withClientCertData(acsCredentials.getClientCertificate())
+                        .withClientKeyData(acsCredentials.getClientKey())
+                        .withWebsocketPingInterval(0);
+                KubernetesClient client = new DefaultKubernetesClient(builder.build());
+                client.pods().list();
+                return FormValidation.ok("Connect to %s successfully", Url);
+            } catch (KubernetesClientException e) {
+                return FormValidation.error("Connect to %s failed", Url);
+            } catch (Exception e) {
+                return FormValidation.error("Connect to %s failed: %s", Url, e.getMessage());
+            }
         }
     }
 }
