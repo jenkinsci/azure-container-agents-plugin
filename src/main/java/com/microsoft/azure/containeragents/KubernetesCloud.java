@@ -1,24 +1,39 @@
 package com.microsoft.azure.containeragents;
 
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
+import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.google.common.base.Throwables;
+import com.microsoft.azure.containeragents.helper.AzureContainerServiceCredentials;
+import com.microsoft.azure.containeragents.util.TokenCache;
+import com.microsoft.azure.management.Azure;
+import com.microsoft.azure.management.compute.ContainerService;
+import com.microsoft.azure.management.compute.ContainerServiceOchestratorTypes;
+import com.microsoft.azure.management.resources.ResourceGroup;
+import com.microsoft.azure.util.AzureCredentials;
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
 import hudson.model.Label;
 import hudson.model.Node;
+import hudson.security.ACL;
 import hudson.slaves.Cloud;
 import hudson.slaves.CloudRetentionStrategy;
 import hudson.slaves.NodeProvisioner;
 import hudson.slaves.RetentionStrategy;
+import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
+import hudson.model.Item;
 import io.fabric8.kubernetes.api.model.Pod;
-import io.fabric8.kubernetes.client.ConfigBuilder;
-import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.commons.lang.StringUtils;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
@@ -32,22 +47,30 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
+
+import static com.microsoft.azure.containeragents.KubernetesService.getContainerService;
+import static com.microsoft.azure.containeragents.KubernetesService.getKubernetesClient;
+import static com.microsoft.azure.containeragents.KubernetesService.lookupCredentials;
+
 
 public class KubernetesCloud extends Cloud {
 
     private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(KubernetesCloud.class.getName());
 
-    private String managementUrl;
+    private String resourceGroup;
+
+    private String serviceName;
 
     private String namespace;
 
-    private String serverCertificate;
+    private String acsCredentialsId;
 
-    private String username;
+    private String azureCredentialsId;
 
-    private String clientCertificate;
+    private transient String managementUrl;
 
-    private String clientPrivateKey;
+    private transient AzureContainerServiceCredentials.KubernetesCredential acsCredentials;
 
     private int idleTime;           // in minutes
 
@@ -61,14 +84,20 @@ public class KubernetesCloud extends Cloud {
     }
 
     private KubernetesClient connect() {
-        ConfigBuilder builder = new ConfigBuilder();
-        builder.withMasterUrl(getManagementUrl())
-                .withCaCertData(getServerCertificate())
-                .withNamespace(getNamespace())
-                .withClientCertData(getClientCertificate())
-                .withClientKeyData(getClientPrivateKey())
-                .withWebsocketPingInterval(0);
-        return new DefaultKubernetesClient(builder.build());
+
+        ContainerService containerService = getContainerService(getAzureCredentialsId(), getResourceGroup(), getServiceName());
+
+        managementUrl = "https://" + containerService.masterFqdn();
+        try {
+            if (lookupCredentials(getAcsCredentialsId()) != null) {
+                return getKubernetesClient(containerService.masterFqdn(), getAcsCredentialsId());
+            } else {
+                return getKubernetesClient(managementUrl, getNamespace(), AzureContainerServiceCredentials.getKubernetesCredential(getAcsCredentialsId()));
+            }
+        } catch (Exception e) {
+            LOGGER.error("Connect failed: {}", e.getMessage());
+            return null;
+        }
     }
 
     private class ProvisionCallback implements Callable<Node> {
@@ -217,58 +246,54 @@ public class KubernetesCloud extends Cloud {
         return (startupTimeout > 0 && TimeUnit.MILLISECONDS.toMinutes(elaspedTime) >= startupTimeout);
     }
 
-    public String getManagementUrl() {
-        return managementUrl;
+    @DataBoundSetter
+    public void setAcsCredentialsId(String acsCredentialsId) {
+        this.acsCredentialsId = acsCredentialsId;
+        this.acsCredentials = AzureContainerServiceCredentials.getKubernetesCredential(acsCredentialsId);
+    }
+
+    public String getAcsCredentialsId() {
+        return acsCredentialsId;
     }
 
     @DataBoundSetter
-    public void setManagementUrl(String managementUrl) {
-        this.managementUrl = managementUrl;
+    public void setAzureCredentialsId(String azureCredentialsId) {
+        this.azureCredentialsId = azureCredentialsId;
+    }
+
+    public String getAzureCredentialsId() {
+        return azureCredentialsId;
+    }
+
+    public String getResourceGroup() {
+        return resourceGroup;
+    }
+
+    @DataBoundSetter
+    public void setResourceGroup(String resourceGroup) {
+        this.resourceGroup = resourceGroup;
+    }
+
+    public String getServiceName() {
+        return serviceName;
+    }
+
+    @DataBoundSetter
+    public void setServiceName(String serviceName) {
+        this.serviceName = serviceName;
     }
 
     public String getNamespace() {
         return namespace;
     }
 
+    public String getManagementUrl() {
+        return managementUrl;
+    }
+
     @DataBoundSetter
     public void setNamespace(String namespace) {
         this.namespace = namespace;
-    }
-
-    public String getServerCertificate() {
-        return serverCertificate;
-    }
-
-    @DataBoundSetter
-    public void setServerCertificate(String serverCertificate) {
-        this.serverCertificate = serverCertificate;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    @DataBoundSetter
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getClientCertificate() {
-        return clientCertificate;
-    }
-
-    @DataBoundSetter
-    public void setClientCertificate(String clientCertificate) {
-        this.clientCertificate = clientCertificate;
-    }
-
-    public String getClientPrivateKey() {
-        return clientPrivateKey;
-    }
-
-    @DataBoundSetter
-    public void setClientPrivateKey(String clientPrivateKey) {
-        this.clientPrivateKey = clientPrivateKey;
     }
 
     public List<PodTemplate> getTemplates() {
@@ -303,6 +328,95 @@ public class KubernetesCloud extends Cloud {
         @Override
         public String getDisplayName() {
             return "Azure Container Service(Kubernetes)";
+        }
+
+        public ListBoxModel doFillAzureCredentialsIdItems(@AncestorInPath Item owner) {
+            return new StandardListBoxModel().withAll(CredentialsProvider.lookupCredentials(AzureCredentials.class, owner, ACL.SYSTEM, Collections.<DomainRequirement>emptyList()));
+        }
+
+        public ListBoxModel doFillAcsCredentialsIdItems(@AncestorInPath Item owner) {
+            StandardListBoxModel listBoxModel = new StandardListBoxModel();
+            listBoxModel.withAll(CredentialsProvider.lookupCredentials(AzureContainerServiceCredentials.class, owner, ACL.SYSTEM, Collections.<DomainRequirement>emptyList()));
+            listBoxModel.withAll(CredentialsProvider.lookupCredentials(BasicSSHUserPrivateKey.class, owner, ACL.SYSTEM, Collections.<DomainRequirement>emptyList()));
+            return listBoxModel;
+        }
+
+        public ListBoxModel doFillResourceGroupItems(@QueryParameter String azureCredentialsId) throws IOException {
+            ListBoxModel model = new ListBoxModel();
+            if (StringUtils.isBlank(azureCredentialsId)) {
+                return model;
+            }
+
+            try {
+                AzureCredentials.ServicePrincipal servicePrincipal = AzureCredentials.getServicePrincipal(azureCredentialsId);
+                final Azure azureClient = TokenCache.getInstance(servicePrincipal).getAzureClient();
+
+                List<ResourceGroup> list = azureClient.resourceGroups().list();
+                for (ResourceGroup resourceGroup : list) {
+                    model.add(resourceGroup.name());
+                }
+                return model;
+            } catch (Exception e) {
+                LOGGER.info("Cannot list resource group name: {}", e);
+                return model;
+            }
+        }
+
+        public ListBoxModel doFillServiceNameItems(@QueryParameter String azureCredentialsId,
+                                                   @QueryParameter String resourceGroup) throws IOException {
+            ListBoxModel model = new ListBoxModel();
+            if (StringUtils.isBlank(azureCredentialsId) || StringUtils.isBlank(resourceGroup)) {
+                return model;
+            }
+
+            AzureCredentials.ServicePrincipal servicePrincipal = AzureCredentials.getServicePrincipal(azureCredentialsId);
+            final Azure azureClient = TokenCache.getInstance(servicePrincipal).getAzureClient();
+
+            List<ContainerService> list = azureClient.containerServices().listByResourceGroup(resourceGroup);
+            for (ContainerService containerService : list) {
+                if (containerService.orchestratorType().equals(ContainerServiceOchestratorTypes.KUBERNETES)) {
+                    model.add(containerService.name());
+                }
+            }
+
+            return model;
+        }
+
+        public FormValidation doTestConnection(@QueryParameter String azureCredentialsId,
+                                               @QueryParameter String resourceGroup,
+                                               @QueryParameter String serviceName,
+                                               @QueryParameter String namespace,
+                                               @QueryParameter String acsCredentialsId) {
+            if (StringUtils.isBlank(azureCredentialsId)
+                    || StringUtils.isBlank(resourceGroup)
+                    || StringUtils.isBlank(serviceName)
+                    || StringUtils.isBlank(namespace)
+                    || StringUtils.isBlank(acsCredentialsId)) {
+                return FormValidation.error("Configurations cannot be empty");
+            }
+
+            AzureCredentials.ServicePrincipal servicePrincipal = AzureCredentials.getServicePrincipal(azureCredentialsId);
+            String url = "Unknown Server";
+            try {
+                final Azure azureClient = TokenCache.getInstance(servicePrincipal).getAzureClient();
+                ContainerService containerService = azureClient.containerServices().getByResourceGroup(resourceGroup, serviceName);
+                url = "https://" + containerService.masterFqdn();
+
+                KubernetesClient client;
+                if (lookupCredentials(acsCredentialsId) != null) {
+                    client = getKubernetesClient(containerService.masterFqdn(), acsCredentialsId);
+                } else {
+                    client = getKubernetesClient(url, namespace, AzureContainerServiceCredentials.getKubernetesCredential(acsCredentialsId));
+                }
+
+                client.pods().list();
+
+                return FormValidation.ok("Connect to %s successfully", url);
+            } catch (KubernetesClientException e) {
+                return FormValidation.error("Connect to %s failed", url);
+            } catch (Exception e) {
+                return FormValidation.error("Connect to %s failed: %s", url, e.getMessage());
+            }
         }
     }
 }

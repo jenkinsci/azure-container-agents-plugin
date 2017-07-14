@@ -6,7 +6,6 @@ import hudson.model.Descriptor;
 import hudson.model.Node;
 import hudson.model.TaskListener;
 import hudson.slaves.*;
-import io.fabric8.kubernetes.client.KubernetesClient;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.RandomStringUtils;
@@ -18,7 +17,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.logging.Level;
 
 public class KubernetesAgent extends AbstractCloudSlave {
 
