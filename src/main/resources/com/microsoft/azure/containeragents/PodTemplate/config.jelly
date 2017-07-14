@@ -14,12 +14,12 @@
         <f:textbox clazz="required" default="jenkinsci/jnlp-slave"/>
     </f:entry>
 
-    <f:entry field="command" title="${%Command to run slave agent}">
-        <f:textbox default="-url $${rootUrl} $${secret} $${nodeName}"/>
+    <f:entry field="command" title="Command">
+        <f:textbox/>
     </f:entry>
 
-    <f:entry field="idleMinutesStr" title="${%Time in minutes to retain slave when idle}">
-        <f:textbox/>
+    <f:entry field="args" title="Arguments">
+        <f:textbox default="-url $${rootUrl} $${secret} $${nodeName}"/>
     </f:entry>
 
 </j:jelly>

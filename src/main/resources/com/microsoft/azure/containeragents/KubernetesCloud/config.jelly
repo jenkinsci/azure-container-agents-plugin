@@ -33,6 +33,14 @@
     <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection"
                       with="managementUrl,credentialsId,serverCertificate,namespace"/>
 
+    <f:entry field="idleTime" title="Agent Idle Time">
+        <f:textbox default="0"/>
+    </f:entry>
+
+    <f:entry field="startupTimeout" title="Startup Timeout">
+        <f:textbox default="10"/>
+    </f:entry>
+
     <f:entry title="${%Images}" description="${%List of Images to be launched as slaves}">
         <f:repeatableHeteroProperty field="templates" hasHeader="true" addCaption="Add Pod Template"
                                     deleteCaption="Delete Template"/>

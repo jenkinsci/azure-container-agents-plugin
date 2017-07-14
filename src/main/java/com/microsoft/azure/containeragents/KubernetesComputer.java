@@ -19,4 +19,5 @@ public class KubernetesComputer extends AbstractCloudComputer<KubernetesAgent> {
     public String toString() {
         return String.format("KubernetesComputer name: %s slave: %s", getName(), getNode());
     }
+
 }

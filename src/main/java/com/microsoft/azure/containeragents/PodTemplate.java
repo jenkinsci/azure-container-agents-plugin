@@ -1,5 +1,6 @@
 package com.microsoft.azure.containeragents;
 
+import com.google.common.collect.Lists;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
@@ -12,7 +13,10 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.logging.Logger;
 
 
@@ -29,12 +33,51 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
 
     private String command;
 
-    private String label;
+    private String args;
 
-    private int idleMinutes;
+    private String label;
 
     @DataBoundConstructor
     public PodTemplate() {
+    }
+
+    public Pod buildPod(KubernetesAgent agent) {
+        // Build volumes and volume mounts.
+        Volume emptyDir = new VolumeBuilder()
+                .withName("rootfs")
+                .withNewEmptyDir()
+                .endEmptyDir()
+                .build();
+        VolumeMount mount = new VolumeMountBuilder()
+                .withName("rootfs")
+                .withMountPath(KubernetesAgent.ROOT_FS)
+                .build();
+        String serverUrl = Jenkins.getInstance().getRootUrl();
+        String nodeName = agent.getNodeName();
+        String secret = agent.getComputer().getJnlpMac();
+        EnvVars envs = new EnvVars("rootUrl", serverUrl, "nodeName", nodeName, "secret", secret);
+        Container container = new ContainerBuilder()
+                .withName(agent.getNodeName())
+                .withImage(image)
+                .withCommand(command.equals("") ? null : Lists.newArrayList(command))
+                .withArgs(envs.expand(args).split(" "))
+                .withVolumeMounts(mount)
+                .build();
+
+        Map<String, String> labels = new TreeMap<>();
+        labels.put("app", "jenkins-agent");
+
+        return new PodBuilder()
+                .withNewMetadata()
+                .withName(agent.getNodeName())
+                .withLabels(labels)
+                .endMetadata()
+                .withNewSpec()
+                .withVolumes(emptyDir)
+                .withContainers(container)
+                .withRestartPolicy("Never")
+                .endSpec()
+                .build();
     }
 
     public String getName() {
@@ -81,49 +124,6 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
         return "Kubernetes Pod Template";
     }
 
-    public int getIdleMinutes() {
-        return idleMinutes;
-    }
-
-    @DataBoundSetter
-    public void setIdleMinutes(int idleMinutes) {
-        this.idleMinutes = idleMinutes;
-    }
-
-    public Pod buildPod(KubernetesAgent agent) {
-        // Build volumes and volume mounts.
-        Volume emptyDir = new VolumeBuilder()
-                .withName("workspace")
-                .withNewEmptyDir()
-                .endEmptyDir()
-                .build();
-        VolumeMount mount = new VolumeMountBuilder()
-                .withName("workspace")
-                .withMountPath("/workspace")
-                .build();
-        String serverUrl = Jenkins.getInstance().getRootUrl();
-        String nodeName = agent.getNodeName();
-        String secret = agent.getComputer().getJnlpMac();
-        EnvVars envs = new EnvVars("rootUrl", serverUrl, "nodeName", nodeName, "secret", secret);
-        Container container = new ContainerBuilder()
-                .withName(agent.getNodeName())
-                .withImage(image)
-                .withArgs(envs.expand(command).split(" "))
-                .withVolumeMounts(mount)
-                .build();
-
-        return new PodBuilder()
-                .withNewMetadata()
-                .withName(agent.getNodeName())
-                .endMetadata()
-                .withNewSpec()
-                .withVolumes(emptyDir)
-                .withContainers(container)
-                .withRestartPolicy("Never")
-                .endSpec()
-                .build();
-    }
-
     public String getDescription() {
         return description;
     }
@@ -131,6 +131,15 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
     @DataBoundSetter
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getArgs() {
+        return args;
+    }
+
+    @DataBoundSetter
+    public void setArgs(String args) {
+        this.args = args;
     }
 
     @Extension
