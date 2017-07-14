@@ -32,6 +32,7 @@ import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.ConnectException;
@@ -40,8 +41,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
 
@@ -52,7 +51,7 @@ import static com.microsoft.azure.containeragents.KubernetesService.lookupCreden
 
 public class KubernetesCloud extends Cloud {
 
-    private static final Logger LOGGER = Logger.getLogger(KubernetesCloud.class.getName());
+    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(KubernetesCloud.class.getName());
 
     private String name;
 
@@ -65,6 +64,8 @@ public class KubernetesCloud extends Cloud {
     private String acsCredentialsId;
 
     private String azureCredentialsId;
+
+    private transient String managementUrl;
 
     private transient AzureContainerServiceCredentials.KubernetesCredential acsCredentials;
 
@@ -79,15 +80,15 @@ public class KubernetesCloud extends Cloud {
 
         ContainerService containerService = getContainerService(getAzureCredentialsId(), getResourceGroup(), getServiceName());
 
-        String url = "https://" + containerService.masterFqdn();
+        managementUrl = "https://" + containerService.masterFqdn();
         try {
             if (lookupCredentials(getAcsCredentialsId()) != null) {
                 return getKubernetesClient(containerService.masterFqdn(), getAcsCredentialsId());
             } else {
-                return getKubernetesClient(url, getNamespace(), AzureContainerServiceCredentials.getKubernetesCredential(getAcsCredentialsId()));
+                return getKubernetesClient(managementUrl, getNamespace(), AzureContainerServiceCredentials.getKubernetesCredential(getAcsCredentialsId()));
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Connect failed: {0}", e.getMessage());
+            LOGGER.error("Connect failed: {}", e.getMessage());
             return null;
         }
     }
@@ -113,7 +114,7 @@ public class KubernetesCloud extends Cloud {
 
                                 slave = new KubernetesAgent(template, retentionStrategy);
 
-                                LOGGER.log(Level.INFO,"Adding Jenkins node: {0}", slave.getNodeName());
+                                LOGGER.info("Adding Jenkins node: {}", slave.getNodeName());
                                 Jenkins.getInstance().addNode(slave);
 
                                 Pod pod = template.buildPod(slave);
@@ -122,7 +123,7 @@ public class KubernetesCloud extends Cloud {
 
                                 try (KubernetesClient k8sClient = connect()) {
                                     pod = k8sClient.pods().inNamespace(getNamespace()).create(pod);
-                                    LOGGER.log(Level.INFO, "Created Pod: {}", podId);
+                                    LOGGER.info("Created Pod: {}", podId);
 
                                     // wait the pod to be running
                                     while (true) {
@@ -150,9 +151,9 @@ public class KubernetesCloud extends Cloud {
                                 }
                                 return slave;
                             } catch (Throwable ex) {
-                                LOGGER.log(Level.WARNING, "Error in provisioning; slave={0}, template={1}", new Object[]{slave, template});
+                                LOGGER.error("Error in provisioning; slave={}, template={}", slave, template);
                                 if (slave != null) {
-                                    LOGGER.log(Level.INFO, "Removing Jenkins node: {0}", slave.getNodeName());
+                                    LOGGER.info("Removing Jenkins node: {0}", slave.getNodeName());
                                     Jenkins.getInstance().removeNode(slave);
                                 }
                                 throw Throwables.propagate(ex);
@@ -167,15 +168,15 @@ public class KubernetesCloud extends Cloud {
         {
             Throwable cause = e.getCause();
             if (cause instanceof SocketTimeoutException || cause instanceof ConnectException) {
-                LOGGER.log(Level.WARNING, "Failed to connect to Kubernetes at {}: {}", new Object[]{getManagementUrl(), cause.getMessage()});
+                LOGGER.warn("Failed to connect to Kubernetes at {}: {}", getManagementUrl(), cause.getMessage());
             } else {
-                LOGGER.log(Level.WARNING, "Failed to count the # of live instances on Kubernetes", cause != null ? cause : e);
+                LOGGER.warn("Failed to count the # of live instances on Kubernetes", cause != null ? cause : e);
             }
         } catch (
                 Exception e)
 
         {
-            LOGGER.log(Level.WARNING, "Failed to count the # of live instances on Kubernetes", e);
+            LOGGER.warn("Failed to count the # of live instances on Kubernetes", e);
         }
         return Collections.emptyList();
     }
@@ -245,7 +246,7 @@ public class KubernetesCloud extends Cloud {
     }
 
     public String getManagementUrl() {
-        return "https://chenylmgmt.southeastasia.cloudapp.azure.com";
+        return managementUrl;
     }
 
     @DataBoundSetter
@@ -296,7 +297,7 @@ public class KubernetesCloud extends Cloud {
                 }
                 return model;
             } catch (Exception e) {
-                LOGGER.log(Level.WARNING, "Cannot list resource group name: {0}", e);
+                LOGGER.info("Cannot list resource group name: {}", e);
                 return model;
             }
         }
