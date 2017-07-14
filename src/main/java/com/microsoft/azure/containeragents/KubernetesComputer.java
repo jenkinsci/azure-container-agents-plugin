@@ -1,10 +1,7 @@
 package com.microsoft.azure.containeragents;
 
-import hudson.model.Executor;
-import hudson.model.Queue;
 import hudson.slaves.AbstractCloudComputer;
 
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
