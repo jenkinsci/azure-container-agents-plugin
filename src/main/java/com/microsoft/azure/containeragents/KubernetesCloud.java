@@ -34,6 +34,7 @@ import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
@@ -56,7 +57,7 @@ import static com.microsoft.azure.containeragents.KubernetesService.lookupCreden
 
 public class KubernetesCloud extends Cloud {
 
-    private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(KubernetesCloud.class.getName());
+    private static final Logger LOGGER = LoggerFactory.getLogger(KubernetesCloud.class.getName());
 
     private String resourceGroup;
 

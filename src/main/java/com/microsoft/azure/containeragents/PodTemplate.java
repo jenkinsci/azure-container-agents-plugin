@@ -13,17 +13,14 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import java.io.Serializable;
-import java.util.EnumMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.logging.Logger;
 
 
 public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements Serializable {
 
     private static final long serialVersionUID = 640431693814718337L;
-    private static final Logger LOGGER = Logger.getLogger(PodTemplate.class.getName());
 
     private String name;
 
