@@ -3,10 +3,12 @@ package com.microsoft.azure.containeragents;
 import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
-import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
 import com.microsoft.azure.containeragents.helper.AzureContainerServiceCredentials;
 import com.microsoft.azure.containeragents.util.SSHShell;
+import com.microsoft.azure.containeragents.util.TokenCache;
 import com.microsoft.azure.management.Azure;
+import com.microsoft.azure.management.compute.ContainerService;
+import com.microsoft.azure.util.AzureCredentials;
 import hudson.security.ACL;
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.ConfigBuilder;
@@ -20,8 +22,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class KubernetesService {
@@ -39,7 +39,6 @@ public class KubernetesService {
             SSHShell shell = SSHShell.open(masterFqdn, 22, credentials.getUsername(), credentials.getPrivateKey().getBytes());
             return shell.download("config", ".kube", true);
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, e.getMessage());
             throw new AuthenticationException(e.getMessage());
         }
     }
@@ -78,6 +77,14 @@ public class KubernetesService {
                 .withClientKeyData(acsCredentials.getClientKey())
                 .withWebsocketPingInterval(0);
         return new DefaultKubernetesClient(builder.build());
+    }
+
+    public static ContainerService getContainerService(final String azureCredentialsId,
+                                                       final String resourceGroup,
+                                                       final String serviceName) {
+        AzureCredentials.ServicePrincipal servicePrincipal = AzureCredentials.getServicePrincipal(azureCredentialsId);
+        final Azure azureClient = TokenCache.getInstance(servicePrincipal).getAzureClient();
+        return azureClient.containerServices().getByResourceGroup(resourceGroup, serviceName);
     }
 
 }

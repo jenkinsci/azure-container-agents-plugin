@@ -3,7 +3,6 @@ package com.microsoft.azure.containeragents;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
-import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
 import com.google.common.base.Throwables;
 import com.microsoft.azure.containeragents.helper.AzureContainerServiceCredentials;
 import com.microsoft.azure.containeragents.util.TokenCache;
@@ -25,8 +24,6 @@ import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import hudson.model.Item;
 import io.fabric8.kubernetes.api.model.Pod;
-import io.fabric8.kubernetes.client.ConfigBuilder;
-import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import jenkins.model.Jenkins;
@@ -35,7 +32,6 @@ import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
-import retrofit2.http.Url;
 
 import java.io.IOException;
 import java.net.ConnectException;
@@ -49,6 +45,7 @@ import java.util.logging.Logger;
 
 import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
 
+import static com.microsoft.azure.containeragents.KubernetesService.getContainerService;
 import static com.microsoft.azure.containeragents.KubernetesService.getKubernetesClient;
 import static com.microsoft.azure.containeragents.KubernetesService.lookupCredentials;
 
@@ -79,15 +76,20 @@ public class KubernetesCloud extends Cloud {
     }
 
     private KubernetesClient connect() {
-        AzureContainerServiceCredentials.KubernetesCredential creds = AzureContainerServiceCredentials.getKubernetesCredential(acsCredentialsId);
-        ConfigBuilder builder = new ConfigBuilder();
-        builder.withMasterUrl(getManagementUrl())
-                .withCaCertData(creds.getServerCertificate())
-                .withNamespace(getNamespace())
-                .withClientCertData(creds.getClientCertificate())
-                .withClientKeyData(creds.getClientKey())
-                .withWebsocketPingInterval(0);
-        return new DefaultKubernetesClient(builder.build());
+
+        ContainerService containerService = getContainerService(getAzureCredentialsId(), getResourceGroup(), getServiceName());
+
+        String url = "https://" + containerService.masterFqdn();
+        try {
+            if (lookupCredentials(getAcsCredentialsId()) != null) {
+                return getKubernetesClient(containerService.masterFqdn(), getAcsCredentialsId());
+            } else {
+                return getKubernetesClient(url, getNamespace(), AzureContainerServiceCredentials.getKubernetesCredential(getAcsCredentialsId()));
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Connect failed: {0}", e.getMessage());
+            return null;
+        }
     }
 
     @Override
