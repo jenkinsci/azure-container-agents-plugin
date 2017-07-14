@@ -3,6 +3,7 @@ package com.microsoft.azure.containeragents;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
+import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
 import com.google.common.base.Throwables;
 import com.microsoft.azure.containeragents.helper.AzureContainerServiceCredentials;
 import com.microsoft.azure.containeragents.util.TokenCache;
@@ -45,6 +46,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
+
+import static com.microsoft.azure.containeragents.KubernetesService.getKubernetesClient;
+import static com.microsoft.azure.containeragents.KubernetesService.lookupCredentials;
 
 
 public class KubernetesCloud extends Cloud {
@@ -268,6 +274,7 @@ public class KubernetesCloud extends Cloud {
         public ListBoxModel doFillAcsCredentialsIdItems(@AncestorInPath Item owner) {
             StandardListBoxModel listBoxModel = new StandardListBoxModel();
             listBoxModel.withAll(CredentialsProvider.lookupCredentials(AzureContainerServiceCredentials.class, owner, ACL.SYSTEM, Collections.<DomainRequirement>emptyList()));
+            listBoxModel.withAll(CredentialsProvider.lookupCredentials(BasicSSHUserPrivateKey.class, owner, ACL.SYSTEM, Collections.<DomainRequirement>emptyList()));
             return listBoxModel;
         }
 
@@ -326,29 +333,26 @@ public class KubernetesCloud extends Cloud {
             }
 
             AzureCredentials.ServicePrincipal servicePrincipal = AzureCredentials.getServicePrincipal(azureCredentialsId);
-            String Url = "Unknown Server";
+            String url = "Unknown Server";
             try {
                 final Azure azureClient = TokenCache.getInstance(servicePrincipal).getAzureClient();
                 ContainerService containerService = azureClient.containerServices().getByResourceGroup(resourceGroup, serviceName);
+                url = "https://" + containerService.masterFqdn();
 
-                AzureContainerServiceCredentials.KubernetesCredential acsCredentials = AzureContainerServiceCredentials.getKubernetesCredential(acsCredentialsId);
+                KubernetesClient client;
+                if (lookupCredentials(acsCredentialsId) != null) {
+                    client = getKubernetesClient(containerService.masterFqdn(), acsCredentialsId);
+                } else {
+                    client = getKubernetesClient(url, namespace, AzureContainerServiceCredentials.getKubernetesCredential(acsCredentialsId));
+                }
 
-                Url = "https://" + containerService.masterFqdn();
-
-                ConfigBuilder builder = new ConfigBuilder();
-                builder.withMasterUrl(Url)
-                        .withCaCertData(acsCredentials.getServerCertificate())
-                        .withNamespace(namespace)
-                        .withClientCertData(acsCredentials.getClientCertificate())
-                        .withClientKeyData(acsCredentials.getClientKey())
-                        .withWebsocketPingInterval(0);
-                KubernetesClient client = new DefaultKubernetesClient(builder.build());
                 client.pods().list();
-                return FormValidation.ok("Connect to %s successfully", Url);
+
+                return FormValidation.ok("Connect to %s successfully", url);
             } catch (KubernetesClientException e) {
-                return FormValidation.error("Connect to %s failed", Url);
+                return FormValidation.error("Connect to %s failed", url);
             } catch (Exception e) {
-                return FormValidation.error("Connect to %s failed: %s", Url, e.getMessage());
+                return FormValidation.error("Connect to %s failed: %s", url, e.getMessage());
             }
         }
     }
