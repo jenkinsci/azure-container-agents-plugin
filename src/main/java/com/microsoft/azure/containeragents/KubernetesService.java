@@ -29,7 +29,7 @@ public class KubernetesService {
     private static final Logger LOGGER = LoggerFactory.getLogger(KubernetesService.class.getName());
 
 
-    private static String getConfigViaSsh(String masterFqdn, String acsCredentialsId) throws AuthenticationException {
+    public static String getConfigViaSsh(String masterFqdn, String acsCredentialsId) throws AuthenticationException {
         BasicSSHUserPrivateKey credentials = lookupCredentials(acsCredentialsId);
 
         if (credentials == null) {
@@ -51,33 +51,6 @@ public class KubernetesService {
                         ACL.SYSTEM,
                         Collections.emptyList()),
                 CredentialsMatchers.withId(credentialsId));
-    }
-
-    public static KubernetesClient getKubernetesClient(final String masterFqdn, final String acsCredentialsId) throws IOException, AuthenticationException {
-        final String configContent = getConfigViaSsh(masterFqdn, acsCredentialsId);
-
-        File tempKubeConfigFile = File.createTempFile("kube", ".config", new File(System.getProperty("java.io.tmpdir")));
-        tempKubeConfigFile.deleteOnExit();
-
-        BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(tempKubeConfigFile));
-        bufferedWriter.write(configContent);
-        bufferedWriter.close();
-
-        System.setProperty(Config.KUBERNETES_KUBECONFIG_FILE, tempKubeConfigFile.getPath());
-        return new DefaultKubernetesClient(Config.autoConfigure());
-    }
-
-    public static KubernetesClient getKubernetesClient(final String url,
-                                                       final String namespace,
-                                                       final AzureContainerServiceCredentials.KubernetesCredential acsCredentials) {
-        ConfigBuilder builder = new ConfigBuilder();
-        builder.withMasterUrl(url)
-                .withCaCertData(acsCredentials.getServerCertificate())
-                .withNamespace(namespace)
-                .withClientCertData(acsCredentials.getClientCertificate())
-                .withClientKeyData(acsCredentials.getClientKey())
-                .withWebsocketPingInterval(0);
-        return new DefaultKubernetesClient(builder.build());
     }
 
     public static ContainerService getContainerService(final String azureCredentialsId,

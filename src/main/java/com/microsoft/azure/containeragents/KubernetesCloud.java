@@ -50,8 +50,9 @@ import java.util.concurrent.TimeoutException;
 
 import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
 
+import javax.naming.AuthenticationException;
+
 import static com.microsoft.azure.containeragents.KubernetesService.getContainerService;
-import static com.microsoft.azure.containeragents.KubernetesService.getKubernetesClient;
 import static com.microsoft.azure.containeragents.KubernetesService.lookupCredentials;
 
 
@@ -69,7 +70,7 @@ public class KubernetesCloud extends Cloud {
 
     private String azureCredentialsId;
 
-    private transient String managementUrl;
+    private volatile transient String masterFqdn;
 
     private transient AzureContainerServiceCredentials.KubernetesCredential acsCredentials;
 
@@ -84,16 +85,24 @@ public class KubernetesCloud extends Cloud {
         super(name);
     }
 
-    private KubernetesClient connect() {
+    private KubernetesClient connect() throws AuthenticationException {
+//        masterFqdn = "192.168.99.100:8443";
+        if (StringUtils.isEmpty(this.masterFqdn)) {
+            ContainerService containerService = getContainerService(azureCredentialsId, resourceGroup, serviceName);
+            this.masterFqdn = containerService.masterFqdn();
+        }
+        return connect(this.masterFqdn, getNamespace(), getAcsCredentialsId());
+    }
 
-        ContainerService containerService = getContainerService(getAzureCredentialsId(), getResourceGroup(), getServiceName());
-
-        managementUrl = "https://" + containerService.masterFqdn();
+    private static KubernetesClient connect(String masterFqdn, String namespace, String acsCredentialsId) throws AuthenticationException {
         try {
-            if (lookupCredentials(getAcsCredentialsId()) != null) {
-                return getKubernetesClient(containerService.masterFqdn(), getAcsCredentialsId());
+            if (lookupCredentials(acsCredentialsId) != null) {
+                final String configContent = KubernetesService.getConfigViaSsh(masterFqdn, acsCredentialsId);
+                return KubernetesClientFactory.buildWithConfigFile(configContent);
             } else {
-                return getKubernetesClient(managementUrl, getNamespace(), AzureContainerServiceCredentials.getKubernetesCredential(getAcsCredentialsId()));
+                String managementUrl = "https://" + masterFqdn;
+                return KubernetesClientFactory.buildWithKeyPair(managementUrl, namespace,
+                        AzureContainerServiceCredentials.getKubernetesCredential(acsCredentialsId));
             }
         } catch (Exception e) {
             LOGGER.error("Connect failed: {}", e.getMessage());
@@ -204,7 +213,7 @@ public class KubernetesCloud extends Cloud {
         } catch (KubernetesClientException e) {
             Throwable cause = e.getCause();
             if (cause instanceof SocketTimeoutException || cause instanceof ConnectException) {
-                LOGGER.warn("Failed to connect to Kubernetes at {}: {}", getManagementUrl(), cause.getMessage());
+                LOGGER.warn("Failed to connect to Kubernetes at {}: {}", masterFqdn, cause.getMessage());
             } else {
                 LOGGER.warn("Failed to count the # of live instances on Kubernetes", cause != null ? cause : e);
             }
@@ -230,8 +239,7 @@ public class KubernetesCloud extends Cloud {
 
     public void deletePod(String podName) {
         LOGGER.info("Terminating container instance for slave {}", podName);
-        try {
-            KubernetesClient client = connect();
+        try (KubernetesClient client = connect()) {
             boolean result = client.pods().inNamespace(namespace).withName(podName).delete();
             if (result) {
                 LOGGER.info("Terminated Kubernetes instance for slave {}", podName);
@@ -286,10 +294,6 @@ public class KubernetesCloud extends Cloud {
 
     public String getNamespace() {
         return namespace;
-    }
-
-    public String getManagementUrl() {
-        return managementUrl;
     }
 
     @DataBoundSetter
@@ -395,28 +399,15 @@ public class KubernetesCloud extends Cloud {
                     || StringUtils.isBlank(acsCredentialsId)) {
                 return FormValidation.error("Configurations cannot be empty");
             }
-
-            AzureCredentials.ServicePrincipal servicePrincipal = AzureCredentials.getServicePrincipal(azureCredentialsId);
-            String url = "Unknown Server";
-            try {
-                final Azure azureClient = TokenCache.getInstance(servicePrincipal).getAzureClient();
-                ContainerService containerService = azureClient.containerServices().getByResourceGroup(resourceGroup, serviceName);
-                url = "https://" + containerService.masterFqdn();
-
-                KubernetesClient client;
-                if (lookupCredentials(acsCredentialsId) != null) {
-                    client = getKubernetesClient(containerService.masterFqdn(), acsCredentialsId);
-                } else {
-                    client = getKubernetesClient(url, namespace, AzureContainerServiceCredentials.getKubernetesCredential(acsCredentialsId));
-                }
-
+            ContainerService containerService = getContainerService(azureCredentialsId, resourceGroup, serviceName);
+            String masterFqdn = containerService.masterFqdn();
+            try (KubernetesClient client = connect(masterFqdn, namespace, acsCredentialsId)) {
                 client.pods().list();
-
-                return FormValidation.ok("Connect to %s successfully", url);
+                return FormValidation.ok("Connect to %s successfully", client.getMasterUrl());
             } catch (KubernetesClientException e) {
-                return FormValidation.error("Connect to %s failed", url);
+                return FormValidation.error("Connect to %s failed", masterFqdn);
             } catch (Exception e) {
-                return FormValidation.error("Connect to %s failed: %s", url, e.getMessage());
+                return FormValidation.error("Connect to %s failed: %s", masterFqdn, e.getMessage());
             }
         }
     }
