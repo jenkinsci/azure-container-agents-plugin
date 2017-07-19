@@ -44,9 +44,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 
 import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
 
@@ -80,6 +78,8 @@ public class KubernetesCloud extends Cloud {
 
     private List<PodTemplate> templates = new ArrayList<>();
 
+    private static ExecutorService threadPool;
+
     @DataBoundConstructor
     public KubernetesCloud(String name) {
         super(name);
@@ -94,7 +94,7 @@ public class KubernetesCloud extends Cloud {
         return connect(this.masterFqdn, getNamespace(), getAcsCredentialsId());
     }
 
-    private static KubernetesClient connect(String masterFqdn, String namespace, String acsCredentialsId) throws AuthenticationException {
+    public static KubernetesClient connect(String masterFqdn, String namespace, String acsCredentialsId) throws AuthenticationException {
         try {
             if (lookupCredentials(acsCredentialsId) != null) {
                 final String configContent = KubernetesService.getConfigViaSsh(masterFqdn, acsCredentialsId);
@@ -255,6 +255,13 @@ public class KubernetesCloud extends Cloud {
         return (startupTimeout > 0 && TimeUnit.MILLISECONDS.toMinutes(elaspedTime) >= startupTimeout);
     }
 
+    public synchronized static ExecutorService getThreadPool() {
+        if (KubernetesCloud.threadPool == null) {
+            KubernetesCloud.threadPool = Executors.newCachedThreadPool();
+        }
+        return KubernetesCloud.threadPool;
+    }
+
     @DataBoundSetter
     public void setAcsCredentialsId(String acsCredentialsId) {
         this.acsCredentialsId = acsCredentialsId;
@@ -326,6 +333,10 @@ public class KubernetesCloud extends Cloud {
     @DataBoundSetter
     public void setStartupTimeout(int startupTimeout) {
         this.startupTimeout = startupTimeout;
+    }
+
+    public String getMasterFqdn() {
+        return masterFqdn;
     }
 
     @Extension

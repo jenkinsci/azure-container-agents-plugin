@@ -1,5 +1,7 @@
 package com.microsoft.azure.containeragents;
 
+import com.google.common.collect.ImmutableBiMap;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import hudson.EnvVars;
 import hudson.Extension;
@@ -9,13 +11,12 @@ import hudson.model.Label;
 import hudson.model.labels.LabelAtom;
 import io.fabric8.kubernetes.api.model.*;
 import jenkins.model.Jenkins;
+import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import java.io.Serializable;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.util.*;
 
 
 public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements Serializable {
@@ -34,6 +35,24 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
 
     private String label;
 
+    private String rootFs;
+
+    private boolean privileged;
+
+    private String requestCpu;
+
+    private String limitCpu;
+
+    private String requestMemory;
+
+    private String limitMemory;
+
+    private final List<PodEnvVar> envVars = new ArrayList<>();
+
+    public static final String LABEL_KEY = "app";
+
+    public static final String LABEL_VALUE = "jenkins-agent";
+
     @DataBoundConstructor
     public PodTemplate() {
     }
@@ -45,24 +64,39 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
                 .withNewEmptyDir()
                 .endEmptyDir()
                 .build();
+
         VolumeMount mount = new VolumeMountBuilder()
                 .withName("rootfs")
-                .withMountPath(KubernetesAgent.ROOT_FS)
+                .withMountPath(rootFs)
                 .build();
+
+        List<EnvVar> envVars = new ArrayList<>();
+        for (PodEnvVar envVar : getEnvVars()) {
+            envVars.add(new EnvVar(envVar.getKey(), envVar.getValue(), null));
+        }
+
         String serverUrl = Jenkins.getInstance().getRootUrl();
         String nodeName = agent.getNodeName();
         String secret = agent.getComputer().getJnlpMac();
-        EnvVars envs = new EnvVars("rootUrl", serverUrl, "nodeName", nodeName, "secret", secret);
+        EnvVars arguments = new EnvVars("rootUrl", serverUrl, "nodeName", nodeName, "secret", secret);
         Container container = new ContainerBuilder()
                 .withName(agent.getNodeName())
                 .withImage(image)
                 .withCommand(command.equals("") ? null : Lists.newArrayList(command))
-                .withArgs(envs.expand(args).split(" "))
+                .withArgs(arguments.expand(args).split(" "))
                 .withVolumeMounts(mount)
+                .withNewResources()
+                    .withLimits(getResourcesMap(limitMemory, limitCpu))
+                    .withRequests(getResourcesMap(requestMemory, requestCpu))
+                .endResources()
+                .withNewSecurityContext()
+                    .withPrivileged(privileged)
+                .endSecurityContext()
+                .withEnv(envVars)
                 .build();
 
         Map<String, String> labels = new TreeMap<>();
-        labels.put("app", "jenkins-agent");
+        labels.put(LABEL_KEY, LABEL_VALUE);
 
         return new PodBuilder()
                 .withNewMetadata()
@@ -116,6 +150,83 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
     public Set<LabelAtom> getLabelSet() {
         return Label.parse(label);
     }
+
+    @DataBoundSetter
+    public void setRootFs(final String rootFs) {
+        this.rootFs = rootFs;
+    }
+
+    public String getRootFs() {
+        return rootFs;
+    }
+
+    @DataBoundSetter
+    public void setPrivileged(final boolean privileged) {
+        this.privileged = privileged;
+    }
+
+    public boolean getPrivileged() {
+        return privileged;
+    }
+
+    @DataBoundSetter
+    public void setRequestCpu(final String requestCpu) {
+        this.requestCpu = requestCpu;
+    }
+
+    public String getRequestCpu() {
+        return requestCpu;
+    }
+
+    @DataBoundSetter
+    public void setRequestMemory(final String requestMemory) {
+        this.requestMemory = requestMemory;
+    }
+
+    public String getRequestMemory() {
+        return requestMemory;
+    }
+
+    @DataBoundSetter
+    public void setLimitCpu(final String limitCpu) {
+        this.limitCpu = limitCpu;
+    }
+
+    public String getLimitCpu() {
+        return limitCpu;
+    }
+
+    @DataBoundSetter
+    public void setLimitMemory(final String limitMemory) {
+        this.limitMemory = limitMemory;
+    }
+
+    public String getLimitMemory() {
+        return limitMemory;
+    }
+
+    @DataBoundSetter
+    public void setEnvVars(List<PodEnvVar> envVars) {
+        this.envVars.addAll(envVars);
+    }
+
+    public List<PodEnvVar> getEnvVars() {
+        return envVars;
+    }
+
+    private Map<String, Quantity> getResourcesMap(String memory, String cpu) {
+        ImmutableMap.Builder<String, Quantity> builder = ImmutableMap.<String, Quantity> builder();
+        if (StringUtils.isNotBlank(memory)) {
+            builder.put("memory", new Quantity(memory));
+        }
+
+        if (StringUtils.isNotBlank(cpu)) {
+            builder.put("cpu", new Quantity(cpu));
+        }
+
+        return builder.build();
+    }
+
 
     public String getDisplayName() {
         return "Kubernetes Pod Template";
