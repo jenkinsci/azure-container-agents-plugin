@@ -30,7 +30,7 @@ public class KubernetesAgent extends AbstractCloudSlave {
             throws Descriptor.FormException, IOException {
         super(generateAgentName(template),
                 template.getDescription(),
-                ROOT_FS,
+                template.getRootFs(),
                 1,
                 Mode.NORMAL,
                 template.getLabel(),
