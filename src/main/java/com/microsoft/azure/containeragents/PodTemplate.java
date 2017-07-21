@@ -64,11 +64,14 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
 
     public Pod buildPod(KubernetesAgent agent) {
         // Build volumes and volume mounts.
+        List<Volume> tempVolumes = new ArrayList<>();
         Volume emptyDir = new VolumeBuilder()
                 .withName("rootfs")
                 .withNewEmptyDir()
                 .endEmptyDir()
                 .build();
+
+        tempVolumes.add(emptyDir);
 
         List<VolumeMount> volumeMounts = new ArrayList<>();
 
@@ -82,7 +85,7 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
         for (int index = 0; index < volumes.size(); index++) {
             PodVolume podVolume = volumes.get(index);
             String volumeName = "volume-" + index;
-            Volume volume = podVolume.buildVolume(volumeName);
+            tempVolumes.add(podVolume.buildVolume(volumeName));
 
             volumeMounts.add(new VolumeMountBuilder()
                                 .withName(volumeName)
@@ -124,7 +127,7 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
                 .withLabels(labels)
                 .endMetadata()
                 .withNewSpec()
-                .withVolumes(emptyDir)
+                .withVolumes(tempVolumes)
                 .withContainers(container)
                 .withRestartPolicy("Never")
                 .endSpec()
