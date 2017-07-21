@@ -65,7 +65,7 @@ public class KubernetesAgent extends AbstractCloudSlave {
         Computer.threadPoolForRemoting.execute(() -> ((KubernetesCloud) cloud).deletePod(name));
     }
 
-    private static String generateAgentName(PodTemplate template) {
+    static String generateAgentName(PodTemplate template) {
         String randString = RandomStringUtils.random(5, "bcdfghjklmnpqrstvwxz0123456789");
         String name = template.getName();
         if (StringUtils.isEmpty(name)) {
