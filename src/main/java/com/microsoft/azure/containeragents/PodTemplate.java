@@ -3,17 +3,20 @@ package com.microsoft.azure.containeragents;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.microsoft.azure.containeragents.volumes.PodVolume;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.model.Label;
 import hudson.model.labels.LabelAtom;
+import hudson.util.FormValidation;
 import io.fabric8.kubernetes.api.model.*;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
 
 import java.io.Serializable;
 import java.util.*;
@@ -49,6 +52,8 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
 
     private final List<PodEnvVar> envVars = new ArrayList<>();
 
+    private final List<PodVolume> volumes = new ArrayList<>();
+
     public static final String LABEL_KEY = "app";
 
     public static final String LABEL_VALUE = "jenkins-agent";
@@ -65,10 +70,25 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
                 .endEmptyDir()
                 .build();
 
+        List<VolumeMount> volumeMounts = new ArrayList<>();
+
         VolumeMount mount = new VolumeMountBuilder()
                 .withName("rootfs")
                 .withMountPath(rootFs)
                 .build();
+
+        volumeMounts.add(mount);
+
+        for (int index = 0; index < volumes.size(); index++) {
+            PodVolume podVolume = volumes.get(index);
+            String volumeName = "volume-" + index;
+            Volume volume = podVolume.buildVolume(volumeName);
+
+            volumeMounts.add(new VolumeMountBuilder()
+                                .withName(volumeName)
+                                .withMountPath(podVolume.getMountPath())
+                                .build());
+        }
 
         List<EnvVar> envVars = new ArrayList<>();
         for (PodEnvVar envVar : getEnvVars()) {
@@ -84,7 +104,7 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
                 .withImage(image)
                 .withCommand(command.equals("") ? null : Lists.newArrayList(command))
                 .withArgs(arguments.expand(args).split(" "))
-                .withVolumeMounts(mount)
+                .withVolumeMounts(volumeMounts)
                 .withNewResources()
                     .withLimits(getResourcesMap(limitMemory, limitCpu))
                     .withRequests(getResourcesMap(requestMemory, requestCpu))
@@ -214,14 +234,23 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
         return envVars;
     }
 
+    @DataBoundSetter
+    public void setVolumes(List<PodVolume> volumes) {
+        this.volumes.addAll(volumes);
+    }
+
+    public List<PodVolume> getVolumes() {
+        return volumes;
+    }
+
     private Map<String, Quantity> getResourcesMap(String memory, String cpu) {
         ImmutableMap.Builder<String, Quantity> builder = ImmutableMap.<String, Quantity> builder();
         if (StringUtils.isNotBlank(memory)) {
-            builder.put("memory", new Quantity(memory));
+            builder.put("memory", new Quantity(memory + "Mi"));
         }
 
         if (StringUtils.isNotBlank(cpu)) {
-            builder.put("cpu", new Quantity(cpu));
+            builder.put("cpu", new Quantity(cpu + "m"));
         }
 
         return builder.build();
@@ -256,6 +285,34 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
         @Override
         public String getDisplayName() {
             return "Kubernetes Pod Template";
+        }
+
+        public FormValidation doCheckRequestCpu(@QueryParameter String value) {
+            if (value.matches("^[0-9]*$")) {
+                return FormValidation.ok();
+            }
+            return FormValidation.error("Must be number");
+        }
+
+        public FormValidation doCheckRequestMemory(@QueryParameter String value) {
+            if (value.matches("^[0-9]*$")) {
+                return FormValidation.ok();
+            }
+            return FormValidation.error("Must be number");
+        }
+
+        public FormValidation doCheckLimitCpu(@QueryParameter String value) {
+            if (value.matches("^[0-9]*$")) {
+                return FormValidation.ok();
+            }
+            return FormValidation.error("Must be number");
+        }
+
+        public FormValidation doCheckLimitMemory(@QueryParameter String value) {
+            if (value.matches("^[0-9]*$")) {
+                return FormValidation.ok();
+            }
+            return FormValidation.error("Must be number");
         }
     }
 }

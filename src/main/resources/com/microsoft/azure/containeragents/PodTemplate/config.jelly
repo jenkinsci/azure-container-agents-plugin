@@ -31,25 +31,30 @@
                                     deleteCaption="Delete Environment Variable"/>
     </f:entry>
 
+    <f:entry title="Volumes">
+        <f:repeatableHeteroProperty field="volumes" hasHeader="true" addCaption="Add Volume"
+                                    deleteCaption="Delete Volume"/>
+    </f:entry>
+
     <f:advanced>
 
         <f:entry field="privileged" title="Run in privileged mode">
             <f:checkbox/>
         </f:entry>
 
-        <f:entry field="requestCpu" title="Request CPU">
+        <f:entry field="requestCpu" title="Request CPU (m)">
             <f:textbox/>
         </f:entry>
 
-        <f:entry field="requestMemory" title="Request Memory">
+        <f:entry field="requestMemory" title="Request Memory (Mi)">
             <f:textbox/>
         </f:entry>
 
-        <f:entry field="limitCpu" title="Limit CPU">
+        <f:entry field="limitCpu" title="Limit CPU (m)">
             <f:textbox/>
         </f:entry>
 
-        <f:entry field="limitMemory" title="Limit Memory">
+        <f:entry field="limitMemory" title="Limit Memory (Mi)">
             <f:textbox/>
         </f:entry>
 

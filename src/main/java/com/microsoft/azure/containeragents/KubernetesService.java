@@ -10,6 +10,7 @@ import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.management.compute.ContainerService;
 import com.microsoft.azure.util.AzureCredentials;
 import hudson.security.ACL;
+import hudson.util.Secret;
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
@@ -23,6 +24,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.Collections;
 
 public class KubernetesService {
@@ -37,7 +39,12 @@ public class KubernetesService {
         }
 
         try {
-            SSHShell shell = SSHShell.open(masterFqdn, 22, credentials.getUsername(), credentials.getPrivateKey().getBytes());
+            Secret passphrase = credentials.getPassphrase();
+            byte[] passphraseBytes = null;
+            if (passphrase != null) {
+                passphraseBytes = passphrase.getPlainText().getBytes(Charset.defaultCharset());
+            }
+            SSHShell shell = SSHShell.open(masterFqdn, 22, credentials.getUsername(), credentials.getPrivateKey().getBytes(), passphraseBytes);
             return shell.download("config", ".kube", true);
         } catch (Exception e) {
             throw new AuthenticationException(e.getMessage());
