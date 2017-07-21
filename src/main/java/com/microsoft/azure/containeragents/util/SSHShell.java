@@ -83,7 +83,7 @@ public final class SSHShell {
      * @throws JSchException
      * @throws IOException
      */
-    private SSHShell(String host, int port, String userName, byte[] sshPrivateKey)
+    private SSHShell(String host, int port, String userName, byte[] sshPrivateKey, byte[] passphrase)
             throws JSchException, IOException {
         Closure expectClosure = getExpectClosure();
         for (String linuxPromptPattern : new String[]{"\\>", "#", "~#", "~\\$"}) {
@@ -96,7 +96,7 @@ public final class SSHShell {
         }
         JSch jsch = new JSch();
         jsch.setKnownHosts(System.getProperty("user.home") + "/.ssh/known_hosts");
-        jsch.addIdentity(host, sshPrivateKey, (byte[]) null, (byte[]) null);
+        jsch.addIdentity(host, sshPrivateKey, (byte[]) null, passphrase);
         this.session = jsch.getSession(userName, host, port);
         this.session.setConfig("StrictHostKeyChecking", "no");
         this.session.setConfig("PreferredAuthentications", "publickey,keyboard-interactive,password");
@@ -133,9 +133,9 @@ public final class SSHShell {
      * @throws JSchException exception thrown
      * @throws IOException IO exception thrown
      */
-    public static SSHShell open(String host, int port, String userName, byte[] sshPrivateKey)
+    public static SSHShell open(String host, int port, String userName, byte[] sshPrivateKey, byte[] passphrase)
             throws JSchException, IOException {
-        return new SSHShell(host, port, userName, sshPrivateKey);
+        return new SSHShell(host, port, userName, sshPrivateKey, passphrase);
     }
 
     /**

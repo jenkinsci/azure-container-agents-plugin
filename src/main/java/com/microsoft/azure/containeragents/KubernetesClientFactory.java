@@ -18,14 +18,15 @@ import java.io.IOException;
 public class KubernetesClientFactory {
     public static KubernetesClient buildWithConfigFile(final String configContent) throws IOException {
         File tempKubeConfigFile = File.createTempFile("kube", ".config", new File(System.getProperty("java.io.tmpdir")));
-        tempKubeConfigFile.deleteOnExit();
 
         BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(tempKubeConfigFile));
         bufferedWriter.write(configContent);
         bufferedWriter.close();
 
         System.setProperty(Config.KUBERNETES_KUBECONFIG_FILE, tempKubeConfigFile.getPath());
-        return new DefaultKubernetesClient(Config.autoConfigure());
+        KubernetesClient client = new DefaultKubernetesClient(Config.autoConfigure());
+        tempKubeConfigFile.delete();
+        return client;
     }
 
     public static KubernetesClient buildWithKeyPair(final String url,
