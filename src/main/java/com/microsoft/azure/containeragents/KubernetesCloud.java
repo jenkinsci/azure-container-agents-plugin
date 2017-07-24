@@ -193,7 +193,7 @@ public class KubernetesCloud extends Cloud {
                         LOGGER.error("Error in cleaning up the slave node " + slave.getNodeName(), e);
                     }
                 }
-                throw Throwables.propagate(ex);
+                throw new RuntimeException(ex);
             }
         }
     }
