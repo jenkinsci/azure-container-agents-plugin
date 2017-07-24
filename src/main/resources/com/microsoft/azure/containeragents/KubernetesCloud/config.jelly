@@ -29,10 +29,6 @@
     <f:validateButton title="${%Test Connection}" progress="${%Testing...}" method="testConnection"
                       with="azureCredentialsId,resourceGroup,serviceName,namespace,acsCredentialsId"/>
 
-    <f:entry field="idleTime" title="Agent Idle Time">
-        <f:textbox default="0"/>
-    </f:entry>
-
     <f:entry field="startupTimeout" title="Startup Timeout">
         <f:textbox default="10"/>
     </f:entry>

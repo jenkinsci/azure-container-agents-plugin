@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See License.txt in the project root for
+ * license information.
+ */
+
 package com.microsoft.azure.containeragents;
 
 import com.cloudbees.plugins.credentials.CredentialsProvider;
@@ -72,13 +78,13 @@ public class KubernetesCloud extends Cloud {
 
     private transient AzureContainerServiceCredentials.KubernetesCredential acsCredentials;
 
-    private int idleTime;           // in minutes
-
     private int startupTimeout;           // in minutes
 
     private List<PodTemplate> templates = new ArrayList<>();
 
     private static ExecutorService threadPool;
+
+    private transient KubernetesClient client;
 
     @DataBoundConstructor
     public KubernetesCloud(String name) {
@@ -87,27 +93,18 @@ public class KubernetesCloud extends Cloud {
 
     private KubernetesClient connect() throws AuthenticationException {
 //        masterFqdn = "192.168.99.100:8443";
-        if (StringUtils.isEmpty(this.masterFqdn)) {
-            ContainerService containerService = getContainerService(azureCredentialsId, resourceGroup, serviceName);
-            this.masterFqdn = containerService.masterFqdn();
-        }
-        return connect(this.masterFqdn, getNamespace(), getAcsCredentialsId());
-    }
-
-    public static KubernetesClient connect(String masterFqdn, String namespace, String acsCredentialsId) throws AuthenticationException {
-        try {
-            if (lookupCredentials(acsCredentialsId) != null) {
-                final String configContent = KubernetesService.getConfigViaSsh(masterFqdn, acsCredentialsId);
-                return KubernetesClientFactory.buildWithConfigFile(configContent);
-            } else {
-                String managementUrl = "https://" + masterFqdn;
-                return KubernetesClientFactory.buildWithKeyPair(managementUrl, namespace,
-                        AzureContainerServiceCredentials.getKubernetesCredential(acsCredentialsId));
+        if (client == null) {
+            synchronized (this) {
+                if (client == null) {
+                    if (StringUtils.isEmpty(this.masterFqdn)) {
+                        ContainerService containerService = getContainerService(azureCredentialsId, resourceGroup, serviceName);
+                        this.masterFqdn = containerService.masterFqdn();
+                    }
+                    client = KubernetesService.connect(this.masterFqdn, getNamespace(), getAcsCredentialsId());
+                }
             }
-        } catch (Exception e) {
-            LOGGER.error("Connect failed: {}", e.getMessage());
-            return null;
         }
+        return client;
     }
 
     private class ProvisionCallback implements Callable<Node> {
@@ -121,15 +118,8 @@ public class KubernetesCloud extends Cloud {
         @Override
         public Node call() throws Exception {
             KubernetesAgent slave = null;
-            RetentionStrategy retentionStrategy = null;
             try {
-                if (idleTime == 0) {
-                    retentionStrategy = null;
-                } else {
-                    retentionStrategy = new CloudRetentionStrategy(idleTime);
-                }
-
-                slave = new KubernetesAgent(KubernetesCloud.this, template, retentionStrategy);
+                slave = new KubernetesAgent(KubernetesCloud.this, template);
 
                 LOGGER.info("Adding Jenkins node: {}", slave.getNodeName());
                 Jenkins.getInstance().addNode(slave);
@@ -317,15 +307,6 @@ public class KubernetesCloud extends Cloud {
         this.templates = templates;
     }
 
-    public int getIdleTime() {
-        return idleTime;
-    }
-
-    @DataBoundSetter
-    public void setIdleTime(int idleTime) {
-        this.idleTime = idleTime;
-    }
-
     public int getStartupTimeout() {
         return startupTimeout;
     }
@@ -337,6 +318,10 @@ public class KubernetesCloud extends Cloud {
 
     public String getMasterFqdn() {
         return masterFqdn;
+    }
+
+    public KubernetesClient getClient() {
+        return client;
     }
 
     @Extension
@@ -412,7 +397,7 @@ public class KubernetesCloud extends Cloud {
             }
             ContainerService containerService = getContainerService(azureCredentialsId, resourceGroup, serviceName);
             String masterFqdn = containerService.masterFqdn();
-            try (KubernetesClient client = connect(masterFqdn, namespace, acsCredentialsId)) {
+            try (KubernetesClient client = KubernetesService.connect(masterFqdn, namespace, acsCredentialsId)) {
                 client.pods().list();
                 return FormValidation.ok("Connect to %s successfully", client.getMasterUrl());
             } catch (KubernetesClientException e) {

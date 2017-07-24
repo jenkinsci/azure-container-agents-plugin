@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See License.txt in the project root for
+ * license information.
+ */
+
 package com.microsoft.azure.containeragents;
 
 import com.microsoft.azure.containeragents.helper.AzureContainerServiceCredentials;
@@ -12,9 +18,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
-/**
- * Created by xianyu on 7/14/2017.
- */
 public class KubernetesClientFactory {
     public static KubernetesClient buildWithConfigFile(final String configContent) throws IOException {
         File tempKubeConfigFile = File.createTempFile("kube", ".config", new File(System.getProperty("java.io.tmpdir")));

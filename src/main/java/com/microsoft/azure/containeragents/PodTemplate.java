@@ -1,8 +1,16 @@
+/*
+ * Copyright (c) Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See License.txt in the project root for
+ * license information.
+ */
+
 package com.microsoft.azure.containeragents;
 
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.microsoft.azure.containeragents.strategy.KubernetesIdleRetentionStrategy;
+import com.microsoft.azure.containeragents.strategy.KubernetesOnceRetentionStrategy;
 import com.microsoft.azure.containeragents.volumes.PodVolume;
 import hudson.EnvVars;
 import hudson.Extension;
@@ -10,6 +18,8 @@ import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.model.Label;
 import hudson.model.labels.LabelAtom;
+import hudson.slaves.CloudRetentionStrategy;
+import hudson.slaves.RetentionStrategy;
 import hudson.util.FormValidation;
 import io.fabric8.kubernetes.api.model.*;
 import jenkins.model.Jenkins;
@@ -40,6 +50,8 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
 
     private String rootFs;
 
+    private CloudRetentionStrategy retentionStrategy;
+
     private boolean privileged;
 
     private String requestCpu;
@@ -57,6 +69,7 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
     public static final String LABEL_KEY = "app";
 
     public static final String LABEL_VALUE = "jenkins-agent";
+
 
     @DataBoundConstructor
     public PodTemplate() {
@@ -184,6 +197,15 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
     }
 
     @DataBoundSetter
+    public void setRetentionStrategy(final CloudRetentionStrategy retentionStrategy) {
+        this.retentionStrategy = retentionStrategy;
+    }
+
+    public CloudRetentionStrategy getRetentionStrategy() {
+        return retentionStrategy;
+    }
+
+    @DataBoundSetter
     public void setPrivileged(final boolean privileged) {
         this.privileged = privileged;
     }
@@ -288,6 +310,13 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
         @Override
         public String getDisplayName() {
             return "Kubernetes Pod Template";
+        }
+
+        public List<Descriptor<RetentionStrategy<?>>> getKubernetseRetentionStrategyDescriptors() {
+            List<Descriptor<RetentionStrategy<?>>> list = new ArrayList<>();
+            list.add(KubernetesOnceRetentionStrategy.DESCRIPTOR);
+            list.add(KubernetesIdleRetentionStrategy.DESCRIPTOR);
+            return list;
         }
 
         public FormValidation doCheckRequestCpu(@QueryParameter String value) {

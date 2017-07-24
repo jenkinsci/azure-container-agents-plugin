@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See License.txt in the project root for
+ * license information.
+ */
+
 package com.microsoft.azure.containeragents.volumes;
 
 import hudson.Extension;
@@ -6,9 +12,6 @@ import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeBuilder;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-/**
- * Created by chenyl on 7/21/2017.
- */
 public class SecretVolume extends PodVolume {
 
     private final String mountPath;

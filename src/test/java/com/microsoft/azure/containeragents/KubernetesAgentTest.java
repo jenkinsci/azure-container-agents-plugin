@@ -30,7 +30,7 @@ public class KubernetesAgentTest {
     public void setup() throws IOException, Descriptor.FormException {
         PodTemplate podTemplate = new PodTemplate();
         KubernetesCloud cloud = Mockito.mock(KubernetesCloud.class);
-        agent = new KubernetesAgent(cloud, podTemplate, null);
+        agent = new KubernetesAgent(cloud, podTemplate);
         rule.jenkins.addNode(agent);
     }
 

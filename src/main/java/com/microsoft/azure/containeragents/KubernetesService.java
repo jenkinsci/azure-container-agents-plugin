@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See License.txt in the project root for
+ * license information.
+ */
+
 package com.microsoft.azure.containeragents;
 
 import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
@@ -30,6 +36,8 @@ import java.util.Collections;
 public class KubernetesService {
     private static final Logger LOGGER = LoggerFactory.getLogger(KubernetesService.class.getName());
 
+    private static KubernetesClient client = null;
+
 
     public static String getConfigViaSsh(String masterFqdn, String acsCredentialsId) throws AuthenticationException {
         BasicSSHUserPrivateKey credentials = lookupCredentials(acsCredentialsId);
@@ -48,6 +56,22 @@ public class KubernetesService {
             return shell.download("config", ".kube", true);
         } catch (Exception e) {
             throw new AuthenticationException(e.getMessage());
+        }
+    }
+
+    public static KubernetesClient connect(String masterFqdn, String namespace, String acsCredentialsId) throws AuthenticationException {
+        try {
+            if (lookupCredentials(acsCredentialsId) != null) {
+                final String configContent = KubernetesService.getConfigViaSsh(masterFqdn, acsCredentialsId);
+                return KubernetesClientFactory.buildWithConfigFile(configContent);
+            } else {
+                String managementUrl = "https://" + masterFqdn;
+                return KubernetesClientFactory.buildWithKeyPair(managementUrl, namespace,
+                        AzureContainerServiceCredentials.getKubernetesCredential(acsCredentialsId));
+            }
+        } catch (Exception e) {
+            LOGGER.error("Connect failed: {}", e.getMessage());
+            return null;
         }
     }
 

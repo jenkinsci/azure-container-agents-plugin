@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See License.txt in the project root for
+ * license information.
+ */
+
 package com.microsoft.azure.containeragents;
 
 
@@ -17,9 +23,7 @@ import org.slf4j.LoggerFactory;
 import javax.naming.AuthenticationException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import static com.microsoft.azure.containeragents.KubernetesService.lookupCredentials;
 
@@ -28,7 +32,7 @@ public class KubernetesCleanUpTask extends AsyncPeriodicWork {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(KubernetesCleanUpTask.class.getName());
 
-    private static final int RECURRENCE_PERIOD_IN_MILLIS = 1 * 60 * 1000;
+    private static final int RECURRENCE_PERIOD_IN_MILLIS = 15 * 60 * 1000;
 
     private static final int CLEAN_TIMEOUT = 15;
 
@@ -42,18 +46,18 @@ public class KubernetesCleanUpTask extends AsyncPeriodicWork {
             return;
         }
          for (KubernetesCloud cloud : instance.clouds.getAll(KubernetesCloud.class)) {
-            if (StringUtils.isBlank(cloud.getMasterFqdn())) {
+            if (cloud.getClient() == null) {
                 return;
             }
             cleanLeakedPods(cloud, cloud.getMasterFqdn(), cloud.getAcsCredentialsId(), cloud.getNamespace());
         }
     }
 
-    private void cleanLeakedPods(final Cloud cloud,
+    private void cleanLeakedPods(final KubernetesCloud cloud,
                                  final String masterFqdn,
                                  final String acsCredentialsId,
                                  final String namespace) throws AuthenticationException {
-        KubernetesClient client = KubernetesCloud.connect(masterFqdn, namespace, acsCredentialsId);
+        KubernetesClient client = cloud.getClient();
 
         if (client == null) {
             return;
@@ -85,7 +89,7 @@ public class KubernetesCleanUpTask extends AsyncPeriodicWork {
             }
 
             for (Pod pod : podsToRemove) {
-                Computer.threadPoolForRemoting.execute(() -> ((KubernetesCloud) cloud).deletePod(pod.getMetadata().getName()));
+                ((KubernetesCloud) cloud).deletePod(pod.getMetadata().getName());
             }
         } catch (Exception e) {
             LOGGER.error("KubernetesCleanUpTask: cleanLeakedPods: failed", e);
@@ -105,8 +109,12 @@ public class KubernetesCleanUpTask extends AsyncPeriodicWork {
                 return null;
             }
         };
+        ExecutorService es =  KubernetesCloud.getThreadPool();
 
-        Future<Void> result = KubernetesCloud.getThreadPool().submit(cleanTask);
+        Future<Void> result = es.submit(cleanTask);
+        LOGGER.info("Now poolsize is: {}", ((ThreadPoolExecutor) es).getPoolSize());
+        LOGGER.info("Now corepoolsize is: {}", ((ThreadPoolExecutor) es).getCorePoolSize());
+        LOGGER.info("Now TaskCount is: {}", ((ThreadPoolExecutor) es).getTaskCount());
 
         try {
             LOGGER.info("KubernetesCleanUpTask: execute: Running clean task within 15 minute timeout");

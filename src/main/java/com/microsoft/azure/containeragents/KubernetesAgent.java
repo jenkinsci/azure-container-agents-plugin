@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See License.txt in the project root for
+ * license information.
+ */
+
 package com.microsoft.azure.containeragents;
 
 import hudson.Extension;
@@ -26,7 +32,7 @@ public class KubernetesAgent extends AbstractCloudSlave {
     private final String cloudName;
 
     @DataBoundConstructor
-    public KubernetesAgent(KubernetesCloud cloud, PodTemplate template, RetentionStrategy retentionStrategy)
+    public KubernetesAgent(KubernetesCloud cloud, PodTemplate template)
             throws Descriptor.FormException, IOException {
         super(generateAgentName(template),
                 template.getDescription(),
@@ -35,7 +41,7 @@ public class KubernetesAgent extends AbstractCloudSlave {
                 Mode.NORMAL,
                 template.getLabel(),
                 new JNLPLauncher(),
-                retentionStrategy,
+                template.getRetentionStrategy(),
                 new ArrayList<>());
         cloudName = cloud.getDisplayName();
     }

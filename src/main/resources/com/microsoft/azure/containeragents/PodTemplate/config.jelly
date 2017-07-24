@@ -38,6 +38,8 @@
 
     <f:advanced>
 
+        <f:dropdownDescriptorSelector field="retentionStrategy" title="Retention Strategy" descriptors="${descriptor.kubernetseRetentionStrategyDescriptors}"/>
+
         <f:entry field="privileged" title="Run in privileged mode">
             <f:checkbox/>
         </f:entry>
