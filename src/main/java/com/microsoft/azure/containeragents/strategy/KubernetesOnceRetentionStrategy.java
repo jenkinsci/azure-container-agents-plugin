@@ -40,7 +40,7 @@ public class KubernetesOnceRetentionStrategy extends CloudRetentionStrategy impl
         if (c.isIdle() && !disabled) {
             final long idleMilliseconds = System.currentTimeMillis() - c.getIdleStartMilliseconds();
             if (idleMilliseconds > TimeUnit2.MINUTES.toMillis(idleMinutes)) {
-                LOGGER.info("Disconnecting {0}", c.getName());
+                LOGGER.info("Disconnecting {}", c.getName());
                 done(c);
             }
         }
@@ -72,42 +72,41 @@ public class KubernetesOnceRetentionStrategy extends CloudRetentionStrategy impl
     }
 
     private void done(Executor executor) {
+        try {
+            Thread.sleep(10 * 1000);
+        } catch (Exception e) {
+            LOGGER.info(e.getMessage());
+        }
         final AbstractCloudComputer<?> c = (AbstractCloudComputer) executor.getOwner();
         Queue.Executable exec = executor.getCurrentExecutable();
 
-        LOGGER.info("terminating {0} since {1} seems to be finished", new Object[]{c.getName(), exec});
+        LOGGER.info("terminating {} since {} seems to be finished", c.getName(), exec);
         done(c);
     }
 
     private void done(final AbstractCloudComputer<?> c) {
         c.setAcceptingTasks(false); // just in case
         synchronized (this) {
-            if (terminating) {
-                return;
-            }
-            terminating = true;
-        }
-        Computer.threadPoolForRemoting.submit(new Runnable() {
-            @Override
-            public void run() {
-                Queue.withLock( new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            AbstractCloudSlave node = c.getNode();
-                            if (node != null) {
-                                node.terminate();
-                            }
-                        } catch (InterruptedException | IOException e) {
-                            LOGGER.warn("Failed to terminate " + c.getName(), e);
-                            synchronized (KubernetesOnceRetentionStrategy.this) {
-                                terminating = false;
+            Computer.threadPoolForRemoting.submit(new Runnable() {
+                @Override
+                public void run() {
+                    Queue.withLock( new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                AbstractCloudSlave node = c.getNode();
+                                if (node != null) {
+                                    node.terminate();
+                                }
+                            } catch (InterruptedException | IOException e) {
+                                LOGGER.warn("Failed to terminate {}: {}", c.getName(), e);
                             }
                         }
-                    }
-                });
-            }
-        });
+                    });
+                }
+            });
+        }
+
     }
 
     @Override
