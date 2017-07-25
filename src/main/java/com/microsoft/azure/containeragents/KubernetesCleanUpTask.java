@@ -13,10 +13,8 @@ import hudson.model.Computer;
 import hudson.model.TaskListener;
 import hudson.slaves.Cloud;
 import io.fabric8.kubernetes.api.model.Pod;
-import io.fabric8.kubernetes.api.model.PodList;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import jenkins.model.Jenkins;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
 
-import static com.microsoft.azure.containeragents.KubernetesService.lookupCredentials;
 
 @Extension
 public class KubernetesCleanUpTask extends AsyncPeriodicWork {

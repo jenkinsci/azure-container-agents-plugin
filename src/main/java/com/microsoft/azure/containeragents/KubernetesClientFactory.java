@@ -12,7 +12,6 @@ import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 
-import javax.naming.AuthenticationException;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;

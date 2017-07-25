@@ -68,6 +68,7 @@ public class KubernetesAgent extends AbstractCloudSlave {
             listener.fatalError(msg);
             return;
         }
+
         Computer.threadPoolForRemoting.execute(() -> ((KubernetesCloud) cloud).deletePod(name));
     }
 

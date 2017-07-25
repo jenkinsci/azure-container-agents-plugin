@@ -7,7 +7,6 @@
 package com.microsoft.azure.containeragents.strategy;
 
 
-import com.microsoft.azure.containeragents.KubernetesCloud;
 import hudson.Extension;
 import hudson.model.Descriptor;
 import hudson.slaves.CloudRetentionStrategy;

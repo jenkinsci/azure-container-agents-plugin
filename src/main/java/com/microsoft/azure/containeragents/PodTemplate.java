@@ -6,7 +6,6 @@
 
 package com.microsoft.azure.containeragents;
 
-import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.microsoft.azure.containeragents.strategy.KubernetesIdleRetentionStrategy;
@@ -18,7 +17,6 @@ import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.model.Label;
 import hudson.model.labels.LabelAtom;
-import hudson.slaves.CloudRetentionStrategy;
 import hudson.slaves.RetentionStrategy;
 import hudson.util.FormValidation;
 import io.fabric8.kubernetes.api.model.*;
@@ -50,7 +48,7 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
 
     private String rootFs;
 
-    private CloudRetentionStrategy retentionStrategy;
+    private RetentionStrategy<?> retentionStrategy;
 
     private boolean privileged;
 
@@ -197,11 +195,11 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
     }
 
     @DataBoundSetter
-    public void setRetentionStrategy(final CloudRetentionStrategy retentionStrategy) {
+    public void setRetentionStrategy(final RetentionStrategy<?> retentionStrategy) {
         this.retentionStrategy = retentionStrategy;
     }
 
-    public CloudRetentionStrategy getRetentionStrategy() {
+    public RetentionStrategy<?> getRetentionStrategy() {
         return retentionStrategy;
     }
 

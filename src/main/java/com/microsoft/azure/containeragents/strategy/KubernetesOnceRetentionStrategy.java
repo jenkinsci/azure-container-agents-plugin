@@ -17,13 +17,11 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.beans.ExceptionListener;
 import java.io.IOException;
-import java.util.logging.Level;
 
 public class KubernetesOnceRetentionStrategy extends CloudRetentionStrategy implements ExecutorListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(KubernetesOnceRetentionStrategy.class);
-    private static int idleMinutes = 10;
+    private static transient int idleMinutes = 1;
     private transient boolean terminating;
 
     @DataBoundConstructor
