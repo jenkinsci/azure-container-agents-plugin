@@ -115,9 +115,10 @@ public class KubernetesOnceRetentionStrategy extends CloudRetentionStrategy impl
     }
 
     @Restricted(NoExternalUse.class)
+    @Extension
     public static final DescriptorImpl DESCRIPTOR = new DescriptorImpl();
 
-    @Extension
+
     public static final class DescriptorImpl extends Descriptor<RetentionStrategy<?>> {
         @Override
         public String getDisplayName() {

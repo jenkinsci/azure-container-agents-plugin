@@ -64,6 +64,8 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
 
     private final List<PodVolume> volumes = new ArrayList<>();
 
+    private final List<PodImagePullSecrets> imagePullSecrets = new ArrayList<>();
+
     public static final String LABEL_KEY = "app";
 
     public static final String LABEL_VALUE = "jenkins-agent";
@@ -109,6 +111,11 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
             envVars.add(new EnvVar(envVar.getKey(), envVar.getValue(), null));
         }
 
+        List<LocalObjectReference> imagePullsecrets = new ArrayList<>();
+        for (PodImagePullSecrets secret : getImagePullSecrets()) {
+            imagePullsecrets.add(new LocalObjectReference(secret.getName()));
+        }
+
         String serverUrl = Jenkins.getInstance().getRootUrl();
         String nodeName = agent.getNodeName();
         String secret = agent.getComputer().getJnlpMac();
@@ -141,6 +148,7 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
                 .withVolumes(tempVolumes)
                 .withContainers(container)
                 .withRestartPolicy("Never")
+                .withImagePullSecrets(imagePullsecrets)
                 .endSpec()
                 .build();
     }
@@ -264,6 +272,15 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
 
     public List<PodVolume> getVolumes() {
         return volumes;
+    }
+
+    @DataBoundSetter
+    public void setImagePullSecrets(List<PodImagePullSecrets> imagePullSecrets) {
+        this.imagePullSecrets.addAll(imagePullSecrets);
+    }
+
+    public List<PodImagePullSecrets> getImagePullSecrets() {
+        return imagePullSecrets;
     }
 
     private Map<String, Quantity> getResourcesMap(String memory, String cpu) {

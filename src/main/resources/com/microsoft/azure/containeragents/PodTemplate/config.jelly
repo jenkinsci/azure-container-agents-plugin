@@ -14,6 +14,11 @@
         <f:textbox clazz="required" default="jenkinsci/jnlp-slave"/>
     </f:entry>
 
+    <f:entry title="Private Registry Secrets">
+        <f:repeatableHeteroProperty field="imagePullSecrets" hasHeader="true" addCaption="Add Private Registry Secret"
+                                    deleteCaption="Delete Private Registry Secret"/>
+    </f:entry>
+
     <f:entry field="command" title="Command">
         <f:textbox/>
     </f:entry>
@@ -26,7 +31,7 @@
         <f:textbox default="/jenkins"/>
     </f:entry>
 
-    <f:entry title="Environment Valuables">
+    <f:entry title="Environment Variable">
         <f:repeatableHeteroProperty field="envVars" hasHeader="true" addCaption="Add Environment Variable"
                                     deleteCaption="Delete Environment Variable"/>
     </f:entry>
