@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.microsoft.azure.containeragents.strategy.KubernetesIdleRetentionStrategy;
 import com.microsoft.azure.containeragents.strategy.KubernetesOnceRetentionStrategy;
+import com.microsoft.azure.containeragents.util.DockerConfigBuilder;
 import com.microsoft.azure.containeragents.volumes.PodVolume;
 import hudson.EnvVars;
 import hudson.Extension;
@@ -18,14 +19,17 @@ import hudson.model.Descriptor;
 import hudson.model.Label;
 import hudson.model.labels.LabelAtom;
 import hudson.slaves.RetentionStrategy;
-import hudson.util.FormValidation;
+import hudson.util.*;
 import io.fabric8.kubernetes.api.model.*;
+import io.fabric8.kubernetes.api.model.Secret;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
+import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
@@ -60,11 +64,13 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
 
     private String limitMemory;
 
-    private final List<PodEnvVar> envVars = new ArrayList<>();
+    private List<PodEnvVar> envVars = new ArrayList<>();
 
-    private final List<PodVolume> volumes = new ArrayList<>();
+    private List<PodVolume> volumes = new ArrayList<>();
 
-    private final List<PodImagePullSecrets> imagePullSecrets = new ArrayList<>();
+    private List<PodImagePullSecrets> imagePullSecrets = new ArrayList<>();
+
+    private List<DockerRegistryEndpoint> privateRegistryCredentials = new ArrayList<>();
 
     public static final String LABEL_KEY = "app";
 
@@ -75,7 +81,7 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
     public PodTemplate() {
     }
 
-    public Pod buildPod(KubernetesAgent agent) {
+    public Pod buildPod(KubernetesAgent agent, String additionalSecret) {
         // Build volumes and volume mounts.
         List<Volume> tempVolumes = new ArrayList<>();
         Volume emptyDir = new VolumeBuilder()
@@ -111,9 +117,12 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
             envVars.add(new EnvVar(envVar.getKey(), envVar.getValue(), null));
         }
 
-        List<LocalObjectReference> imagePullsecrets = new ArrayList<>();
+        List<LocalObjectReference> imagePullSecrets = new ArrayList<>();
         for (PodImagePullSecrets secret : getImagePullSecrets()) {
-            imagePullsecrets.add(new LocalObjectReference(secret.getName()));
+            imagePullSecrets.add(new LocalObjectReference(secret.getName()));
+        }
+        if (additionalSecret != null) {
+            imagePullSecrets.add(new LocalObjectReference(additionalSecret));
         }
 
         String serverUrl = Jenkins.getInstance().getRootUrl();
@@ -148,8 +157,26 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
                 .withVolumes(tempVolumes)
                 .withContainers(container)
                 .withRestartPolicy("Never")
-                .withImagePullSecrets(imagePullsecrets)
+                .withImagePullSecrets(imagePullSecrets)
                 .endSpec()
+                .build();
+    }
+
+    public Secret buildSecret(String namespace,
+                              String secretName,
+                              List<DockerRegistryEndpoint> credentials) throws IOException {
+        DockerConfigBuilder dockerConfigBuilder = new DockerConfigBuilder(credentials);
+        String dockerConfig = dockerConfigBuilder.buildDockercfgForKubernetes();
+
+        Map<String, String> data = new HashMap<>();
+        data.put(".dockercfg", dockerConfig);
+        return new SecretBuilder()
+                .withNewMetadata()
+                    .withName(secretName)
+                    .withNamespace(namespace)
+                .endMetadata()
+                .withData(data)
+                .withType("kubernetes.io/dockercfg")
                 .build();
     }
 
@@ -258,7 +285,7 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
 
     @DataBoundSetter
     public void setEnvVars(List<PodEnvVar> envVars) {
-        this.envVars.addAll(envVars);
+        this.envVars = envVars;
     }
 
     public List<PodEnvVar> getEnvVars() {
@@ -267,7 +294,7 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
 
     @DataBoundSetter
     public void setVolumes(List<PodVolume> volumes) {
-        this.volumes.addAll(volumes);
+        this.volumes = volumes;
     }
 
     public List<PodVolume> getVolumes() {
@@ -276,11 +303,20 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
 
     @DataBoundSetter
     public void setImagePullSecrets(List<PodImagePullSecrets> imagePullSecrets) {
-        this.imagePullSecrets.addAll(imagePullSecrets);
+        this.imagePullSecrets = imagePullSecrets;
     }
 
     public List<PodImagePullSecrets> getImagePullSecrets() {
         return imagePullSecrets;
+    }
+
+    @DataBoundSetter
+    public void setPrivateRegistryCredentials(List<DockerRegistryEndpoint> privateRegistryCredentials) {
+        this.privateRegistryCredentials = privateRegistryCredentials;
+    }
+
+    public List<DockerRegistryEndpoint> getPrivateRegistryCredentials() {
+        return privateRegistryCredentials;
     }
 
     private Map<String, Quantity> getResourcesMap(String memory, String cpu) {

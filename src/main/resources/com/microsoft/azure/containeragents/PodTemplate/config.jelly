@@ -19,6 +19,13 @@
                                     deleteCaption="Delete Private Registry Secret"/>
     </f:entry>
 
+    <f:advanced>
+        <f:entry title="Private Registry Credentials">
+            <f:repeatableHeteroProperty field="privateRegistryCredentials" hasHeader="true" addCaption="Add Private Registry Registry"
+                                    deleteCaption="Delete Private Registry Registry"/>
+        </f:entry>
+    </f:advanced>
+
     <f:entry field="command" title="Command">
         <f:textbox/>
     </f:entry>

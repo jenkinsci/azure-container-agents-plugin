@@ -2,7 +2,7 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
          xmlns:t="/lib/hudson" xmlns:f="/lib/form">
 
-    <f:entry field="name" title="Docker-registry Name">
+    <f:entry field="name" title="Secret Name">
         <f:textbox/>
     </f:entry>
 

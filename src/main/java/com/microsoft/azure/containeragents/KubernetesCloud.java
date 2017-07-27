@@ -27,6 +27,7 @@ import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import hudson.model.Item;
 import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import jenkins.model.Jenkins;
@@ -120,13 +121,25 @@ public class KubernetesCloud extends Cloud {
                 LOGGER.info("Adding Jenkins node: {}", slave.getNodeName());
                 Jenkins.getInstance().addNode(slave);
 
-                Pod pod = template.buildPod(slave);
+                Secret registrySecret = null;
+                String secretName = null;
+                if (!template.getPrivateRegistryCredentials().isEmpty()) {
+                    secretName = name + "-" + template.getName();
+                    registrySecret = template.buildSecret(namespace, secretName, template.getPrivateRegistryCredentials());
+                }
+
+                Pod pod = template.buildPod(slave, secretName);
 
                 String podId = pod.getMetadata().getName();
 
                 StopWatch stopwatch = new StopWatch();
                 stopwatch.start();
                 try (KubernetesClient k8sClient = connect()) {
+
+                    if (registrySecret != null) {
+                        k8sClient.secrets().inNamespace(namespace).createOrReplace(registrySecret);
+                    }
+
                     pod = k8sClient.pods().inNamespace(getNamespace()).create(pod);
                     LOGGER.info("Created Pod: {}", podId);
 
