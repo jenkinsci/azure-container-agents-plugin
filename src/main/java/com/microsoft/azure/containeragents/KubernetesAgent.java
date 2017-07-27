@@ -11,7 +11,10 @@ import hudson.model.Computer;
 import hudson.model.Descriptor;
 import hudson.model.Node;
 import hudson.model.TaskListener;
-import hudson.slaves.*;
+import hudson.slaves.AbstractCloudComputer;
+import hudson.slaves.AbstractCloudSlave;
+import hudson.slaves.Cloud;
+import hudson.slaves.JNLPLauncher;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.RandomStringUtils;
@@ -73,7 +76,9 @@ public class KubernetesAgent extends AbstractCloudSlave {
     }
 
     static String generateAgentName(PodTemplate template) {
-        String randString = RandomStringUtils.random(5, "bcdfghjklmnpqrstvwxz0123456789");
+        final int randomLength = 5;
+        final int maxNameLength = 62;
+        String randString = RandomStringUtils.random(randomLength, "bcdfghjklmnpqrstvwxz0123456789");
         String name = template.getName();
         if (StringUtils.isEmpty(name)) {
             return String.format("%s-%s", "jenkins-agent", randString);
@@ -81,7 +86,7 @@ public class KubernetesAgent extends AbstractCloudSlave {
         // no spaces
         name = name.replaceAll("[ _]", "-").toLowerCase();
         // keep it under 63 chars (62 is used to account for the '-')
-        name = name.substring(0, Math.min(name.length(), 62 - randString.length()));
+        name = name.substring(0, Math.min(name.length(), maxNameLength - randString.length()));
         return String.format("%s-%s", name, randString);
     }
 

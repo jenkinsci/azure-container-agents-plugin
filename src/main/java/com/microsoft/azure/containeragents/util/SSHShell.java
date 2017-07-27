@@ -37,6 +37,7 @@ public final class SSHShell {
     private final Expect4j expect;
     private final StringBuilder shellBuffer = new StringBuilder();
     private List<Match> linuxPromptMatches =  new ArrayList<>();
+    private final int connectTimeout = 60000;
 
     /**
      * Creates SSHShell.
@@ -66,7 +67,7 @@ public final class SSHShell {
         Hashtable<String, String> config = new Hashtable<>();
         config.put("StrictHostKeyChecking", "no");
         session.setConfig(config);
-        session.connect(60000);
+        session.connect(connectTimeout);
         this.channel = (ChannelShell) session.openChannel("shell");
         this.expect = new Expect4j(channel.getInputStream(), channel.getOutputStream());
         channel.connect();
@@ -100,7 +101,7 @@ public final class SSHShell {
         this.session = jsch.getSession(userName, host, port);
         this.session.setConfig("StrictHostKeyChecking", "no");
         this.session.setConfig("PreferredAuthentications", "publickey,keyboard-interactive,password");
-        session.connect(60000);
+        session.connect(connectTimeout);
         this.channel = (ChannelShell) session.openChannel("shell");
         this.expect = new Expect4j(channel.getInputStream(), channel.getOutputStream());
         channel.connect();
@@ -173,23 +174,24 @@ public final class SSHShell {
     public String executeCommand(String command, Boolean getExitStatus, Boolean withErr) throws Exception {
         String result = "";
         String resultErr = "";
+        final int buffLength = 4096;
 
         Channel channel = this.session.openChannel("exec");
         ((ChannelExec) channel).setCommand(command);
         InputStream commandOutput = channel.getInputStream();
         InputStream commandErr = ((ChannelExec) channel).getErrStream();
         channel.connect();
-        byte[] tmp  = new byte[4096];
+        byte[] tmp  = new byte[buffLength];
         while (true) {
             while (commandOutput.available() > 0) {
-                int i = commandOutput.read(tmp, 0, 4096);
+                int i = commandOutput.read(tmp, 0, buffLength);
                 if (i < 0) {
                     break;
                 }
                 result += new String(tmp, 0, i);
             }
             while (commandErr.available() > 0) {
-                int i = commandErr.read(tmp, 0, 4096);
+                int i = commandErr.read(tmp, 0, buffLength);
                 if (i < 0) {
                     break;
                 }
@@ -208,7 +210,8 @@ public final class SSHShell {
                 break;
             }
             try {
-                Thread.sleep(100);
+                final int retryInterval = 100;
+                Thread.sleep(retryInterval);
             } catch (Exception ee) { }
         }
         channel.disconnect();

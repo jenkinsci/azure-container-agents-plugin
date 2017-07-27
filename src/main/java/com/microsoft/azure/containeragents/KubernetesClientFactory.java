@@ -17,8 +17,13 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
-public class KubernetesClientFactory {
-    public static KubernetesClient buildWithConfigFile(final String configContent) throws IOException {
+public final class KubernetesClientFactory {
+
+    private KubernetesClientFactory() {
+
+    }
+
+    static KubernetesClient buildWithConfigFile(final String configContent) throws IOException {
         File tempKubeConfigFile = File.createTempFile("kube", ".config", new File(System.getProperty("java.io.tmpdir")));
 
         BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(tempKubeConfigFile));
@@ -31,7 +36,7 @@ public class KubernetesClientFactory {
         return client;
     }
 
-    public static KubernetesClient buildWithKeyPair(final String url,
+    static KubernetesClient buildWithKeyPair(final String url,
                                                     final String namespace,
                                                     final AzureContainerServiceCredentials.KubernetesCredential acsCredentials) {
         ConfigBuilder builder = new ConfigBuilder();

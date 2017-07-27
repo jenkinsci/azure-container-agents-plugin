@@ -26,11 +26,14 @@ import javax.naming.AuthenticationException;
 import java.nio.charset.Charset;
 import java.util.Collections;
 
-public class KubernetesService {
+public final class KubernetesService {
     private static final Logger LOGGER = LoggerFactory.getLogger(KubernetesService.class.getName());
 
     private static KubernetesClient client = null;
 
+    private KubernetesService() {
+
+    }
 
     public static String getConfigViaSsh(String masterFqdn, String acsCredentialsId) throws AuthenticationException {
         BasicSSHUserPrivateKey credentials = lookupCredentials(acsCredentialsId);
@@ -45,7 +48,8 @@ public class KubernetesService {
             if (passphrase != null) {
                 passphraseBytes = passphrase.getPlainText().getBytes(Charset.defaultCharset());
             }
-            SSHShell shell = SSHShell.open(masterFqdn, 22, credentials.getUsername(), credentials.getPrivateKey().getBytes(), passphraseBytes);
+            final int port = 22;
+            SSHShell shell = SSHShell.open(masterFqdn, port, credentials.getUsername(), credentials.getPrivateKey().getBytes(), passphraseBytes);
             return shell.download("config", ".kube", true);
         } catch (Exception e) {
             throw new AuthenticationException(e.getMessage());

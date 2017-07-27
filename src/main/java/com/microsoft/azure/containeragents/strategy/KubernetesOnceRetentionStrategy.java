@@ -8,8 +8,16 @@ package com.microsoft.azure.containeragents.strategy;
 
 
 import hudson.Extension;
-import hudson.model.*;
-import hudson.slaves.*;
+import hudson.model.Computer;
+import hudson.model.Descriptor;
+import hudson.model.Executor;
+import hudson.model.ExecutorListener;
+import hudson.model.Queue;
+import hudson.slaves.AbstractCloudComputer;
+import hudson.slaves.AbstractCloudSlave;
+import hudson.slaves.CloudRetentionStrategy;
+import hudson.slaves.EphemeralNode;
+import hudson.slaves.RetentionStrategy;
 import hudson.util.TimeUnit2;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
@@ -22,7 +30,7 @@ import java.io.IOException;
 public class KubernetesOnceRetentionStrategy extends CloudRetentionStrategy implements ExecutorListener {
     private static final Logger LOGGER = LoggerFactory.getLogger(KubernetesOnceRetentionStrategy.class);
     private static transient int idleMinutes = 1;
-    private transient boolean terminating;
+    private static transient final int WAIT_TIME = 10 * 1000;
 
     @DataBoundConstructor
     public KubernetesOnceRetentionStrategy() {
@@ -73,7 +81,7 @@ public class KubernetesOnceRetentionStrategy extends CloudRetentionStrategy impl
 
     private void done(Executor executor) {
         try {
-            Thread.sleep(10 * 1000);
+            Thread.sleep(WAIT_TIME);
         } catch (Exception e) {
             LOGGER.info(e.getMessage());
         }
@@ -90,7 +98,7 @@ public class KubernetesOnceRetentionStrategy extends CloudRetentionStrategy impl
             Computer.threadPoolForRemoting.submit(new Runnable() {
                 @Override
                 public void run() {
-                    Queue.withLock( new Runnable() {
+                    Queue.withLock(new Runnable() {
                         @Override
                         public void run() {
                             try {

@@ -22,7 +22,8 @@ import hudson.model.Descriptor;
 import hudson.model.Label;
 import hudson.model.Node;
 import hudson.security.ACL;
-import hudson.slaves.*;
+import hudson.slaves.Cloud;
+import hudson.slaves.NodeProvisioner;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import hudson.model.Item;
@@ -47,14 +48,17 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
 
 import javax.naming.AuthenticationException;
 
 import static com.microsoft.azure.containeragents.KubernetesService.getContainerService;
-import static com.microsoft.azure.containeragents.KubernetesService.lookupCredentials;
 
 
 public class KubernetesCloud extends Cloud {
@@ -116,6 +120,7 @@ public class KubernetesCloud extends Cloud {
         public Node call() throws Exception {
             KubernetesAgent slave = null;
             try {
+                final int retryInterval = 1000;
                 slave = new KubernetesAgent(KubernetesCloud.this, template);
 
                 LOGGER.info("Adding Jenkins node: {}", slave.getNodeName());
@@ -156,7 +161,7 @@ public class KubernetesCloud extends Cloud {
                             break;
                         } else if (status.equals("Pending")) {
                             try {
-                                Thread.sleep(1000);
+                                Thread.sleep(retryInterval);
                             } catch (InterruptedException ex) {
                                 // do nothing
                             }
@@ -179,7 +184,7 @@ public class KubernetesCloud extends Cloud {
                     if (slave.getComputer().isOnline()) {
                         break;
                     }
-                    Thread.sleep(1000);
+                    Thread.sleep(retryInterval);
                 }
                 return slave;
             } catch (Throwable ex) {

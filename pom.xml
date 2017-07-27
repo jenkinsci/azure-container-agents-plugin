@@ -21,8 +21,7 @@
         <jackson.version>2.7.2</jackson.version>
         <jenkins.version>1.653</jenkins.version>
         <java.level>8</java.level>
-        <findbugs.failOnError>true</findbugs.failOnError>
-        <findbugs.excludeFilterFile>findbugs-exclude.xml</findbugs.excludeFilterFile>
+        <findbugs.failOnError>false</findbugs.failOnError>
         <maven.javadoc.skip>true</maven.javadoc.skip>
         <azure-credentials.version>1.2</azure-credentials.version>
         <kubernetes-client.version>2.3.1</kubernetes-client.version>
@@ -203,33 +202,26 @@
                     </signature>
                 </configuration>
             </plugin>
-            <!--<plugin>-->
-                <!--<groupId>org.apache.maven.plugins</groupId>-->
-                <!--<artifactId>maven-checkstyle-plugin</artifactId>-->
-                <!--<version>2.17</version>-->
-                <!--<executions>-->
-                    <!--<execution>-->
-                        <!--<id>validate</id>-->
-                        <!--<phase>validate</phase>-->
-                        <!--<goals>-->
-                            <!--<goal>checkstyle</goal>-->
-                        <!--</goals>-->
-                    <!--</execution>-->
-                <!--</executions>-->
-                <!--<configuration>-->
-                    <!--<configLocation>checkstyle.xml</configLocation>-->
-                    <!--<encoding>UTF-8</encoding>-->
-                    <!--<consoleOutput>true</consoleOutput>-->
-                    <!--<failsOnError>true</failsOnError>-->
-                    <!--&lt;!&ndash;-->
-                    <!--Exclude the generated sources.-->
-
-                    <!--We cannot use pattern like **/generated-sources/**/* here as the generated source directory-->
-                    <!--belongs to the base directory, which the excludes pattern doesn't apply to.-->
-                    <!--&ndash;&gt;-->
-                    <!--<excludes>com/microsoftopentechnologies/windowsazurestorage/Messages.java</excludes>-->
-                <!--</configuration>-->
-            <!--</plugin>-->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>2.17</version>
+                <executions>
+                    <execution>
+                        <id>validate</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>checkstyle</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <configLocation>checkstyle.xml</configLocation>
+                    <encoding>UTF-8</encoding>
+                    <consoleOutput>true</consoleOutput>
+                    <failsOnError>true</failsOnError>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>

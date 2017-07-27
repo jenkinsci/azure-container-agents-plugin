@@ -19,9 +19,20 @@ import hudson.model.Descriptor;
 import hudson.model.Label;
 import hudson.model.labels.LabelAtom;
 import hudson.slaves.RetentionStrategy;
-import hudson.util.*;
-import io.fabric8.kubernetes.api.model.*;
+import hudson.util.FormValidation;
+import io.fabric8.kubernetes.api.model.Container;
+import io.fabric8.kubernetes.api.model.ContainerBuilder;
+import io.fabric8.kubernetes.api.model.EnvVar;
+import io.fabric8.kubernetes.api.model.LocalObjectReference;
+import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.api.model.PodBuilder;
+import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.Secret;
+import io.fabric8.kubernetes.api.model.SecretBuilder;
+import io.fabric8.kubernetes.api.model.Volume;
+import io.fabric8.kubernetes.api.model.VolumeBuilder;
+import io.fabric8.kubernetes.api.model.VolumeMount;
+import io.fabric8.kubernetes.api.model.VolumeMountBuilder;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
@@ -31,7 +42,12 @@ import org.kohsuke.stapler.QueryParameter;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 
 
 public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements Serializable {
@@ -320,7 +336,7 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
     }
 
     private Map<String, Quantity> getResourcesMap(String memory, String cpu) {
-        ImmutableMap.Builder<String, Quantity> builder = ImmutableMap.<String, Quantity> builder();
+        ImmutableMap.Builder<String, Quantity> builder = ImmutableMap.<String, Quantity>builder();
         if (StringUtils.isNotBlank(memory)) {
             builder.put("memory", new Quantity(memory + "Mi"));
         }

@@ -3,16 +3,11 @@ package com.microsoft.azure.containeragents.util;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
-import com.microsoft.azure.containeragents.helper.AzureContainerServiceCredentials;
-import hudson.FilePath;
-import hudson.model.Item;
 import hudson.security.ACL;
 import jenkins.authentication.tokens.api.AuthenticationTokens;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryToken;
 
@@ -20,7 +15,6 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.List;
-import java.util.zip.GZIPOutputStream;
 
 import static com.cloudbees.plugins.credentials.CredentialsMatchers.allOf;
 import static com.cloudbees.plugins.credentials.CredentialsMatchers.firstOrNull;
