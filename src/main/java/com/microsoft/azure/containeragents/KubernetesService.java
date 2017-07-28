@@ -10,20 +10,19 @@ import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.microsoft.azure.containeragents.helper.AzureContainerServiceCredentials;
-import com.microsoft.azure.containeragents.util.SSHShell;
 import com.microsoft.azure.containeragents.util.TokenCache;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.management.compute.ContainerService;
 import com.microsoft.azure.util.AzureCredentials;
+import com.microsoft.jenkins.azurecommons.remote.SSHClient;
 import hudson.security.ACL;
-import hudson.util.Secret;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import jenkins.model.Jenkins;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.naming.AuthenticationException;
-import java.nio.charset.Charset;
+import java.io.File;
 import java.util.Collections;
 
 public final class KubernetesService {
@@ -35,7 +34,7 @@ public final class KubernetesService {
 
     }
 
-    public static String getConfigViaSsh(String masterFqdn, String acsCredentialsId) throws AuthenticationException {
+    public static File getConfigViaSsh(String masterFqdn, String acsCredentialsId) throws AuthenticationException {
         BasicSSHUserPrivateKey credentials = lookupCredentials(acsCredentialsId);
 
         if (credentials == null) {
@@ -43,14 +42,12 @@ public final class KubernetesService {
         }
 
         try {
-            Secret passphrase = credentials.getPassphrase();
-            byte[] passphraseBytes = null;
-            if (passphrase != null) {
-                passphraseBytes = passphrase.getPlainText().getBytes(Charset.defaultCharset());
-            }
             final int port = 22;
-            SSHShell shell = SSHShell.open(masterFqdn, port, credentials.getUsername(), credentials.getPrivateKey().getBytes(), passphraseBytes);
-            return shell.download("config", ".kube", true);
+            try (SSHClient sshClient = new SSHClient(masterFqdn, port, credentials).connect()) {
+                File configFile = File.createTempFile("kube", ".config", new File(System.getProperty("java.io.tmpdir")));
+                sshClient.copyFrom(".kube/config", configFile);
+                return configFile;
+            }
         } catch (Exception e) {
             throw new AuthenticationException(e.getMessage());
         }
@@ -59,8 +56,17 @@ public final class KubernetesService {
     public static KubernetesClient connect(String masterFqdn, String namespace, String acsCredentialsId) throws AuthenticationException {
         try {
             if (lookupCredentials(acsCredentialsId) != null) {
-                final String configContent = KubernetesService.getConfigViaSsh(masterFqdn, acsCredentialsId);
-                return KubernetesClientFactory.buildWithConfigFile(configContent);
+                File configFile = null;
+                try {
+                    configFile = KubernetesService.getConfigViaSsh(masterFqdn, acsCredentialsId);
+                    return KubernetesClientFactory.buildWithConfigFile(configFile);
+                } finally {
+                    if (configFile != null) {
+                        if(!configFile.delete()) {
+                            LOGGER.error("KubernetesService: connect: ConfigFile failed to delete");
+                        }
+                    }
+                }
             } else {
                 String managementUrl = "https://" + masterFqdn;
                 return KubernetesClientFactory.buildWithKeyPair(managementUrl, namespace,

@@ -12,9 +12,7 @@ import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 
 public final class KubernetesClientFactory {
@@ -23,17 +21,9 @@ public final class KubernetesClientFactory {
 
     }
 
-    static KubernetesClient buildWithConfigFile(final String configContent) throws IOException {
-        File tempKubeConfigFile = File.createTempFile("kube", ".config", new File(System.getProperty("java.io.tmpdir")));
-
-        BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(tempKubeConfigFile));
-        bufferedWriter.write(configContent);
-        bufferedWriter.close();
-
-        System.setProperty(Config.KUBERNETES_KUBECONFIG_FILE, tempKubeConfigFile.getPath());
-        KubernetesClient client = new DefaultKubernetesClient(Config.autoConfigure());
-        tempKubeConfigFile.delete();
-        return client;
+    static KubernetesClient buildWithConfigFile(File configFile) throws IOException {
+        System.setProperty(Config.KUBERNETES_KUBECONFIG_FILE, configFile.getPath());
+        return new DefaultKubernetesClient(Config.autoConfigure());
     }
 
     static KubernetesClient buildWithKeyPair(final String url,
