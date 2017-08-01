@@ -62,7 +62,7 @@ public final class KubernetesService {
                     return KubernetesClientFactory.buildWithConfigFile(configFile);
                 } finally {
                     if (configFile != null) {
-                        if(!configFile.delete()) {
+                        if (!configFile.delete()) {
                             LOGGER.error("KubernetesService: connect: ConfigFile failed to delete");
                         }
                     }

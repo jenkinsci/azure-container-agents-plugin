@@ -48,6 +48,7 @@ public class AzureDiskVolume extends PodVolume {
                 .withNewAzureDisk()
                     .withDiskName(getDiskName())
                     .withDiskURI(getDiskUrl())
+                    .withCachingMode("ReadWrite")
                 .endAzureDisk()
                 .build();
     }
