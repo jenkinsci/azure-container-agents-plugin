@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.microsoft.azure.containeragents.strategy.KubernetesIdleRetentionStrategy;
 import com.microsoft.azure.containeragents.strategy.KubernetesOnceRetentionStrategy;
+import com.microsoft.azure.containeragents.util.Constants;
 import com.microsoft.azure.containeragents.util.DockerConfigBuilder;
 import com.microsoft.azure.containeragents.volumes.PodVolume;
 import hudson.EnvVars;
@@ -67,6 +68,10 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
     private String label;
 
     private String rootFs;
+
+    private boolean isAci;
+
+    private String aciResourceGroup;
 
     private RetentionStrategy<?> retentionStrategy;
 
@@ -166,14 +171,15 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
 
         return new PodBuilder()
                 .withNewMetadata()
-                .withName(agent.getNodeName())
-                .withLabels(labels)
+                    .withName(agent.getNodeName())
+                    .withLabels(labels)
                 .endMetadata()
                 .withNewSpec()
-                .withVolumes(tempVolumes)
-                .withContainers(container)
-                .withRestartPolicy("Never")
-                .withImagePullSecrets(imagePullSecrets)
+                    .withVolumes(tempVolumes)
+                    .withContainers(container)
+                    .withRestartPolicy("Never")
+                    .withImagePullSecrets(imagePullSecrets)
+                    .withNodeName(isAci ? Constants.ACI_NODE_NAME : null)
                 .endSpec()
                 .build();
     }
@@ -243,6 +249,24 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
 
     public String getRootFs() {
         return rootFs;
+    }
+
+    @DataBoundSetter
+    public void setIsAci(final boolean isAci) {
+        this.isAci = isAci;
+    }
+
+    public boolean getIsAci() {
+        return isAci;
+    }
+
+    @DataBoundSetter
+    public void setAciResourceGroup(final String aciResourceGroup) {
+        this.aciResourceGroup = aciResourceGroup;
+    }
+
+    public String getAciResourceGroup() {
+        return aciResourceGroup;
     }
 
     @DataBoundSetter

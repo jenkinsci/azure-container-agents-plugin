@@ -48,6 +48,13 @@
                                     deleteCaption="Delete Volume"/>
     </f:entry>
 
+
+    <f:optionalBlock name="isAci" title="Running containers in ACI (Experimental)" inline="true">
+        <f:entry title="ACI Resource Group" field="aciResourceGroup">
+            <f:textbox/>
+        </f:entry>
+    </f:optionalBlock>
+
     <f:advanced>
 
         <f:dropdownDescriptorSelector field="retentionStrategy" title="Retention Strategy" descriptors="${descriptor.kubernetseRetentionStrategyDescriptors}"/>

@@ -10,6 +10,7 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.microsoft.azure.containeragents.helper.AzureContainerServiceCredentials;
+import com.microsoft.azure.containeragents.util.Constants;
 import com.microsoft.azure.containeragents.util.TokenCache;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.management.compute.ContainerService;
@@ -51,7 +52,6 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
@@ -126,6 +126,7 @@ public class KubernetesCloud extends Cloud {
                 LOGGER.info("Adding Jenkins node: {}", slave.getNodeName());
                 Jenkins.getInstance().addNode(slave);
 
+                //Build Secret
                 Secret registrySecret = null;
                 String secretName = null;
                 if (!template.getPrivateRegistryCredentials().isEmpty()) {
@@ -133,8 +134,15 @@ public class KubernetesCloud extends Cloud {
                     registrySecret = template.buildSecret(namespace, secretName, template.getPrivateRegistryCredentials());
                 }
 
-                Pod pod = template.buildPod(slave, secretName);
+                //Build ACI if necessary
+                Pod aciConnector = null;
+                if (template.getIsAci()) {
+                    aciConnector = KubernetesService.createAciConnectorPod(AzureCredentials.getServicePrincipal(azureCredentialsId),
+                            template.getAciResourceGroup());
+                }
 
+                //Build Pod
+                Pod pod = template.buildPod(slave, secretName);
                 String podId = pod.getMetadata().getName();
 
                 StopWatch stopwatch = new StopWatch();
@@ -145,30 +153,18 @@ public class KubernetesCloud extends Cloud {
                         k8sClient.secrets().inNamespace(namespace).createOrReplace(registrySecret);
                     }
 
+                    if (template.getIsAci()) {
+                        if (k8sClient.nodes().withName(Constants.ACI_NODE_NAME).get() == null) {
+                            KubernetesService.createAciAndWaitToOnline(k8sClient, aciConnector, namespace, stopwatch, retryInterval, startupTimeout);
+                        }
+                    }
+
                     pod = k8sClient.pods().inNamespace(getNamespace()).create(pod);
                     LOGGER.info("Created Pod: {}", podId);
 
                     // wait the pod to be running
-                    while (true) {
-                        if (isTimeout(stopwatch.getTime())) {
-                            final String msg = String.format("Pod %s failed to start after %d minutes",
-                                    podId, startupTimeout);
-                            throw new TimeoutException(msg);
-                        }
-                        pod = k8sClient.pods().inNamespace(namespace).withName(podId).get();
-                        String status = pod.getStatus().getPhase();
-                        if (status.equals("Running")) {
-                            break;
-                        } else if (status.equals("Pending")) {
-                            try {
-                                Thread.sleep(retryInterval);
-                            } catch (InterruptedException ex) {
-                                // do nothing
-                            }
-                        } else {
-                            throw new IllegalStateException("Container is not running, status: " + status);
-                        }
-                    }
+                    KubernetesService.waitPodToOnline(k8sClient, podId, namespace, stopwatch, retryInterval, startupTimeout);
+
                 }
 
                 // wait the slave to be online
@@ -256,7 +252,7 @@ public class KubernetesCloud extends Cloud {
     }
 
     private boolean isTimeout(long elaspedTime) {
-        return (startupTimeout > 0 && TimeUnit.MILLISECONDS.toMinutes(elaspedTime) >= startupTimeout);
+        return KubernetesService.isTimeout(startupTimeout, elaspedTime);
     }
 
     public synchronized static ExecutorService getThreadPool() {
