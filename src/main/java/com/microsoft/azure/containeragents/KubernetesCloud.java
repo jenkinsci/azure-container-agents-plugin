@@ -10,7 +10,6 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.microsoft.azure.containeragents.helper.AzureContainerServiceCredentials;
-import com.microsoft.azure.containeragents.util.Constants;
 import com.microsoft.azure.containeragents.util.TokenCache;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.management.compute.ContainerService;
@@ -134,13 +133,6 @@ public class KubernetesCloud extends Cloud {
                     registrySecret = template.buildSecret(namespace, secretName, template.getPrivateRegistryCredentials());
                 }
 
-                //Build ACI if necessary
-                Pod aciConnector = null;
-                if (template.getIsAci()) {
-                    aciConnector = KubernetesService.createAciConnectorPod(AzureCredentials.getServicePrincipal(azureCredentialsId),
-                            template.getAciResourceGroup());
-                }
-
                 //Build Pod
                 Pod pod = template.buildPod(slave, secretName);
                 String podId = pod.getMetadata().getName();
@@ -151,12 +143,6 @@ public class KubernetesCloud extends Cloud {
 
                     if (registrySecret != null) {
                         k8sClient.secrets().inNamespace(namespace).createOrReplace(registrySecret);
-                    }
-
-                    if (template.getIsAci()) {
-                        if (k8sClient.nodes().withName(Constants.ACI_NODE_NAME).get() == null) {
-                            KubernetesService.createAciAndWaitToOnline(k8sClient, aciConnector, namespace, stopwatch, retryInterval, startupTimeout);
-                        }
                     }
 
                     pod = k8sClient.pods().inNamespace(getNamespace()).create(pod);
@@ -358,6 +344,7 @@ public class KubernetesCloud extends Cloud {
 
         public ListBoxModel doFillResourceGroupItems(@QueryParameter String azureCredentialsId) throws IOException {
             ListBoxModel model = new ListBoxModel();
+            model.add("--- Select Resource Group ---", "");
             if (StringUtils.isBlank(azureCredentialsId)) {
                 return model;
             }
@@ -380,6 +367,7 @@ public class KubernetesCloud extends Cloud {
         public ListBoxModel doFillServiceNameItems(@QueryParameter String azureCredentialsId,
                                                    @QueryParameter String resourceGroup) throws IOException {
             ListBoxModel model = new ListBoxModel();
+            model.add("--- Select Service Name ---", "");
             if (StringUtils.isBlank(azureCredentialsId) || StringUtils.isBlank(resourceGroup)) {
                 return model;
             }

@@ -6,6 +6,7 @@
 
 package com.microsoft.azure.containeragents;
 
+import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.microsoft.azure.containeragents.strategy.KubernetesIdleRetentionStrategy;
@@ -13,18 +14,22 @@ import com.microsoft.azure.containeragents.strategy.KubernetesOnceRetentionStrat
 import com.microsoft.azure.containeragents.util.Constants;
 import com.microsoft.azure.containeragents.util.DockerConfigBuilder;
 import com.microsoft.azure.containeragents.volumes.PodVolume;
+import com.microsoft.azure.management.compute.ContainerService;
 import hudson.EnvVars;
 import hudson.Extension;
+import hudson.RelativePath;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.model.Label;
 import hudson.model.labels.LabelAtom;
 import hudson.slaves.RetentionStrategy;
 import hudson.util.FormValidation;
+import hudson.util.ListBoxModel;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.LocalObjectReference;
+import io.fabric8.kubernetes.api.model.Node;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.PodBuilder;
 import io.fabric8.kubernetes.api.model.Quantity;
@@ -34,6 +39,7 @@ import io.fabric8.kubernetes.api.model.Volume;
 import io.fabric8.kubernetes.api.model.VolumeBuilder;
 import io.fabric8.kubernetes.api.model.VolumeMount;
 import io.fabric8.kubernetes.api.model.VolumeMountBuilder;
+import io.fabric8.kubernetes.client.KubernetesClient;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
@@ -49,6 +55,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+
+import static com.microsoft.azure.containeragents.KubernetesService.getContainerService;
 
 
 public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements Serializable {
@@ -69,13 +77,11 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
 
     private String rootFs;
 
-    private boolean isAci;
-
-    private String aciResourceGroup;
-
     private RetentionStrategy<?> retentionStrategy;
 
     private boolean privileged;
+
+    private String specifyNode;
 
     private String requestCpu;
 
@@ -179,7 +185,7 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
                     .withContainers(container)
                     .withRestartPolicy("Never")
                     .withImagePullSecrets(imagePullSecrets)
-                    .withNodeName(isAci ? Constants.ACI_NODE_NAME : null)
+                    .withNodeName(StringUtils.isBlank(specifyNode) ? null : specifyNode)
                 .endSpec()
                 .build();
     }
@@ -252,24 +258,6 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
     }
 
     @DataBoundSetter
-    public void setIsAci(final boolean isAci) {
-        this.isAci = isAci;
-    }
-
-    public boolean getIsAci() {
-        return isAci;
-    }
-
-    @DataBoundSetter
-    public void setAciResourceGroup(final String aciResourceGroup) {
-        this.aciResourceGroup = aciResourceGroup;
-    }
-
-    public String getAciResourceGroup() {
-        return aciResourceGroup;
-    }
-
-    @DataBoundSetter
     public void setRetentionStrategy(final RetentionStrategy<?> retentionStrategy) {
         this.retentionStrategy = retentionStrategy;
     }
@@ -285,6 +273,15 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
 
     public boolean getPrivileged() {
         return privileged;
+    }
+
+    @DataBoundSetter
+    public void setSpecifyNode(String specifyNode) {
+        this.specifyNode = specifyNode;
+    }
+
+    public String getSpecifyNode() {
+        return specifyNode;
     }
 
     @DataBoundSetter
@@ -436,6 +433,41 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
                 return FormValidation.ok();
             }
             return FormValidation.error("Must be number");
+        }
+
+        public ListBoxModel doFillSpecifyNodeItems(@RelativePath("..") @QueryParameter String azureCredentialsId,
+                                                   @RelativePath("..") @QueryParameter String resourceGroup,
+                                                   @RelativePath("..") @QueryParameter String serviceName,
+                                                   @RelativePath("..") @QueryParameter String namespace,
+                                                   @RelativePath("..") @QueryParameter String acsCredentialsId) {
+            StandardListBoxModel listBoxModel = new StandardListBoxModel();
+            listBoxModel.add("DO NOT SPECIFY NODE", "");
+            if (StringUtils.isBlank(azureCredentialsId)
+                    || StringUtils.isBlank(resourceGroup)
+                    || StringUtils.isBlank(serviceName)
+                    || StringUtils.isBlank(namespace)
+                    || StringUtils.isBlank(acsCredentialsId)) {
+                return listBoxModel;
+            }
+
+            ContainerService containerService = getContainerService(azureCredentialsId, resourceGroup, serviceName);
+            //When changing resource group, serviceName may delay. Mismatching will lead containerService to null.
+            if (containerService == null) {
+                return listBoxModel;
+            }
+
+            String masterFqdn = containerService.masterFqdn();
+            try (KubernetesClient client = KubernetesService.connect(masterFqdn, namespace, acsCredentialsId)) {
+                List<Node> nodeList = client.nodes().list().getItems();
+                for (Node node : nodeList) {
+                    if (!node.getMetadata().getLabels().get(Constants.NODE_ROLE).equals(Constants.NODE_MASTER)) {
+                        listBoxModel.add(node.getMetadata().getName());
+                    }
+                }
+                return listBoxModel;
+            } catch (Exception e) {
+                return listBoxModel;
+            }
         }
     }
 }

@@ -10,72 +10,69 @@
         <f:textbox/>
     </f:entry>
 
-    <f:entry field="image" title="${%Docker image}">
+    <f:entry field="image" title="${%Docker_Image}">
         <f:textbox clazz="required" default="jenkinsci/jnlp-slave"/>
     </f:entry>
 
-    <f:entry title="Private Registry Secrets">
-        <f:repeatableHeteroProperty field="imagePullSecrets" hasHeader="true" addCaption="Add Private Registry Secret"
-                                    deleteCaption="Delete Private Registry Secret"/>
+    <f:entry title="${%Private_Registry_Secrets}">
+        <f:repeatableHeteroProperty field="imagePullSecrets" hasHeader="true" addCaption="${%Add_Private_Registry_Secret}"
+                                    deleteCaption="${%Delete_Private_Registry_Secret}"/>
     </f:entry>
 
     <f:advanced>
-        <f:entry title="Private Registry Credentials">
-            <f:repeatableHeteroProperty field="privateRegistryCredentials" hasHeader="true" addCaption="Add Private Registry Registry"
-                                    deleteCaption="Delete Private Registry Registry"/>
+        <f:entry title="${%Private_Registry_Credentials}">
+            <f:repeatableHeteroProperty field="privateRegistryCredentials" hasHeader="true" addCaption="${%Add_Private_Registry_Registry}"
+                                    deleteCaption="${%Delete_Private_Registry_Registry}"/>
         </f:entry>
     </f:advanced>
 
-    <f:entry field="command" title="Command">
+    <f:entry field="command" title="${Command}">
         <f:textbox/>
     </f:entry>
 
-    <f:entry field="args" title="Arguments">
+    <f:entry field="args" title="${Arguments}">
         <f:textbox default="-url $${rootUrl} $${secret} $${nodeName}"/>
     </f:entry>
 
-    <f:entry field="rootFs" title="Working Dir">
+    <f:entry field="rootFs" title="${Working_Dir}">
         <f:textbox default="/jenkins"/>
     </f:entry>
 
-    <f:entry title="Environment Variable">
-        <f:repeatableHeteroProperty field="envVars" hasHeader="true" addCaption="Add Environment Variable"
-                                    deleteCaption="Delete Environment Variable"/>
+    <f:entry title="${%Environment_Variable}">
+        <f:repeatableHeteroProperty field="envVars" hasHeader="true" addCaption="${%Add_Environment_Variable}"
+                                    deleteCaption="${%Delete_Environment_Variable}"/>
     </f:entry>
 
-    <f:entry title="Volumes">
-        <f:repeatableHeteroProperty field="volumes" hasHeader="true" addCaption="Add Volume"
-                                    deleteCaption="Delete Volume"/>
+    <f:entry title="${%Volumes}">
+        <f:repeatableHeteroProperty field="volumes" hasHeader="true" addCaption="${%Add_Volume}"
+                                    deleteCaption="${%Delete_Volume}"/>
     </f:entry>
-
-
-    <f:optionalBlock name="isAci" title="Running containers in ACI (Experimental)" inline="true">
-        <f:entry title="ACI Resource Group" field="aciResourceGroup">
-            <f:textbox/>
-        </f:entry>
-    </f:optionalBlock>
 
     <f:advanced>
 
-        <f:dropdownDescriptorSelector field="retentionStrategy" title="Retention Strategy" descriptors="${descriptor.kubernetseRetentionStrategyDescriptors}"/>
+        <f:dropdownDescriptorSelector field="retentionStrategy" title="${%Retention_Strategy}" descriptors="${descriptor.kubernetseRetentionStrategyDescriptors}"/>
 
-        <f:entry field="privileged" title="Run in privileged mode">
+        <f:entry field="specifyNode" title="${%Specify_Node}">
+            <f:select/>
+        </f:entry>
+
+        <f:entry field="privileged" title="${%Privileged_Mode}">
             <f:checkbox/>
         </f:entry>
 
-        <f:entry field="requestCpu" title="Request CPU (m)">
+        <f:entry field="requestCpu" title="${%Request_CPU}">
             <f:textbox/>
         </f:entry>
 
-        <f:entry field="requestMemory" title="Request Memory (Mi)">
+        <f:entry field="requestMemory" title="${%Request_Memory}">
             <f:textbox/>
         </f:entry>
 
-        <f:entry field="limitCpu" title="Limit CPU (m)">
+        <f:entry field="limitCpu" title="${%Limit_CPU}">
             <f:textbox/>
         </f:entry>
 
-        <f:entry field="limitMemory" title="Limit Memory (Mi)">
+        <f:entry field="limitMemory" title="${%Limit_Memory}">
             <f:textbox/>
         </f:entry>
 
