@@ -1,0 +1,46 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+
+    <f:entry field="name" title="${%Name}">
+        <f:textbox/>
+    </f:entry>
+
+    <f:entry field="label" title="${%Labels}">
+        <f:textbox/>
+    </f:entry>
+
+    <f:entry field="osType" title="${%Image_OsType}">
+        <f:select/>
+    </f:entry>
+
+    <f:entry field="image" title="${%Docker_Image}">
+        <f:textbox clazz="required" default="jenkinsci/jnlp-slave"/>
+    </f:entry>
+
+    <f:entry field="command" title="${Command}">
+        <f:textbox default="jenkins-slave -url $${rootUrl} $${secret} $${nodeName}"/>
+    </f:entry>
+
+    <f:entry field="rootFs" title="${Working_Dir}">
+        <f:textbox default="/jenkins"/>
+    </f:entry>
+
+    <f:entry title="${%Port}">
+        <f:repeatableHeteroProperty field="ports" hasHeader="true" addCaption="${%Add_Ports}"
+                                    deleteCaption="${%Delete_Ports}"/>
+    </f:entry>
+
+    <f:advanced>
+
+        <f:entry field="cpu" title="${%CPU}">
+            <f:textbox/>
+        </f:entry>
+
+        <f:entry field="memory" title="${%Memory}">
+            <f:textbox/>
+        </f:entry>
+
+    </f:advanced>
+
+</j:jelly>
