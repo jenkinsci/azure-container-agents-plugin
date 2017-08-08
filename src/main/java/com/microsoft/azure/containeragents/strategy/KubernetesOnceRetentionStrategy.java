@@ -22,15 +22,16 @@ import hudson.util.TimeUnit2;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class KubernetesOnceRetentionStrategy extends CloudRetentionStrategy implements ExecutorListener {
-    private static final Logger LOGGER = LoggerFactory.getLogger(KubernetesOnceRetentionStrategy.class);
+    private static final Logger LOGGER = Logger.getLogger(KubernetesOnceRetentionStrategy.class.getName());
     private static transient int idleMinutes = 1;
-    private static transient final int WAIT_TIME = 10 * 1000;
+    private static final transient int WAIT_TIME = 10 * 1000;
 
     @DataBoundConstructor
     public KubernetesOnceRetentionStrategy() {
@@ -48,7 +49,7 @@ public class KubernetesOnceRetentionStrategy extends CloudRetentionStrategy impl
         if (c.isIdle() && !disabled) {
             final long idleMilliseconds = System.currentTimeMillis() - c.getIdleStartMilliseconds();
             if (idleMilliseconds > TimeUnit2.MINUTES.toMillis(idleMinutes)) {
-                LOGGER.info("Disconnecting {}", c.getName());
+                LOGGER.log(Level.INFO, "Disconnecting {0}", c.getName());
                 done(c);
             }
         }
@@ -88,7 +89,7 @@ public class KubernetesOnceRetentionStrategy extends CloudRetentionStrategy impl
         final AbstractCloudComputer<?> c = (AbstractCloudComputer) executor.getOwner();
         Queue.Executable exec = executor.getCurrentExecutable();
 
-        LOGGER.info("terminating {} since {} seems to be finished", c.getName(), exec);
+        LOGGER.log(Level.INFO, "terminating {0} since {1} seems to be finished", new Object[] {c.getName(), exec});
         done(c);
     }
 
@@ -107,7 +108,8 @@ public class KubernetesOnceRetentionStrategy extends CloudRetentionStrategy impl
                                     node.terminate();
                                 }
                             } catch (InterruptedException | IOException e) {
-                                LOGGER.warn("Failed to terminate {}: {}", c.getName(), e);
+                                LOGGER.log(Level.WARNING, "Failed to terminate {0}: {1}",
+                                        new Object[]{c.getName(), e});
                             }
                         }
                     });

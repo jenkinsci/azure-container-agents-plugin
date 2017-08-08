@@ -40,9 +40,13 @@ public class DockerConfigBuilder {
     private JSONObject buildAuthsObject() throws IOException {
         JSONObject auths = new JSONObject();
         for (DockerRegistryEndpoint endpoint : this.endpoints) {
-            DockerRegistryToken token = AuthenticationTokens.convert(DockerRegistryToken.class, firstOrNull(CredentialsProvider.lookupCredentials(
-                    IdCredentials.class, Jenkins.getInstance(), ACL.SYSTEM, Collections.<DomainRequirement>emptyList()),
-                    allOf(AuthenticationTokens.matcher(DockerRegistryToken.class), withId(endpoint.getCredentialsId()))));
+            DockerRegistryToken token = AuthenticationTokens.convert(DockerRegistryToken.class,
+                    firstOrNull(CredentialsProvider.lookupCredentials(IdCredentials.class,
+                            Jenkins.getInstance(),
+                            ACL.SYSTEM,
+                            Collections.<DomainRequirement>emptyList()),
+                            allOf(AuthenticationTokens.matcher(DockerRegistryToken.class),
+                            withId(endpoint.getCredentialsId()))));
 
 
             if (token == null) {

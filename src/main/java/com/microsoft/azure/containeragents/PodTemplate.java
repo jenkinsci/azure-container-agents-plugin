@@ -55,11 +55,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static com.microsoft.azure.containeragents.KubernetesService.getContainerService;
 
 
 public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements Serializable {
+    private static final Logger LOGGER = Logger.getLogger(PodTemplate.class.getName());
 
     private static final long serialVersionUID = 640431693814718337L;
 
@@ -109,6 +112,7 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
     }
 
     public Pod buildPod(KubernetesAgent agent, String additionalSecret) {
+        LOGGER.log(Level.INFO, "Start building pod for agent: " + agent.getNodeName());
         // Build volumes and volume mounts.
         List<Volume> tempVolumes = new ArrayList<>();
         Volume emptyDir = new VolumeBuilder()
@@ -139,17 +143,17 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
                                 .build());
         }
 
-        List<EnvVar> envVars = new ArrayList<>();
+        List<EnvVar> containerEnvVars = new ArrayList<>();
         for (PodEnvVar envVar : getEnvVars()) {
-            envVars.add(new EnvVar(envVar.getKey(), envVar.getValue(), null));
+            containerEnvVars.add(new EnvVar(envVar.getKey(), envVar.getValue(), null));
         }
 
-        List<LocalObjectReference> imagePullSecrets = new ArrayList<>();
+        List<LocalObjectReference> podImagePullSecrets = new ArrayList<>();
         for (PodImagePullSecrets secret : getImagePullSecrets()) {
-            imagePullSecrets.add(new LocalObjectReference(secret.getName()));
+            podImagePullSecrets.add(new LocalObjectReference(secret.getName()));
         }
         if (additionalSecret != null) {
-            imagePullSecrets.add(new LocalObjectReference(additionalSecret));
+            podImagePullSecrets.add(new LocalObjectReference(additionalSecret));
         }
 
         String serverUrl = Jenkins.getInstance().getRootUrl();
@@ -169,7 +173,7 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
                 .withNewSecurityContext()
                     .withPrivileged(privileged)
                 .endSecurityContext()
-                .withEnv(envVars)
+                .withEnv(containerEnvVars)
                 .build();
 
         Map<String, String> labels = new TreeMap<>();
@@ -184,7 +188,7 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
                     .withVolumes(tempVolumes)
                     .withContainers(container)
                     .withRestartPolicy("Never")
-                    .withImagePullSecrets(imagePullSecrets)
+                    .withImagePullSecrets(podImagePullSecrets)
                     .withNodeName(StringUtils.isBlank(specifyNode) ? null : specifyNode)
                 .endSpec()
                 .build();
@@ -411,28 +415,28 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
             if (value.matches("^[0-9]*$")) {
                 return FormValidation.ok();
             }
-            return FormValidation.error("Must be number");
+            return FormValidation.error(Messages.Pod_Template_Not_Number_Error());
         }
 
         public FormValidation doCheckRequestMemory(@QueryParameter String value) {
             if (value.matches("^[0-9]*$")) {
                 return FormValidation.ok();
             }
-            return FormValidation.error("Must be number");
+            return FormValidation.error(Messages.Pod_Template_Not_Number_Error());
         }
 
         public FormValidation doCheckLimitCpu(@QueryParameter String value) {
             if (value.matches("^[0-9]*$")) {
                 return FormValidation.ok();
             }
-            return FormValidation.error("Must be number");
+            return FormValidation.error(Messages.Pod_Template_Not_Number_Error());
         }
 
         public FormValidation doCheckLimitMemory(@QueryParameter String value) {
             if (value.matches("^[0-9]*$")) {
                 return FormValidation.ok();
             }
-            return FormValidation.error("Must be number");
+            return FormValidation.error(Messages.Pod_Template_Not_Number_Error());
         }
 
         public ListBoxModel doFillSpecifyNodeItems(@RelativePath("..") @QueryParameter String azureCredentialsId,

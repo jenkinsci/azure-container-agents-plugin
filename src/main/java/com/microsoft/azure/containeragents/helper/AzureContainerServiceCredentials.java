@@ -77,7 +77,8 @@ public class AzureContainerServiceCredentials extends BaseStandardCredentials {
         kubernetesCredentialData = new KubernetesCredential(serverCertificate, username, clientCertificate, clientKey);
     }
 
-    public static AzureContainerServiceCredentials.KubernetesCredential getKubernetesCredential(final String kubernetesCredentialId) {
+    public static AzureContainerServiceCredentials.KubernetesCredential getKubernetesCredential(
+            final String kubernetesCredentialId) {
         AzureContainerServiceCredentials creds = CredentialsMatchers.firstOrNull(
                 CredentialsProvider.lookupCredentials(
                         AzureContainerServiceCredentials.class,

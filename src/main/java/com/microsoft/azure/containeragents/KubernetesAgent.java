@@ -21,15 +21,16 @@ import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class KubernetesAgent extends AbstractCloudSlave {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(KubernetesAgent.class);
+    private static final Logger LOGGER = Logger.getLogger(KubernetesAgent.class.getName());
     public static final String ROOT_FS = "/jenkins";
 
     private final String cloudName;
@@ -57,7 +58,6 @@ public class KubernetesAgent extends AbstractCloudSlave {
     @Override
     protected void _terminate(TaskListener listener) throws IOException, InterruptedException {
         final Computer computer = toComputer();
-        final String cloudName = getCloudName();
         if (computer == null || StringUtils.isEmpty(cloudName)) {
             return;
         }
@@ -67,7 +67,7 @@ public class KubernetesAgent extends AbstractCloudSlave {
         }
         if (!(cloud instanceof KubernetesCloud)) {
             String msg = String.format("Cloud %s is not a KubernetesCloud", cloudName);
-            LOGGER.error(msg);
+            LOGGER.log(Level.WARNING, msg);
             listener.fatalError(msg);
             return;
         }

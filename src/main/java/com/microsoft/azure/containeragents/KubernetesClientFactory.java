@@ -17,18 +17,15 @@ import java.io.IOException;
 
 public final class KubernetesClientFactory {
 
-    private KubernetesClientFactory() {
-
-    }
-
     static KubernetesClient buildWithConfigFile(File configFile) throws IOException {
         System.setProperty(Config.KUBERNETES_KUBECONFIG_FILE, configFile.getPath());
         return new DefaultKubernetesClient(Config.autoConfigure());
     }
 
     static KubernetesClient buildWithKeyPair(final String url,
-                                                    final String namespace,
-                                                    final AzureContainerServiceCredentials.KubernetesCredential acsCredentials) {
+                                             final String namespace,
+                                             final AzureContainerServiceCredentials
+                                                     .KubernetesCredential acsCredentials) {
         ConfigBuilder builder = new ConfigBuilder();
         builder.withMasterUrl(url)
                 .withCaCertData(acsCredentials.getServerCertificate())
@@ -37,5 +34,9 @@ public final class KubernetesClientFactory {
                 .withClientKeyData(acsCredentials.getClientKey())
                 .withWebsocketPingInterval(0);
         return new DefaultKubernetesClient(builder.build());
+    }
+
+    private KubernetesClientFactory() {
+        // hide constructor
     }
 }

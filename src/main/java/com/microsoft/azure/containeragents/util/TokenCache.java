@@ -7,6 +7,7 @@
 package com.microsoft.azure.containeragents.util;
 
 import com.microsoft.azure.AzureEnvironment;
+import com.microsoft.azure.containeragents.KubernetesPlugin;
 import com.microsoft.azure.credentials.ApplicationTokenCredentials;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.util.AzureCredentials;
@@ -26,18 +27,24 @@ public class TokenCache {
 
     private static TokenCache cache = null;
 
-    protected final AzureCredentials.ServicePrincipal credentials;
+    private final AzureCredentials.ServicePrincipal credentials;
 
     public static TokenCache getInstance(final AzureCredentials.ServicePrincipal servicePrincipal) {
         synchronized (TSAFE) {
             if (cache == null) {
                 cache = new TokenCache(servicePrincipal);
             } else if (cache.credentials == null
-                    || !StringUtils.isEmpty(cache.credentials.getSubscriptionId()) || !cache.credentials.getSubscriptionId().equals(servicePrincipal.getSubscriptionId())
-                    || !StringUtils.isEmpty(cache.credentials.getClientId()) || !cache.credentials.getClientId().equals(servicePrincipal.getClientId())
-                    || !StringUtils.isEmpty(cache.credentials.getClientSecret()) || !cache.credentials.getClientSecret().equals(servicePrincipal.getClientSecret())
-                    || !StringUtils.isEmpty(cache.credentials.getTenant()) || !cache.credentials.getTenant().equals(servicePrincipal.getTenant())
-                    || !StringUtils.isEmpty(cache.credentials.getServiceManagementURL()) || !cache.credentials.getServiceManagementURL().equals(servicePrincipal.getServiceManagementURL())) {
+                    || !StringUtils.isEmpty(cache.credentials.getSubscriptionId())
+                    || !cache.credentials.getSubscriptionId().equals(servicePrincipal.getSubscriptionId())
+                    || !StringUtils.isEmpty(cache.credentials.getClientId())
+                    || !cache.credentials.getClientId().equals(servicePrincipal.getClientId())
+                    || !StringUtils.isEmpty(cache.credentials.getClientSecret())
+                    || !cache.credentials.getClientSecret().equals(servicePrincipal.getClientSecret())
+                    || !StringUtils.isEmpty(cache.credentials.getTenant())
+                    || !cache.credentials.getTenant().equals(servicePrincipal.getTenant())
+                    || !StringUtils.isEmpty(cache.credentials.getServiceManagementURL())
+                    || !cache.credentials.getServiceManagementURL()
+                        .equals(servicePrincipal.getServiceManagementURL())) {
                 cache = new TokenCache(servicePrincipal);
             }
         }
@@ -90,6 +97,7 @@ public class TokenCache {
     public Azure getAzureClient() {
         return Azure
                 .configure()
+                .withInterceptor(new KubernetesPlugin.AzureTelemetryInterceptor())
                 .withLogLevel(LogLevel.NONE)
                 .withUserAgent(getUserAgent())
                 .authenticate(get(credentials))
