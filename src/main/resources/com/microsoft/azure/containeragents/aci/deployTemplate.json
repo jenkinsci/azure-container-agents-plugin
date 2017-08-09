@@ -8,8 +8,7 @@
     "containerImage": "",
     "cpu": "",
     "memory": "",
-    "osType": "",
-    "command": ""
+    "osType": ""
   },
   "resources": [
     {
@@ -22,7 +21,9 @@
           {
             "name": "[variables('containerName')]",
             "properties": {
-              "command": "variables('command')",
+              "command": [
+
+              ],
               "image": "[variables('containerImage')]",
               "resources": {
                 "requests": {
@@ -32,7 +33,7 @@
               },
               "ports": [
                 {
-                  "port": 80
+                  "port": "80"
                 }
               ]
             }
@@ -54,7 +55,7 @@
   "outputs": {
     "containerIPv4Address": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.ContainerInstance/containerGroups/', 'myContainerGroup')).ipAddress.ip]"
+      "value": "[reference(resourceId('Microsoft.ContainerInstance/containerGroups/', variables('containerName'))).ipAddress.ip]"
     }
   }
 }

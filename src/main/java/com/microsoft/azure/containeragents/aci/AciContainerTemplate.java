@@ -3,16 +3,21 @@ package com.microsoft.azure.containeragents.aci;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
+import hudson.model.Label;
+import hudson.model.labels.LabelAtom;
 import hudson.util.ListBoxModel;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Logger;
 
-public class AciContainer extends AbstractDescribableImpl<AciContainer> implements Serializable{
+public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTemplate> implements Serializable {
 
-    private static final Logger LOGGER = Logger.getLogger(AciContainer.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(AciContainerTemplate.class.getName());
+
+    private static final long serialVersionUID = 640938461214718337L;
 
     private String name;
 
@@ -36,15 +41,15 @@ public class AciContainer extends AbstractDescribableImpl<AciContainer> implemen
 
 
     @DataBoundConstructor
-    public AciContainer(String name,
-                        String label,
-                        String osType,
-                        String image,
-                        String command,
-                        String rootFs,
-                        List<AciPort> ports,
-                        String cpu,
-                        String memory) {
+    public AciContainerTemplate(String name,
+                                String label,
+                                String osType,
+                                String image,
+                                String command,
+                                String rootFs,
+                                List<AciPort> ports,
+                                String cpu,
+                                String memory) {
         this.name = name;
         this.label = label;
         this.image = image;
@@ -56,12 +61,20 @@ public class AciContainer extends AbstractDescribableImpl<AciContainer> implemen
         this.memory = memory;
     }
 
+    public void provisionAgents(AciCloud cloud, AciAgent agent) throws Exception {
+        AciService.createDeployment(cloud, this, agent);
+    }
+
     public String getName() {
         return name;
     }
 
     public String getLabel() {
         return label;
+    }
+
+    public Set<LabelAtom> getLabelSet() {
+        return Label.parse(label);
     }
 
     public String getImage() {
@@ -97,7 +110,7 @@ public class AciContainer extends AbstractDescribableImpl<AciContainer> implemen
     }
 
     @Extension
-    public static class DescriptorImpl extends Descriptor<AciContainer> {
+    public static class DescriptorImpl extends Descriptor<AciContainerTemplate> {
 
         @Override
         public String getDisplayName() {
@@ -108,6 +121,13 @@ public class AciContainer extends AbstractDescribableImpl<AciContainer> implemen
             ListBoxModel model = new ListBoxModel();
             model.add("westus");
             model.add("eastus");
+            return model;
+        }
+
+        public ListBoxModel doFillOsTypeItems() {
+            ListBoxModel model = new ListBoxModel();
+            model.add("Linux");
+            model.add("Windows");
             return model;
         }
     }

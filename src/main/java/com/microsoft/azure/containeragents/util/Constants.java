@@ -16,6 +16,11 @@ public final class Constants {
 
     public static final String AI_ACS_MASTER_FQDN = "Acs Master FQDN";
 
+    public static final int KUBERNETES_RANDOM_NAME_LENGTH = 5;
+
+    public static final int ACI_RANDOM_NAME_LENGTH = 5;
+
+    public static final int ACI_DEPLOYMENT_RANDOM_NAME_LENGTH = 8;
 
     private Constants() {
 
