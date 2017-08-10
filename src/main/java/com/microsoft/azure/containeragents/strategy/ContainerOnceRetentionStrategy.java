@@ -28,18 +28,18 @@ import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class KubernetesOnceRetentionStrategy extends CloudRetentionStrategy implements ExecutorListener {
-    private static final Logger LOGGER = Logger.getLogger(KubernetesOnceRetentionStrategy.class.getName());
-    private static transient int idleMinutes = 1;
+public class ContainerOnceRetentionStrategy extends CloudRetentionStrategy implements ExecutorListener {
+    private static final Logger LOGGER = Logger.getLogger(ContainerOnceRetentionStrategy.class.getName());
+    private static final transient int IDLE_MINUTES = 10;
     private static final transient int WAIT_TIME = 10 * 1000;
 
     @DataBoundConstructor
-    public KubernetesOnceRetentionStrategy() {
-        super(idleMinutes);
+    public ContainerOnceRetentionStrategy() {
+        super(IDLE_MINUTES);
     }
 
     public int getIdleMinutes() {
-        return idleMinutes;
+        return IDLE_MINUTES;
     }
 
     @Override
@@ -48,7 +48,7 @@ public class KubernetesOnceRetentionStrategy extends CloudRetentionStrategy impl
         // terminate. If it's not already trying to terminate then lets terminate manually.
         if (c.isIdle() && !disabled) {
             final long idleMilliseconds = System.currentTimeMillis() - c.getIdleStartMilliseconds();
-            if (idleMilliseconds > TimeUnit2.MINUTES.toMillis(idleMinutes)) {
+            if (idleMilliseconds > TimeUnit2.MINUTES.toMillis(IDLE_MINUTES)) {
                 LOGGER.log(Level.INFO, "Disconnecting {0}", c.getName());
                 done(c);
             }
@@ -132,7 +132,7 @@ public class KubernetesOnceRetentionStrategy extends CloudRetentionStrategy impl
     public static final class DescriptorImpl extends Descriptor<RetentionStrategy<?>> {
         @Override
         public String getDisplayName() {
-            return "Kubernetes Once Retention Strategy";
+            return "Container Once Retention Strategy";
         }
     }
 

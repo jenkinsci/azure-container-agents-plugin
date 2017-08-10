@@ -10,6 +10,10 @@
         <f:textbox/>
     </f:entry>
 
+    <f:entry field="timeout" title="${%Timeout}">
+        <f:textbox default="10"/>
+    </f:entry>
+
     <f:entry field="osType" title="${%Image_OsType}">
         <f:select/>
     </f:entry>
@@ -18,11 +22,16 @@
         <f:textbox clazz="required" default="jenkinsci/jnlp-slave"/>
     </f:entry>
 
-    <f:entry field="command" title="${Command}">
+    <f:entry title="${%Private_Registry_Credentials}">
+        <f:repeatableHeteroProperty field="privateRegistryCredentials" hasHeader="true" addCaption="${%Add_Private_Registry_Registry}"
+                                    deleteCaption="${%Delete_Private_Registry_Registry}"/>
+    </f:entry>
+
+    <f:entry field="command" title="${%Command}">
         <f:textbox default="jenkins-slave -url $${rootUrl} $${secret} $${nodeName}"/>
     </f:entry>
 
-    <f:entry field="rootFs" title="${Working_Dir}">
+    <f:entry field="rootFs" title="${%Working_Dir}">
         <f:textbox default="/jenkins"/>
     </f:entry>
 
@@ -31,14 +40,26 @@
                                     deleteCaption="${%Delete_Ports}"/>
     </f:entry>
 
+    <f:entry title="${%Environment_Variable}">
+        <f:repeatableHeteroProperty field="envVars" hasHeader="true" addCaption="${%Add_Environment_Variable}"
+                                    deleteCaption="${%Delete_Environment_Variable}"/>
+    </f:entry>
+
+    <f:entry title="${%Volumes}">
+        <f:repeatableHeteroProperty field="volumes" hasHeader="true" addCaption="${%Add_Volume}"
+                                    deleteCaption="${%Delete_Volume}"/>
+    </f:entry>
+
     <f:advanced>
 
+        <f:dropdownDescriptorSelector field="retentionStrategy" title="${%Retention_Strategy}" descriptors="${descriptor.getAciRetentionStrategyDescriptors()}"/>
+
         <f:entry field="cpu" title="${%CPU}">
-            <f:textbox/>
+            <f:textbox default="1"/>
         </f:entry>
 
         <f:entry field="memory" title="${%Memory}">
-            <f:textbox/>
+            <f:textbox default="3"/>
         </f:entry>
 
     </f:advanced>

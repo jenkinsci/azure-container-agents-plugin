@@ -10,10 +10,9 @@ import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.microsoft.azure.containeragents.helper.AzureContainerServiceCredentials;
-import com.microsoft.azure.containeragents.util.TokenCache;
+import com.microsoft.azure.containeragents.util.AzureContainerUtils;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.management.compute.ContainerService;
-import com.microsoft.azure.util.AzureCredentials;
 import com.microsoft.jenkins.azurecommons.remote.SSHClient;
 import hudson.security.ACL;
 import io.fabric8.kubernetes.api.model.Pod;
@@ -24,7 +23,6 @@ import org.apache.commons.lang3.time.StopWatch;
 import javax.naming.AuthenticationException;
 import java.io.File;
 import java.util.Collections;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -96,8 +94,7 @@ public final class KubernetesService {
     public static ContainerService getContainerService(final String azureCredentialsId,
                                                        final String resourceGroup,
                                                        final String serviceName) {
-        AzureCredentials.ServicePrincipal servicePrincipal = AzureCredentials.getServicePrincipal(azureCredentialsId);
-        final Azure azureClient = TokenCache.getInstance(servicePrincipal).getAzureClient();
+        final Azure azureClient = AzureContainerUtils.getAzureClient(azureCredentialsId);
         return azureClient.containerServices().getByResourceGroup(resourceGroup, serviceName);
     }
 
@@ -108,7 +105,7 @@ public final class KubernetesService {
                                        final int retryInterval,
                                        final int timeout) throws TimeoutException {
         while (true) {
-            if (isTimeout(stopWatch.getTime(), timeout)) {
+            if (AzureContainerUtils.isTimeout(stopWatch.getTime(), timeout)) {
                 throw new TimeoutException(Messages.Kubernetes_Pod_Start_Failed(podName, timeout));
             }
 
@@ -126,10 +123,6 @@ public final class KubernetesService {
                 throw new IllegalStateException(Messages.Kubernetes_Container_Not_Running(status));
             }
         }
-    }
-
-    public static boolean isTimeout(long startupTimeout, long elaspedTime) {
-        return (startupTimeout > 0 && TimeUnit.MILLISECONDS.toMinutes(elaspedTime) >= startupTimeout);
     }
 
 }

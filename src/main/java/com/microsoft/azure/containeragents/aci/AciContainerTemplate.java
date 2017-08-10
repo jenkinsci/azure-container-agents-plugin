@@ -1,14 +1,22 @@
 package com.microsoft.azure.containeragents.aci;
 
+import com.microsoft.azure.containeragents.PodEnvVar;
+import com.microsoft.azure.containeragents.strategy.ContainerIdleRetentionStrategy;
+import com.microsoft.azure.containeragents.strategy.ContainerOnceRetentionStrategy;
+import com.microsoft.azure.containeragents.volumes.AzureFileVolume;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.model.Label;
 import hudson.model.labels.LabelAtom;
+import hudson.slaves.RetentionStrategy;
 import hudson.util.ListBoxModel;
+import org.apache.commons.lang3.time.StopWatch;
+import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -31,7 +39,7 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
 
     private String rootFs;
 
-    private String location;
+    private int timeout;
 
     private List<AciPort> ports;
 
@@ -39,15 +47,27 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
 
     private String memory;
 
+    private RetentionStrategy<?> retentionStrategy;
+
+    private List<PodEnvVar> envVars = new ArrayList<>();
+
+    private List<DockerRegistryEndpoint> privateRegistryCredentials = new ArrayList<>();
+
+    private List<AzureFileVolume> volumes = new ArrayList<>();
 
     @DataBoundConstructor
     public AciContainerTemplate(String name,
                                 String label,
+                                int timeout,
                                 String osType,
                                 String image,
                                 String command,
                                 String rootFs,
                                 List<AciPort> ports,
+                                List<DockerRegistryEndpoint> privateRegistryCredentials,
+                                List<PodEnvVar> envVars,
+                                List<AzureFileVolume> volumes,
+                                RetentionStrategy<?> retentionStrategy,
                                 String cpu,
                                 String memory) {
         this.name = name;
@@ -59,10 +79,15 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
         this.ports = ports;
         this.cpu = cpu;
         this.memory = memory;
+        this.timeout = timeout;
+        this.retentionStrategy = retentionStrategy;
+        this.envVars = envVars;
+        this.privateRegistryCredentials = privateRegistryCredentials;
+        this.volumes = volumes;
     }
 
-    public void provisionAgents(AciCloud cloud, AciAgent agent) throws Exception {
-        AciService.createDeployment(cloud, this, agent);
+    public void provisionAgents(AciCloud cloud, AciAgent agent, StopWatch stopWatch) throws Exception {
+        AciService.createDeployment(cloud, this, agent, stopWatch);
     }
 
     public String getName() {
@@ -85,8 +110,8 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
         return osType;
     }
 
-    public String getLocation() {
-        return location;
+    public int getTimeout() {
+        return timeout;
     }
 
     public String getCommand() {
@@ -109,19 +134,35 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
         return memory;
     }
 
+    public RetentionStrategy<?> getRetentionStrategy() {
+        return retentionStrategy;
+    }
+
+    public List<PodEnvVar> getEnvVars() {
+        return envVars;
+    }
+
+    public List<DockerRegistryEndpoint> getPrivateRegistryCredentials() {
+        return privateRegistryCredentials;
+    }
+
+    public List<AzureFileVolume> getVolumes() {
+        return volumes;
+    }
+
     @Extension
     public static class DescriptorImpl extends Descriptor<AciContainerTemplate> {
 
         @Override
         public String getDisplayName() {
-            return "Kubernetes Pod Template";
+            return "Aci Container Template";
         }
 
-        public ListBoxModel doFillLocationItems() {
-            ListBoxModel model = new ListBoxModel();
-            model.add("westus");
-            model.add("eastus");
-            return model;
+        public List<Descriptor<RetentionStrategy<?>>> getAciRetentionStrategyDescriptors() {
+            List<Descriptor<RetentionStrategy<?>>> list = new ArrayList<>();
+            list.add(ContainerOnceRetentionStrategy.DESCRIPTOR);
+            list.add(ContainerIdleRetentionStrategy.DESCRIPTOR);
+            return list;
         }
 
         public ListBoxModel doFillOsTypeItems() {

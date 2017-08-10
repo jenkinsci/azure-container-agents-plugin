@@ -16,6 +16,8 @@ import java.io.Serializable;
 
 public class PodEnvVar extends AbstractDescribableImpl<PodEnvVar> implements Serializable {
 
+    private static final long serialVersionUID = 694763293814718337L;
+
     private String key;
     private String value;
 

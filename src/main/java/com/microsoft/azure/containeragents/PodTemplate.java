@@ -9,8 +9,8 @@ package com.microsoft.azure.containeragents;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.microsoft.azure.containeragents.strategy.KubernetesIdleRetentionStrategy;
-import com.microsoft.azure.containeragents.strategy.KubernetesOnceRetentionStrategy;
+import com.microsoft.azure.containeragents.strategy.ContainerIdleRetentionStrategy;
+import com.microsoft.azure.containeragents.strategy.ContainerOnceRetentionStrategy;
 import com.microsoft.azure.containeragents.util.Constants;
 import com.microsoft.azure.containeragents.util.DockerConfigBuilder;
 import com.microsoft.azure.containeragents.volumes.PodVolume;
@@ -404,10 +404,10 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
             return "Kubernetes Pod Template";
         }
 
-        public List<Descriptor<RetentionStrategy<?>>> getKubernetseRetentionStrategyDescriptors() {
+        public List<Descriptor<RetentionStrategy<?>>> getKubernetesRetentionStrategyDescriptors() {
             List<Descriptor<RetentionStrategy<?>>> list = new ArrayList<>();
-            list.add(KubernetesOnceRetentionStrategy.DESCRIPTOR);
-            list.add(KubernetesIdleRetentionStrategy.DESCRIPTOR);
+            list.add(ContainerOnceRetentionStrategy.DESCRIPTOR);
+            list.add(ContainerIdleRetentionStrategy.DESCRIPTOR);
             return list;
         }
 

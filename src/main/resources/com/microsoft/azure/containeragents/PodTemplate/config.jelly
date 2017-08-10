@@ -26,15 +26,15 @@
         </f:entry>
     </f:advanced>
 
-    <f:entry field="command" title="${Command}">
+    <f:entry field="command" title="${%Command}">
         <f:textbox/>
     </f:entry>
 
-    <f:entry field="args" title="${Arguments}">
+    <f:entry field="args" title="${%Arguments}">
         <f:textbox default="-url $${rootUrl} $${secret} $${nodeName}"/>
     </f:entry>
 
-    <f:entry field="rootFs" title="${Working_Dir}">
+    <f:entry field="rootFs" title="${%Working_Dir}">
         <f:textbox default="/jenkins"/>
     </f:entry>
 
@@ -50,7 +50,7 @@
 
     <f:advanced>
 
-        <f:dropdownDescriptorSelector field="retentionStrategy" title="${%Retention_Strategy}" descriptors="${descriptor.kubernetseRetentionStrategyDescriptors}"/>
+        <f:dropdownDescriptorSelector field="retentionStrategy" title="${%Retention_Strategy}" descriptors="${descriptor.kubernetesRetentionStrategyDescriptors}"/>
 
         <f:entry field="specifyNode" title="${%Specify_Node}">
             <f:select/>

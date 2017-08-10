@@ -10,12 +10,11 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.microsoft.azure.containeragents.helper.AzureContainerServiceCredentials;
+import com.microsoft.azure.containeragents.util.AzureContainerUtils;
 import com.microsoft.azure.containeragents.util.Constants;
-import com.microsoft.azure.containeragents.util.TokenCache;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.management.compute.ContainerService;
 import com.microsoft.azure.management.compute.ContainerServiceOchestratorTypes;
-import com.microsoft.azure.management.resources.ResourceGroup;
 import com.microsoft.azure.util.AzureCredentials;
 import com.microsoft.jenkins.azurecommons.telemetry.AppInsightsConstants;
 import hudson.Extension;
@@ -271,7 +270,7 @@ public class KubernetesCloud extends Cloud {
     }
 
     private boolean isTimeout(long elaspedTime) {
-        return KubernetesService.isTimeout(startupTimeout, elaspedTime);
+        return AzureContainerUtils.isTimeout(startupTimeout, elaspedTime);
     }
 
     public static synchronized ExecutorService getThreadPool() {
@@ -361,13 +360,7 @@ public class KubernetesCloud extends Cloud {
         }
 
         public ListBoxModel doFillAzureCredentialsIdItems(@AncestorInPath Item owner) {
-            StandardListBoxModel listBoxModel = new StandardListBoxModel();
-            listBoxModel.add("--- Select Azure Credentials ---", "");
-            listBoxModel.withAll(CredentialsProvider.lookupCredentials(AzureCredentials.class,
-                    owner,
-                    ACL.SYSTEM,
-                    Collections.<DomainRequirement>emptyList()));
-            return listBoxModel;
+            return AzureContainerUtils.listCredentialsIdItems(owner);
         }
 
         public ListBoxModel doFillAcsCredentialsIdItems(@AncestorInPath Item owner) {
@@ -385,26 +378,7 @@ public class KubernetesCloud extends Cloud {
         }
 
         public ListBoxModel doFillResourceGroupItems(@QueryParameter String azureCredentialsId) throws IOException {
-            ListBoxModel model = new ListBoxModel();
-            model.add("--- Select Resource Group ---", "");
-            if (StringUtils.isBlank(azureCredentialsId)) {
-                return model;
-            }
-
-            try {
-                AzureCredentials.ServicePrincipal servicePrincipal
-                        = AzureCredentials.getServicePrincipal(azureCredentialsId);
-                final Azure azureClient = TokenCache.getInstance(servicePrincipal).getAzureClient();
-
-                List<ResourceGroup> list = azureClient.resourceGroups().list();
-                for (ResourceGroup resourceGroup : list) {
-                    model.add(resourceGroup.name());
-                }
-                return model;
-            } catch (Exception e) {
-                LOGGER.log(Level.INFO, "Cannot list resource group name: {}", e);
-                return model;
-            }
+            return AzureContainerUtils.listResourceGroupItems(azureCredentialsId);
         }
 
         public ListBoxModel doFillServiceNameItems(@QueryParameter String azureCredentialsId,
@@ -415,9 +389,7 @@ public class KubernetesCloud extends Cloud {
                 return model;
             }
 
-            AzureCredentials.ServicePrincipal servicePrincipal
-                    = AzureCredentials.getServicePrincipal(azureCredentialsId);
-            final Azure azureClient = TokenCache.getInstance(servicePrincipal).getAzureClient();
+            final Azure azureClient = AzureContainerUtils.getAzureClient(azureCredentialsId);
 
             List<ContainerService> list = azureClient.containerServices().listByResourceGroup(resourceGroup);
             for (ContainerService containerService : list) {

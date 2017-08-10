@@ -22,7 +22,6 @@
             "name": "[variables('containerName')]",
             "properties": {
               "command": [
-
               ],
               "image": "[variables('containerImage')]",
               "resources": {
@@ -35,11 +34,17 @@
                 {
                   "port": "80"
                 }
+              ],
+              "environmentVariables": [
+              ],
+              "volumeMounts": [
               ]
             }
           }
         ],
         "osType": "[variables('osType')]",
+        "volumes": [
+        ],
         "ipAddress": {
           "type": "Public",
           "ports": [
@@ -48,7 +53,9 @@
               "port": "80"
             }
           ]
-        }
+        },
+        "imageRegistryCredentials": [
+        ]
       }
     }
   ],

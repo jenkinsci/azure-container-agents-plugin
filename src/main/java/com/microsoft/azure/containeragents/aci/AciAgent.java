@@ -32,6 +32,8 @@ public class AciAgent extends AbstractCloudSlave {
 
     private final String resourceGroup;
 
+    private String deployName = null;
+
     @DataBoundConstructor
     public AciAgent(AciCloud cloud, AciContainerTemplate template) throws Descriptor.FormException, IOException {
         super(generateAgentName(template),
@@ -41,7 +43,7 @@ public class AciAgent extends AbstractCloudSlave {
                 Mode.NORMAL,
                 template.getLabel(),
                 new JNLPLauncher(),
-                null,
+                template.getRetentionStrategy(),
                 new ArrayList<>());
         this.credentialsId = cloud.getCredentialsId();
         this.cloudName = cloud.getName();
@@ -72,14 +74,21 @@ public class AciAgent extends AbstractCloudSlave {
 
         Computer.threadPoolForRemoting.execute(() -> AciService.deleteAciContainerGroup(credentialsId,
                 resourceGroup,
-                getNodeName()));
+                getNodeName(),
+                deployName));
     }
 
     static String generateAgentName(AciContainerTemplate template) {
         return AzureContainerUtils.generateName(template.getName(), Constants.ACI_RANDOM_NAME_LENGTH);
     }
 
+    public void setDeployName(String deployName) {
+        this.deployName = deployName;
+    }
 
+    public String getDeployName() {
+        return deployName;
+    }
 
     @Override
     public Node reconfigure(StaplerRequest req, JSONObject form) throws Descriptor.FormException {

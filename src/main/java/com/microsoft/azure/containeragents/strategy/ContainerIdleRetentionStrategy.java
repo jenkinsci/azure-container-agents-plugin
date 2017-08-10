@@ -15,11 +15,11 @@ import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-public class KubernetesIdleRetentionStrategy extends CloudRetentionStrategy {
+public class ContainerIdleRetentionStrategy extends CloudRetentionStrategy {
     private int idleMinutes = 0;
 
     @DataBoundConstructor
-    public KubernetesIdleRetentionStrategy(int idleMinutes) {
+    public ContainerIdleRetentionStrategy(int idleMinutes) {
         super(idleMinutes);
         this.idleMinutes = idleMinutes;
     }
@@ -41,7 +41,7 @@ public class KubernetesIdleRetentionStrategy extends CloudRetentionStrategy {
     public static final class DescriptorImpl extends Descriptor<RetentionStrategy<?>> {
         @Override
         public String getDisplayName() {
-            return "Kubernetes Idle Retention Strategy";
+            return "Container Idle Retention Strategy";
         }
     }
 }
