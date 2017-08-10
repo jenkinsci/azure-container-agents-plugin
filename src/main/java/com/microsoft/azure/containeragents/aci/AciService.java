@@ -10,7 +10,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.microsoft.azure.containeragents.PodEnvVar;
 import com.microsoft.azure.containeragents.util.AzureContainerUtils;
 import com.microsoft.azure.containeragents.util.Constants;
-import com.microsoft.azure.containeragents.volumes.AzureFileVolume;
+import com.microsoft.azure.containeragents.aci.volumes.AzureFileVolume;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.management.resources.Deployment;
 import com.microsoft.azure.management.resources.DeploymentMode;
@@ -176,19 +176,26 @@ public final class AciService {
 
     private static void addAzureFileVolumeNode(JsonNode tmp, ObjectMapper mapper, AzureFileVolume volume) {
         ArrayNode volumeMountsNode = ArrayNode.class.cast(tmp.get("resources").get(0)
-                .get("properties").get("containers").get(0).get("properties").get("volumeMounts");
-        ArrayNode volumesNode = ArrayNode.class.cast(tmp.get("resources").get(0).get("properties").get("volumes");
+                .get("properties").get("containers").get(0).get("properties").get("volumeMounts"));
+        ArrayNode volumesNode = ArrayNode.class.cast(tmp.get("resources").get(0).get("properties").get("volumes"));
 
         ObjectNode newVolumeMountsNode = mapper.createObjectNode();
         String volumeName = AzureContainerUtils.generateName("volume", 3);
         newVolumeMountsNode.put("name", volumeName);
         newVolumeMountsNode.put("mountPath", volume.getMountPath());
 
-        ObjectNode newVolumesNode = mapper.createObjectNode();
-        newVolumesNode.put("name", volumeName);
+        volumeMountsNode.add(newVolumeMountsNode);
+
         ObjectNode newAzureFileNode = mapper.createObjectNode();
         newAzureFileNode.put("shareName", volume.getShareName());
-//        newAzureFileNode.put("storage")
+        newAzureFileNode.put("storageAccountName", volume.getStorageAccountName());
+        newAzureFileNode.put("storageAccountKdy", volume.getStorageAccountKey());
+
+        ObjectNode newVolumesNode = mapper.createObjectNode();
+        newVolumesNode.put("name", volumeName);
+        newVolumesNode.set("azureFile", newAzureFileNode);
+
+        volumesNode.add(newVolumesNode);
     }
 
     private static String commandReplace(String command, AciAgent agent) {

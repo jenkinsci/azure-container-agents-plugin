@@ -3,7 +3,7 @@ package com.microsoft.azure.containeragents.aci;
 import com.microsoft.azure.containeragents.PodEnvVar;
 import com.microsoft.azure.containeragents.strategy.ContainerIdleRetentionStrategy;
 import com.microsoft.azure.containeragents.strategy.ContainerOnceRetentionStrategy;
-import com.microsoft.azure.containeragents.volumes.AzureFileVolume;
+import com.microsoft.azure.containeragents.aci.volumes.AzureFileVolume;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
