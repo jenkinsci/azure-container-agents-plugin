@@ -204,7 +204,7 @@ public class KubernetesCloud extends Cloud {
                 if (slave != null) {
                     LOGGER.log(Level.INFO, "Removing Jenkins node: {0}", slave.getNodeName());
                     try {
-                        Jenkins.getInstance().removeNode(slave);
+                        slave.terminate();
                     } catch (IOException e) {
                         LOGGER.log(Level.WARNING, "Error in cleaning up the slave node " + slave.getNodeName(), e);
                     }

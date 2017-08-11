@@ -42,7 +42,7 @@ public final class AciService {
                                         final StopWatch stopWatch) throws Exception {
         String deployName = getDeploymentName(template);
         try {
-            final Azure azureClient = AzureContainerUtils.getAzureClient(cloud.getCredentialsId());
+            final Azure azureClient = cloud.getAzureClient();
 
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode tmp = mapper.readTree(AciService.class.getResourceAsStream(DEPLOY_TEMPLATE_FILENAME));
@@ -180,7 +180,7 @@ public final class AciService {
         ArrayNode volumesNode = ArrayNode.class.cast(tmp.get("resources").get(0).get("properties").get("volumes"));
 
         ObjectNode newVolumeMountsNode = mapper.createObjectNode();
-        String volumeName = AzureContainerUtils.generateName("volume", 3);
+        String volumeName = AzureContainerUtils.generateName("volume", Constants.ACI_VOLUME_NAME_LENGTH);
         newVolumeMountsNode.put("name", volumeName);
         newVolumeMountsNode.put("mountPath", volume.getMountPath());
 
@@ -189,7 +189,7 @@ public final class AciService {
         ObjectNode newAzureFileNode = mapper.createObjectNode();
         newAzureFileNode.put("shareName", volume.getShareName());
         newAzureFileNode.put("storageAccountName", volume.getStorageAccountName());
-        newAzureFileNode.put("storageAccountKdy", volume.getStorageAccountKey());
+        newAzureFileNode.put("storageAccountKey", volume.getStorageAccountKeyPlainText());
 
         ObjectNode newVolumesNode = mapper.createObjectNode();
         newVolumesNode.put("name", volumeName);

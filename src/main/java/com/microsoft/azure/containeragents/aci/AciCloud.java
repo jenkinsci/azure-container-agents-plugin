@@ -1,6 +1,7 @@
 package com.microsoft.azure.containeragents.aci;
 
 import com.microsoft.azure.containeragents.util.AzureContainerUtils;
+import com.microsoft.azure.management.Azure;
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
@@ -36,6 +37,8 @@ public class AciCloud extends Cloud {
 
     private List<AciContainerTemplate> templates;
 
+    private transient Azure azure = null;
+
     @DataBoundConstructor
     public AciCloud(String name,
                     String credentialsId,
@@ -45,6 +48,17 @@ public class AciCloud extends Cloud {
         this.credentialsId = credentialsId;
         this.resourceGroup = resourceGroup;
         this.templates = templates;
+    }
+
+    public Azure getAzureClient() {
+        if (azure == null) {
+            synchronized (this) {
+                if (azure == null) {
+                    azure = AzureContainerUtils.getAzureClient(credentialsId);
+                }
+            }
+        }
+        return azure;
     }
 
     @Override
@@ -84,7 +98,7 @@ public class AciCloud extends Cloud {
                                     LOGGER.log(Level.WARNING, e.toString());
 
                                     if (agent != null) {
-                                        Jenkins.getInstance().removeNode(agent);
+                                        agent.terminate();
                                     }
 
                                     throw new Exception(e);

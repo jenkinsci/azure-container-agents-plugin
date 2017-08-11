@@ -1,22 +1,27 @@
 package com.microsoft.azure.containeragents.aci.volumes;
 
-import com.microsoft.azure.containeragents.volumes.PodVolume;
 import hudson.Extension;
+import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
+import hudson.util.Secret;
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import java.io.Serializable;
 
-public class AzureFileVolume {
+
+public class AzureFileVolume extends AbstractDescribableImpl<AzureFileVolume> implements Serializable {
+    private static final long serialVersionUID = 8879963354L;
+
     private final String mountPath;
     private final String storageAccountName;
     private final String shareName;
-    private final String storageAccountKey;
+    private final Secret storageAccountKey;
 
     @DataBoundConstructor
     public AzureFileVolume(final String mountPath,
                            final String storageAccountName,
                            final String shareName,
-                           final String storageAccountKey) {
+                           final Secret storageAccountKey) {
         this.mountPath = mountPath;
         this.storageAccountName = storageAccountName;
         this.shareName = shareName;
@@ -36,11 +41,15 @@ public class AzureFileVolume {
     }
 
     public String getStorageAccountKey() {
-        return storageAccountKey;
+        return storageAccountKey.getEncryptedValue();
+    }
+
+    public String getStorageAccountKeyPlainText() {
+        return storageAccountKey.getPlainText();
     }
 
     @Extension
-    public static class DescriptorImpl extends Descriptor<PodVolume> {
+    public static class DescriptorImpl extends Descriptor<AzureFileVolume> {
 
         @Override
         public String getDisplayName() {

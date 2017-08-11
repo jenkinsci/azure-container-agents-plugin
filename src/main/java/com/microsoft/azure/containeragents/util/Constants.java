@@ -22,6 +22,8 @@ public final class Constants {
 
     public static final int ACI_DEPLOYMENT_RANDOM_NAME_LENGTH = 8;
 
+    public static final int ACI_VOLUME_NAME_LENGTH = 3;
+
     private Constants() {
 
     }
