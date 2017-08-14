@@ -7,7 +7,7 @@
 package com.microsoft.jenkins.containeragents.util;
 
 import com.microsoft.azure.AzureEnvironment;
-import com.microsoft.jenkins.containeragents.KubernetesPlugin;
+import com.microsoft.jenkins.containeragents.ContainerPlugin;
 import com.microsoft.azure.credentials.ApplicationTokenCredentials;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.util.AzureCredentials;
@@ -97,7 +97,7 @@ public class TokenCache {
     public Azure getAzureClient() {
         return Azure
                 .configure()
-                .withInterceptor(new KubernetesPlugin.AzureTelemetryInterceptor())
+                .withInterceptor(new ContainerPlugin.AzureTelemetryInterceptor())
                 .withLogLevel(LogLevel.NONE)
                 .withUserAgent(getUserAgent())
                 .authenticate(get(credentials))

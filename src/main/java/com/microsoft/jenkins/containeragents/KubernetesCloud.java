@@ -123,6 +123,11 @@ public class KubernetesCloud extends Cloud {
             final Map<String, String> properties = new HashMap<>();
 
             try {
+                final int retryInterval = 1000;
+                slave = new KubernetesAgent(KubernetesCloud.this, template);
+
+                LOGGER.log(Level.INFO, "Adding Jenkins node: {0}", slave.getNodeName());
+                Jenkins.getInstance().addNode(slave);
 
                 // build AI properties
                 properties.put(AppInsightsConstants.AZURE_SUBSCRIPTION_ID,
@@ -131,12 +136,7 @@ public class KubernetesCloud extends Cloud {
                         KubernetesService.lookupSshCredentials(acsCredentialsId) != null
                                 ? Constants.AI_ACS_TYPE_SSH
                                 : Constants.AI_ACS_TYPE_CONFIG);
-
-                final int retryInterval = 1000;
-                slave = new KubernetesAgent(KubernetesCloud.this, template);
-
-                LOGGER.log(Level.INFO, "Adding Jenkins node: {0}", slave.getNodeName());
-                Jenkins.getInstance().addNode(slave);
+                properties.put(Constants.AI_CONTAINER_NAME, slave.getNodeName());
 
                 //Build Secret
                 Secret registrySecret = null;
@@ -188,7 +188,7 @@ public class KubernetesCloud extends Cloud {
                     Thread.sleep(retryInterval);
                 }
 
-                KubernetesPlugin.sendEvent(Constants.AI_CONTAINER_AGENT, "Provision", properties);
+                ContainerPlugin.sendEvent(Constants.AI_CONTAINER_AGENT, "Provision", properties);
 
                 return slave;
             } catch (Exception ex) {
@@ -196,7 +196,7 @@ public class KubernetesCloud extends Cloud {
                         new Object[] {slave, template});
 
                 properties.put("Message", ex.getMessage());
-                KubernetesPlugin.sendEvent(Constants.AI_CONTAINER_AGENT, "ProvisionFailed", properties);
+                ContainerPlugin.sendEvent(Constants.AI_CONTAINER_AGENT, "ProvisionFailed", properties);
 
                 if (slave != null) {
                     LOGGER.log(Level.INFO, "Removing Jenkins node: {0}", slave.getNodeName());
@@ -254,8 +254,15 @@ public class KubernetesCloud extends Cloud {
 
     public void deletePod(String podName) {
         LOGGER.log(Level.INFO, "Terminating container instance for slave {0}", podName);
+        final Map<String, String> properties = new HashMap<>();
+
         try (KubernetesClient client = connect()) {
+            properties.put(Constants.AI_CONTAINER_NAME, podName);
+
             boolean result = client.pods().inNamespace(namespace).withName(podName).delete();
+
+            ContainerPlugin.sendEvent(Constants.AI_CONTAINER_AGENT, "DeletedFailed", properties);
+
             if (result) {
                 LOGGER.log(Level.INFO, "Terminated Kubernetes instance for slave {0}", podName);
             } else {
@@ -263,6 +270,9 @@ public class KubernetesCloud extends Cloud {
             }
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Failed to terminate pod for slave " + podName, e);
+
+            properties.put("Message", e.getMessage());
+            ContainerPlugin.sendEvent(Constants.AI_CONTAINER_AGENT, "DeletedFailed", properties);
         }
     }
 

@@ -16,9 +16,9 @@ import okhttp3.Response;
 import java.io.IOException;
 import java.util.Map;
 
-public class KubernetesPlugin extends Plugin {
+public class ContainerPlugin extends Plugin {
     public static void sendEvent(final String item, final String action, final Map<String, String> properties) {
-        AppInsightsClientFactory.getInstance(KubernetesPlugin.class).sendEvent(item, action, properties, false);
+        AppInsightsClientFactory.getInstance(ContainerPlugin.class).sendEvent(item, action, properties, false);
     }
 
     public static class AzureTelemetryInterceptor implements Interceptor {
@@ -26,7 +26,7 @@ public class KubernetesPlugin extends Plugin {
         public Response intercept(final Chain chain) throws IOException {
             final Request request = chain.request();
             final Response response = chain.proceed(request);
-            new AzureHttpRecorder(AppInsightsClientFactory.getInstance(KubernetesPlugin.class))
+            new AzureHttpRecorder(AppInsightsClientFactory.getInstance(ContainerPlugin.class))
                     .record(new AzureHttpRecorder.HttpRecordable()
                             .withHttpCode(response.code())
                             .withHttpMessage(response.message())

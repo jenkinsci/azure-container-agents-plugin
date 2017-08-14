@@ -326,7 +326,7 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
 
     @DataBoundSetter
     public void setEnvVars(List<PodEnvVar> envVars) {
-        this.envVars = envVars;
+        this.envVars = envVars == null ? new ArrayList<>() : envVars;
     }
 
     public List<PodEnvVar> getEnvVars() {
@@ -335,7 +335,7 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
 
     @DataBoundSetter
     public void setVolumes(List<PodVolume> volumes) {
-        this.volumes = volumes;
+        this.volumes = volumes == null ? new ArrayList<>() : volumes;
     }
 
     public List<PodVolume> getVolumes() {
@@ -344,7 +344,7 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
 
     @DataBoundSetter
     public void setImagePullSecrets(List<PodImagePullSecrets> imagePullSecrets) {
-        this.imagePullSecrets = imagePullSecrets;
+        this.imagePullSecrets = imagePullSecrets == null ? new ArrayList<>() : imagePullSecrets;
     }
 
     public List<PodImagePullSecrets> getImagePullSecrets() {
@@ -353,7 +353,9 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
 
     @DataBoundSetter
     public void setPrivateRegistryCredentials(List<DockerRegistryEndpoint> privateRegistryCredentials) {
-        this.privateRegistryCredentials = privateRegistryCredentials;
+        this.privateRegistryCredentials = privateRegistryCredentials == null
+                ? new ArrayList<>()
+                : privateRegistryCredentials;
     }
 
     public List<DockerRegistryEndpoint> getPrivateRegistryCredentials() {

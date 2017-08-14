@@ -76,14 +76,16 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
         this.osType = osType;
         this.command = command;
         this.rootFs = rootFs;
-        this.ports = ports;
+        this.ports = ports == null ? new ArrayList<>() : ports;
         this.cpu = cpu;
         this.memory = memory;
         this.timeout = timeout;
         this.retentionStrategy = retentionStrategy;
-        this.envVars = envVars;
-        this.privateRegistryCredentials = privateRegistryCredentials;
-        this.volumes = volumes;
+        this.envVars = envVars == null ? new ArrayList<>() : envVars;
+        this.privateRegistryCredentials = privateRegistryCredentials == null
+                ? new ArrayList<>()
+                : privateRegistryCredentials;
+        this.volumes = volumes == null ? new ArrayList<>() : volumes;
     }
 
     public void provisionAgents(AciCloud cloud, AciAgent agent, StopWatch stopWatch) throws Exception {

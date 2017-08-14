@@ -63,9 +63,7 @@ public final class AzureContainerUtils {
         }
 
         try {
-            AzureCredentials.ServicePrincipal servicePrincipal
-                    = AzureCredentials.getServicePrincipal(credentialsId);
-            final Azure azureClient = TokenCache.getInstance(servicePrincipal).getAzureClient();
+            final Azure azureClient = getAzureClient(credentialsId);
 
             List<ResourceGroup> list = azureClient.resourceGroups().list();
             for (ResourceGroup resourceGroup : list) {

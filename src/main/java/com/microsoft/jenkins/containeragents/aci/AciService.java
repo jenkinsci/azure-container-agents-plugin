@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.microsoft.jenkins.containeragents.ContainerPlugin;
 import com.microsoft.jenkins.containeragents.PodEnvVar;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
 import com.microsoft.jenkins.containeragents.util.Constants;
@@ -23,7 +24,9 @@ import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -215,6 +218,7 @@ public final class AciService {
                                                String containerGroupName,
                                                String deployName) {
         final Azure azureClient = AzureContainerUtils.getAzureClient(credentialsId);
+        final Map<String, String> properties = new HashMap<>();
 
         try {
             azureClient.genericResources().delete(resourceGroup,
@@ -225,6 +229,9 @@ public final class AciService {
                     "2017-08-01-preview");
             LOGGER.log(Level.INFO, "Delete ACI Container Group: {0} successfully", containerGroupName);
 
+            properties.put(Constants.AI_ACI_NAME, containerGroupName);
+            ContainerPlugin.sendEvent(Constants.AI_ACI_AGENT, "Deleted", properties);
+
             //To avoid to many deployments. May over deployment limits.
             if (deployName != null) {
                 azureClient.deployments().deleteByResourceGroup(resourceGroup, deployName);
@@ -234,6 +241,9 @@ public final class AciService {
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Delete ACI Container Group: {0} failed: {1}",
                     new Object[] {containerGroupName, e});
+
+            properties.put("Message", e.getMessage());
+            ContainerPlugin.sendEvent(Constants.AI_ACI_AGENT, "DeletedFailed", properties);
         }
     }
 

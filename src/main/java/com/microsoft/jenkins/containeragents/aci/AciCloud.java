@@ -1,7 +1,11 @@
 package com.microsoft.jenkins.containeragents.aci;
 
+import com.microsoft.azure.util.AzureCredentials;
+import com.microsoft.jenkins.azurecommons.telemetry.AppInsightsConstants;
+import com.microsoft.jenkins.containeragents.ContainerPlugin;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
 import com.microsoft.azure.management.Azure;
+import com.microsoft.jenkins.containeragents.util.Constants;
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
@@ -21,7 +25,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
@@ -76,6 +82,7 @@ public class AciCloud extends Cloud {
                             @Override
                             public Node call() throws Exception {
                                 AciAgent agent = null;
+                                final Map<String, String> properties = new HashMap<>();
 
                                 try {
                                     agent = new AciAgent(AciCloud.this, template);
@@ -87,15 +94,26 @@ public class AciCloud extends Cloud {
                                     StopWatch stopWatch = new StopWatch();
                                     stopWatch.start();
 
+                                    //BI properties
+                                    properties.put(AppInsightsConstants.AZURE_SUBSCRIPTION_ID,
+                                            AzureCredentials.getServicePrincipal(credentialsId).getSubscriptionId());
+                                    properties.put(Constants.AI_ACI_NAME, agent.getNodeName());
+
                                     //Deploy ACI and wait
                                     template.provisionAgents(AciCloud.this, agent, stopWatch);
 
                                     //wait JNLP to online
                                     waitToOnline(agent, template.getTimeout(), stopWatch);
 
+                                    //Send BI
+                                    ContainerPlugin.sendEvent(Constants.AI_ACI_AGENT, "Provision", properties);
+
                                     return agent;
                                 } catch (Exception e) {
                                     LOGGER.log(Level.WARNING, e.toString());
+
+                                    properties.put("Message", e.getMessage());
+                                    ContainerPlugin.sendEvent(Constants.AI_ACI_AGENT, "ProvisionFailed", properties);
 
                                     if (agent != null) {
                                         agent.terminate();
