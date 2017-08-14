@@ -21,7 +21,7 @@ You can also manually install the plugin if you want to try the latest feature b
 ## Pre-requirements
 * Service Principal: [Create Service Principal via Azure CLI 2.0](https://docs.microsoft.com/en-us/cli/azure/create-an-azure-service-principal-azure-cli?toc=%2fazure%2fazure-resource-manager%2ftoc.json)
 
-# Azure Container Service (Kubernetes)
+## Azure Container Service (Kubernetes)
 
 With Azure Container Service (Kubernetes), you can create a container in you Kubernetes Cluster as agent.
 
@@ -50,8 +50,8 @@ Although Kubernetes supports multi-containers in a Pod, but we only support one 
 Please ensure JenkinsURL, secret and nodeName passed to container via arguments or environment variables.
 
 1. Specify `Name` and `Labels`
-2. Choose a `Docker image`. Please note that the slave will connect with master via JNLP, so make sure JNLP installed in image.
-3. If you use a private registry, you need to specify a credential and you have two choose:
+2. Choose a `Docker image`. Please note that the slave will connect with master via JNLP, so make sure JNLP installed in image. Default image is `jenkins/jnlp-slave` and you can also use it as base image.
+3. If you use a private registry, you need to specify a credential and you have two choices:
     * Use a Private Registry Secret. You need to [create a Secret](https://kubernetes.io/docs/concepts/configuration/secret/) in your Kubernetes cluster in advance and then fill in the Secret name.
     * Use a Private Registry Credential. You just need to fill in the credential and we will create a Secret for you.
 4. Specify a `Command` to override the ENTRYPOINT or leave it blank.
@@ -72,7 +72,7 @@ Please note this software is experimental and should not be used for anything re
 Only very few configurations are supported now.
 
 
-# Azure Container Instance
+## Azure Container Instance
 
 [Azure Container Instances](https://docs.microsoft.com/en-us/azure/container-instances/) offers the fastest and simplest way to run a container in Azure, without having to provision any virtual machines and without having to adopt a higher-level service.
 
@@ -90,7 +90,7 @@ Only very few configurations are supported now.
 1. Specify `Name` and `Labels`
 2. Set `Startup Timeout`.
 3. Select `Image OS Type`, Windows or Linux.
-4. Fill in `Docker Image`. Please note that the slave will connect with master via JNLP, so make sure JNLP installed in image.
+4. Fill in `Docker Image`. Please note that the slave will connect with master via JNLP, so make sure JNLP installed in image. Default image is `jenkins/jnlp-slave` and you can also use it as base image.
 5. If you use a private registry, you need to specify a credential. Please note the `URL` should not contain protocol (e.g. index.docker.io).
 6. Specify a `Command`. Now the `Command` will override the ENTRYPOINT. `Arguments`. `${rootUrl}`, `${secret}` and `${nodeName}` will be replace with JenkinsUrl, Secret and ComputerNodeName automatically.
 7. Specify the `Working Dir`. Different from Azure Container Service (Kubernetes), you must ensure login user have the write permission to this directory.
