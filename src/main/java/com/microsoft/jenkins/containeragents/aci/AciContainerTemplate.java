@@ -55,6 +55,8 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
 
     private List<AzureFileVolume> volumes = new ArrayList<>();
 
+    private boolean isAvailable = true;
+
     @DataBoundConstructor
     public AciContainerTemplate(String name,
                                 String label,
@@ -86,6 +88,7 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
                 ? new ArrayList<>()
                 : privateRegistryCredentials;
         this.volumes = volumes == null ? new ArrayList<>() : volumes;
+        setAvailable(true);
     }
 
     public void provisionAgents(AciCloud cloud, AciAgent agent, StopWatch stopWatch) throws Exception {
@@ -150,6 +153,14 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
 
     public List<AzureFileVolume> getVolumes() {
         return volumes;
+    }
+
+    public void setAvailable(boolean available) {
+        this.isAvailable = available;
+    }
+
+    public boolean getAvailable() {
+        return isAvailable;
     }
 
     @Extension

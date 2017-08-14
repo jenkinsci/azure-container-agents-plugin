@@ -192,7 +192,7 @@ public final class AciService {
         ObjectNode newAzureFileNode = mapper.createObjectNode();
         newAzureFileNode.put("shareName", volume.getShareName());
         newAzureFileNode.put("storageAccountName", volume.getStorageAccountName());
-        newAzureFileNode.put("storageAccountKey", volume.getStorageAccountKeyPlainText());
+        newAzureFileNode.put("storageAccountKey", volume.getStorageAccountKey());
 
         ObjectNode newVolumesNode = mapper.createObjectNode();
         newVolumesNode.put("name", volumeName);

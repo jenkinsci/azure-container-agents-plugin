@@ -119,6 +119,8 @@ public class AciCloud extends Cloud {
                                         agent.terminate();
                                     }
 
+                                    template.setAvailable(false);
+
                                     throw new Exception(e);
                                 }
                             }
@@ -136,7 +138,17 @@ public class AciCloud extends Cloud {
 
     @Override
     public boolean canProvision(Label label) {
-        return getFirstTemplate(label) != null;
+        AciContainerTemplate template = getFirstTemplate(label);
+        if (template == null) {
+            LOGGER.log(Level.WARNING, "Cannot provision: template for label {0} not found", label);
+            return false;
+        }
+        if (!template.getAvailable()) {
+            LOGGER.log(Level.WARNING, "Cannot provision: template for label {0} is not available now, "
+                    + "because it failed to provision last time. ", label);
+            return false;
+        }
+        return true;
     }
 
     public AciContainerTemplate getFirstTemplate(Label label) {
