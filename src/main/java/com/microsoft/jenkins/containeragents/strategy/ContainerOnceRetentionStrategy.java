@@ -32,6 +32,7 @@ public class ContainerOnceRetentionStrategy extends CloudRetentionStrategy imple
     private static final Logger LOGGER = Logger.getLogger(ContainerOnceRetentionStrategy.class.getName());
     private static final transient int IDLE_MINUTES = 10;
     private static final transient int WAIT_TIME = 10 * 1000;
+    private static final transient int LAPSE = 5;
 
     @DataBoundConstructor
     public ContainerOnceRetentionStrategy() {
@@ -47,8 +48,11 @@ public class ContainerOnceRetentionStrategy extends CloudRetentionStrategy imple
         // When the slave is idle we should disable accepting tasks and check to see if it is already trying to
         // terminate. If it's not already trying to terminate then lets terminate manually.
         if (c.isIdle() && !disabled) {
+            final long milliBetweenCreationAndIdle = c.getConnectTime() - c.getIdleStartMilliseconds();
+            boolean neverConnected = milliBetweenCreationAndIdle < TimeUnit2.SECONDS.toMillis(LAPSE);
+
             final long idleMilliseconds = System.currentTimeMillis() - c.getIdleStartMilliseconds();
-            if (idleMilliseconds > TimeUnit2.MINUTES.toMillis(IDLE_MINUTES)) {
+            if (!neverConnected && idleMilliseconds > TimeUnit2.MINUTES.toMillis(IDLE_MINUTES)) {
                 LOGGER.log(Level.INFO, "Disconnecting {0}", c.getName());
                 done(c);
             }

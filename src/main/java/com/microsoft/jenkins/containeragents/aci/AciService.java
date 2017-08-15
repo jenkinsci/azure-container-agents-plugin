@@ -231,19 +231,23 @@ public final class AciService {
 
             properties.put(Constants.AI_ACI_NAME, containerGroupName);
             ContainerPlugin.sendEvent(Constants.AI_ACI_AGENT, "Deleted", properties);
-
-            //To avoid to many deployments. May over deployment limits.
-            if (deployName != null) {
-                azureClient.deployments().deleteByResourceGroup(resourceGroup, deployName);
-                LOGGER.log(Level.INFO, "Delete ACI deployment: {0} successfully", deployName);
-            }
-
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Delete ACI Container Group: {0} failed: {1}",
                     new Object[] {containerGroupName, e});
 
             properties.put("Message", e.getMessage());
             ContainerPlugin.sendEvent(Constants.AI_ACI_AGENT, "DeletedFailed", properties);
+        }
+
+        try {
+            //To avoid to many deployments. May over deployment limits.
+            if (deployName != null) {
+                azureClient.deployments().deleteByResourceGroup(resourceGroup, deployName);
+                LOGGER.log(Level.INFO, "Delete ACI deployment: {0} successfully", deployName);
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Delete ACI deployment: {0} failed: {1}",
+                    new Object[] {deployName, e});
         }
     }
 

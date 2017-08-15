@@ -59,7 +59,7 @@
         </f:entry>
 
         <f:entry field="memory" title="${%Memory}">
-            <f:textbox default="3"/>
+            <f:textbox default="1.5"/>
         </f:entry>
 
     </f:advanced>
