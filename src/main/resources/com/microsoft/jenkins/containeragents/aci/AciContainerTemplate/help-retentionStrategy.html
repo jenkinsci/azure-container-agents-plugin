@@ -1,0 +1,7 @@
+<dev>
+    <b>Container Once Retention Strategy</b><br/>
+    For each job in the queue, an own docker container is started. Once the job has finished, the container is shut down.<br/><br/>
+    <b>Container Idle Retention Strategy</b><br/>
+    Based on the workload provided by the queue (load average), new docker containers are started on demand. After the job(s) have finished, the container is not shut down immediately. <br/>
+    If no new job was executed on this slave/container during the period of the Idle delay, the container is shut down.
+</dev>

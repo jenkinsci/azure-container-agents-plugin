@@ -21,11 +21,13 @@
         <jackson.version>2.7.2</jackson.version>
         <jenkins.version>1.653</jenkins.version>
         <java.level>8</java.level>
-        <findbugs.failOnError>true</findbugs.failOnError>
-        <findbugs.excludeFilterFile>findbugs-exclude.xml</findbugs.excludeFilterFile>
+        <findbugs.failOnError>false</findbugs.failOnError>
         <maven.javadoc.skip>true</maven.javadoc.skip>
         <azure-credentials.version>1.2</azure-credentials.version>
         <kubernetes-client.version>2.3.1</kubernetes-client.version>
+        <azure-commons.version>1.0-SNAPSHOT</azure-commons.version>
+        <docker-commons.version>1.3.1</docker-commons.version>
+        <windows-azure-storage.version>0.3.6</windows-azure-storage.version>
     </properties>
 
     <licenses>
@@ -38,18 +40,13 @@
 
     <developers>
         <developer>
-            <id>xianyu</id>
-            <name>Raphael Yu</name>
-            <email>xianyu@microsoft.com</email>
+            <id>azure_devops</id>
+            <name>Azure DevOps Team</name>
+            <email>vscjenkins@microsoft.com</email>
         </developer>
     </developers>
 
     <dependencies>
-        <dependency>
-            <groupId>com.microsoft.azure</groupId>
-            <artifactId>azure-mgmt-resources</artifactId>
-            <version>${azuresdk.version}</version>
-        </dependency>
         <dependency>
             <groupId>com.microsoft.azure</groupId>
             <artifactId>azure</artifactId>
@@ -57,12 +54,10 @@
             <type>jar</type>
         </dependency>
         <dependency>
-            <groupId>com.microsoft.azure</groupId>
-            <artifactId>azure-mgmt-compute</artifactId>
-            <version>${azuresdk.version}</version>
-            <type>jar</type>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>docker-commons</artifactId>
+            <version>${docker-commons.version}</version>
         </dependency>
-
 
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -74,6 +69,11 @@
                     <artifactId>azure</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>windows-azure-storage</artifactId>
+            <version>${windows-azure-storage.version}</version>
         </dependency>
 
         <dependency>
@@ -140,6 +140,16 @@
             <groupId>com.github.cverges.expect4j</groupId>
             <artifactId>expect4j</artifactId>
             <version>1.6</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>azure-commons</artifactId>
+            <version>${azure-commons.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.modules</groupId>
+            <artifactId>instance-identity</artifactId>
+            <version>2.1</version>
         </dependency>
     </dependencies>
 
@@ -210,33 +220,26 @@
                     </signature>
                 </configuration>
             </plugin>
-            <!--<plugin>-->
-                <!--<groupId>org.apache.maven.plugins</groupId>-->
-                <!--<artifactId>maven-checkstyle-plugin</artifactId>-->
-                <!--<version>2.17</version>-->
-                <!--<executions>-->
-                    <!--<execution>-->
-                        <!--<id>validate</id>-->
-                        <!--<phase>validate</phase>-->
-                        <!--<goals>-->
-                            <!--<goal>checkstyle</goal>-->
-                        <!--</goals>-->
-                    <!--</execution>-->
-                <!--</executions>-->
-                <!--<configuration>-->
-                    <!--<configLocation>checkstyle.xml</configLocation>-->
-                    <!--<encoding>UTF-8</encoding>-->
-                    <!--<consoleOutput>true</consoleOutput>-->
-                    <!--<failsOnError>true</failsOnError>-->
-                    <!--&lt;!&ndash;-->
-                    <!--Exclude the generated sources.-->
-
-                    <!--We cannot use pattern like **/generated-sources/**/* here as the generated source directory-->
-                    <!--belongs to the base directory, which the excludes pattern doesn't apply to.-->
-                    <!--&ndash;&gt;-->
-                    <!--<excludes>com/microsoftopentechnologies/windowsazurestorage/Messages.java</excludes>-->
-                <!--</configuration>-->
-            <!--</plugin>-->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>2.17</version>
+                <executions>
+                    <execution>
+                        <id>validate</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>checkstyle</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <configLocation>checkstyle.xml</configLocation>
+                    <encoding>UTF-8</encoding>
+                    <consoleOutput>true</consoleOutput>
+                    <failsOnError>true</failsOnError>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>
