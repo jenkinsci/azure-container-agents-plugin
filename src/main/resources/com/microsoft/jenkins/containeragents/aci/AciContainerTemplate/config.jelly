@@ -23,8 +23,8 @@
     </f:entry>
 
     <f:entry title="${%Private_Registry_Credentials}">
-        <f:repeatableHeteroProperty field="privateRegistryCredentials" hasHeader="true" addCaption="${%Add_Private_Registry_Registry}"
-                                    deleteCaption="${%Delete_Private_Registry_Registry}"/>
+        <f:repeatableHeteroProperty field="privateRegistryCredentials" hasHeader="true" addCaption="${%Add_Private_Registry_Credentials}"
+                                    deleteCaption="${%Delete_Private_Registry_Credentials}"/>
     </f:entry>
 
     <f:entry field="command" title="${%Command}">
