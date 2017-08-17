@@ -3,6 +3,7 @@ package com.microsoft.jenkins.containeragents.aci;
 import com.microsoft.azure.util.AzureCredentials;
 import com.microsoft.jenkins.azurecommons.telemetry.AppInsightsConstants;
 import com.microsoft.jenkins.containeragents.ContainerPlugin;
+import com.microsoft.jenkins.containeragents.strategy.ProvisionRetryStrategy;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.jenkins.containeragents.util.Constants;
@@ -48,6 +49,8 @@ public class AciCloud extends Cloud {
     private transient Azure azure = null;
 
     private static ExecutorService threadPool;
+
+    private transient ProvisionRetryStrategy provisionRetryStrategy = new ProvisionRetryStrategy();
 
     @DataBoundConstructor
     public AciCloud(String name,
@@ -109,6 +112,8 @@ public class AciCloud extends Cloud {
                                     //wait JNLP to online
                                     waitToOnline(agent, template.getTimeout(), stopWatch);
 
+                                    provisionRetryStrategy.success(template.getName());
+
                                     //Send BI
                                     ContainerPlugin.sendEvent(Constants.AI_ACI_AGENT, "Provision", properties);
 
@@ -123,7 +128,7 @@ public class AciCloud extends Cloud {
                                         agent.terminate();
                                     }
 
-                                    template.setAvailable(false);
+                                    provisionRetryStrategy.failure(template.getName());
 
                                     throw new Exception(e);
                                 }
@@ -147,7 +152,7 @@ public class AciCloud extends Cloud {
             LOGGER.log(Level.WARNING, "Cannot provision: template for label {0} not found", label);
             return false;
         }
-        if (!template.getAvailable()) {
+        if (!provisionRetryStrategy.isEnabled(template.getName())) {
             LOGGER.log(Level.WARNING, "Cannot provision: template for label {0} is not available now, "
                     + "because it failed to provision last time. ", label);
             return false;
@@ -205,6 +210,11 @@ public class AciCloud extends Cloud {
             AciCloud.threadPool = Executors.newCachedThreadPool();
         }
         return AciCloud.threadPool;
+    }
+
+    private Object readResolve() {
+        this.provisionRetryStrategy = new ProvisionRetryStrategy();
+        return this;
     }
 
     @Extension
