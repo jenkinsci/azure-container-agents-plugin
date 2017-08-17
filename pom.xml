@@ -74,6 +74,12 @@
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>windows-azure-storage</artifactId>
             <version>${windows-azure-storage.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework</groupId>
+                    <artifactId>spring-context</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
