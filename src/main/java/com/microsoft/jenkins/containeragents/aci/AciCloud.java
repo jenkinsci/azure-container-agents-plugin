@@ -29,6 +29,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -44,6 +46,8 @@ public class AciCloud extends Cloud {
     private List<AciContainerTemplate> templates;
 
     private transient Azure azure = null;
+
+    private static ExecutorService threadPool;
 
     @DataBoundConstructor
     public AciCloud(String name,
@@ -194,6 +198,13 @@ public class AciCloud extends Cloud {
 
     public List<AciContainerTemplate> getTemplates() {
         return templates;
+    }
+
+    public static synchronized ExecutorService getThreadPool() {
+        if (AciCloud.threadPool == null) {
+            AciCloud.threadPool = Executors.newCachedThreadPool();
+        }
+        return AciCloud.threadPool;
     }
 
     @Extension

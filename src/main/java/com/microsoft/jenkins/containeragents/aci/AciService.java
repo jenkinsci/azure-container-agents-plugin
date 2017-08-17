@@ -55,10 +55,15 @@ public final class AciService {
             ObjectNode.class.cast(tmp.get("variables")).put("osType", template.getOsType());
             ObjectNode.class.cast(tmp.get("variables")).put("cpu", template.getCpu());
             ObjectNode.class.cast(tmp.get("variables")).put("memory", template.getMemory());
+            ObjectNode.class.cast(tmp.get("variables")).put("jenkinsInstance",
+                    Jenkins.getInstance().getLegacyInstanceId());
 
             addCommandNode(tmp, mapper, template.getCommand(), agent);
 
             for (AciPort port : template.getPorts()) {
+                if (StringUtils.isBlank(port.getPort())) {
+                    continue;
+                }
                 addPortNode(tmp, mapper, port.getPort());
             }
 
@@ -69,6 +74,11 @@ public final class AciService {
             }
 
             for (AzureFileVolume volume : template.getVolumes()) {
+                if (StringUtils.isBlank(volume.getMountPath())
+                        || StringUtils.isBlank(volume.getShareName())
+                        || StringUtils.isBlank(volume.getCredentialsId())) {
+                    continue;
+                }
                 addAzureFileVolumeNode(tmp, mapper, volume);
             }
 
@@ -170,6 +180,9 @@ public final class AciService {
                 .get("properties").get("containers").get(0).get("properties").get("environmentVariables"));
 
         for (PodEnvVar envVar : envVars) {
+            if (StringUtils.isBlank(envVar.getKey())) {
+                continue;
+            }
             ObjectNode newCredentialNode = mapper.createObjectNode();
             newCredentialNode.put("name", envVar.getKey());
             newCredentialNode.put("value", envVar.getValue());
