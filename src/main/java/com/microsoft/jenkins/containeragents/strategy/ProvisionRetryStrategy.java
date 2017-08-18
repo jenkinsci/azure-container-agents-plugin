@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ProvisionRetryStrategy {
-    private static final int MAX_INTERVAL = 600;    // 10 minutes
+    private static final int MAX_INTERVAL = 10 * 60 * 1000;    // 10 minutes
     private Map<String, Record> records = new HashMap<>();
 
     public void failure(String name) {
@@ -12,11 +12,12 @@ public class ProvisionRetryStrategy {
         if (record == null) {
             record = new Record();
             records.put(name, record);
+        } else {
+            int nextInterval = record.getInterval();
+            nextInterval = (nextInterval * 2 > MAX_INTERVAL) ? MAX_INTERVAL : nextInterval * 2;
+            record.setInterval(nextInterval);
         }
         record.setLastFail(System.currentTimeMillis());
-        int nextInterval = record.getInterval();
-        nextInterval = (nextInterval * 2 > MAX_INTERVAL) ? MAX_INTERVAL : nextInterval * 2;
-        record.setInterval(nextInterval);
     }
 
     public void success(String name) {
@@ -32,11 +33,19 @@ public class ProvisionRetryStrategy {
     }
 
     public boolean isEnabled(String name) {
-        return System.currentTimeMillis() > getNextRetryTime(name);
+        return isEnabled(name, System.currentTimeMillis());
+    }
+
+    public boolean isEnabled(String name, long now) {
+        return now >= getNextRetryTime(name);
+    }
+
+    Map<String, Record> getRecords() {
+        return records;
     }
 
     public static class Record {
-        private static final int INITIAL_INTERVAL = 5;
+        private static final int INITIAL_INTERVAL = 5 * 1000;   // 5 sec.
         private long lastFail;
         private int interval = INITIAL_INTERVAL;
 
