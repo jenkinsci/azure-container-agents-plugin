@@ -46,7 +46,7 @@ public class AciCleanTask extends AsyncPeriodicWork {
             return;
         }
 
-        Set<String> validVmSet = getValidVm();
+        Set<String> validContainerSet = getValidContainer();
 
         List<GenericResource> resourceList = azureClient.genericResources().listByResourceGroup(resourceGroup);
         for (GenericResource resource : resourceList) {
@@ -55,7 +55,7 @@ public class AciCleanTask extends AsyncPeriodicWork {
                     && resource.tags().containsKey("JenkinsInstance")
                     && resource.tags().get("JenkinsInstance")
                         .equalsIgnoreCase(Jenkins.getInstance().getLegacyInstanceId())) {
-                if (!validVmSet.contains(resource.name())) {
+                if (!validContainerSet.contains(resource.name())) {
                     AciCloud.getThreadPool().submit(() -> AciService.deleteAciContainerGroup(credentialsId,
                             resourceGroup,
                             resource.name(),
@@ -65,7 +65,7 @@ public class AciCleanTask extends AsyncPeriodicWork {
         }
     }
 
-    private Set<String> getValidVm() {
+    private Set<String> getValidContainer() {
         Set<String> result = new TreeSet<>();
         if (Jenkins.getInstance() != null) {
             for (Computer computer : Jenkins.getInstance().getComputers()) {
