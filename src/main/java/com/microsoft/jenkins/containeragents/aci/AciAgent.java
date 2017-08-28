@@ -15,6 +15,7 @@ import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.StaplerRequest;
 
 import java.io.IOException;
@@ -82,6 +83,7 @@ public class AciAgent extends AbstractCloudSlave {
         return AzureContainerUtils.generateName(template.getName(), Constants.ACI_RANDOM_NAME_LENGTH);
     }
 
+    @DataBoundSetter
     public void setDeployName(String deployName) {
         this.deployName = deployName;
     }

@@ -8,13 +8,17 @@
     "containerImage": "",
     "cpu": "",
     "memory": "",
-    "osType": ""
+    "osType": "",
+    "jenkinsInstance": ""
   },
   "resources": [
     {
       "name": "[variables('containerName')]",
       "type": "Microsoft.ContainerInstance/containerGroups",
       "apiVersion": "2017-08-01-preview",
+      "tags": {
+        "JenkinsInstance": "[variables('jenkinsInstance')]"
+      },
       "location": "[resourceGroup().location]",
       "properties": {
         "containers": [
