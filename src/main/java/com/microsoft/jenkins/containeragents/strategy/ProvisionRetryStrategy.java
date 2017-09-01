@@ -2,12 +2,13 @@ package com.microsoft.jenkins.containeragents.strategy;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class ProvisionRetryStrategy {
     private static final int MAX_INTERVAL = 10 * 60 * 1000;    // 10 minutes
-    private Map<String, Record> records = new HashMap<>();
+    private Map<String, Record> records = new ConcurrentHashMap<>();
 
-    public void failure(String name) {
+    public synchronized void failure(String name) {
         Record record = records.get(name);
         if (record == null) {
             record = new Record();
@@ -20,7 +21,7 @@ public class ProvisionRetryStrategy {
         record.setLastFail(System.currentTimeMillis());
     }
 
-    public void success(String name) {
+    public synchronized void success(String name) {
         records.remove(name);
     }
 
