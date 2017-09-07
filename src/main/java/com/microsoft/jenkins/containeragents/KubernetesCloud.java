@@ -10,6 +10,7 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.microsoft.jenkins.containeragents.helper.AzureContainerServiceCredentials;
+import com.microsoft.jenkins.containeragents.strategy.ProvisionRetryStrategy;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
 import com.microsoft.jenkins.containeragents.util.Constants;
 import com.microsoft.azure.management.Azure;
@@ -86,6 +87,8 @@ public class KubernetesCloud extends Cloud {
     private static ExecutorService threadPool;
 
     private transient KubernetesClient client;
+
+    private transient ProvisionRetryStrategy provisionRetryStrategy = new ProvisionRetryStrategy();
 
     @DataBoundConstructor
     public KubernetesCloud(String name) {
@@ -188,6 +191,7 @@ public class KubernetesCloud extends Cloud {
                     Thread.sleep(retryInterval);
                 }
 
+                provisionRetryStrategy.success(template.getName());
                 ContainerPlugin.sendEvent(Constants.AI_CONTAINER_AGENT, "Provision", properties);
 
                 return slave;
@@ -206,6 +210,7 @@ public class KubernetesCloud extends Cloud {
                         LOGGER.log(Level.WARNING, "Error in cleaning up the slave node " + slave.getNodeName(), e);
                     }
                 }
+                provisionRetryStrategy.failure(template.getName());
                 throw new RuntimeException(ex);
             }
         }
@@ -240,7 +245,8 @@ public class KubernetesCloud extends Cloud {
 
     @Override
     public boolean canProvision(Label label) {
-        return findFirstPodTemplateBy(label) != null;
+        final PodTemplate template = findFirstPodTemplateBy(label);
+        return template != null && provisionRetryStrategy.isEnabled(template.getName());
     }
 
     public PodTemplate findFirstPodTemplateBy(Label label) {
@@ -357,6 +363,11 @@ public class KubernetesCloud extends Cloud {
 
     public KubernetesClient getClient() {
         return client;
+    }
+
+    private Object readResolve() {
+        this.provisionRetryStrategy = new ProvisionRetryStrategy();
+        return this;
     }
 
     @Extension
