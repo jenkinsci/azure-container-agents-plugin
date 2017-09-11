@@ -78,6 +78,10 @@ public class KubernetesCloudBuilder {
         return new PodTemplateNested();
     }
 
+    public PodTemplateNested addNewTemplateLike(PodTemplate template) {
+        return new PodTemplateNested(template);
+    }
+
     //CHECKSTYLE:ON
 
     public KubernetesCloud build() {
@@ -98,6 +102,10 @@ public class KubernetesCloudBuilder {
 
         PodTemplateNested() {
             this.builder = new PodTemplateBuilder(this);
+        }
+
+        PodTemplateNested(PodTemplate template) {
+            this.builder = new PodTemplateBuilder(this, template);
         }
 
         public KubernetesCloudBuilder endTemplate() {

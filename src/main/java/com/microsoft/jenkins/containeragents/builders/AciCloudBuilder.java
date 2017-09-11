@@ -45,6 +45,10 @@ public class AciCloudBuilder {
     public AciContainerTemplateNested addNewTemplate() {
         return new AciContainerTemplateNested();
     }
+
+    public AciContainerTemplateNested addNewTemplateLike(AciContainerTemplate template) {
+        return new AciContainerTemplateNested(template);
+    }
     //CHECKSTYLE:ON
 
     public AciCloud build() {
@@ -57,6 +61,10 @@ public class AciCloudBuilder {
 
         public AciContainerTemplateNested() {
             this.builder = new AciContainerTemplateBuilder(this);
+        }
+
+        public AciContainerTemplateNested(AciContainerTemplate template) {
+            this.builder = new AciContainerTemplateBuilder(this, template);
         }
 
         public AciCloudBuilder endTemplate() {

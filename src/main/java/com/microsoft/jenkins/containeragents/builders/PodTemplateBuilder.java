@@ -2,6 +2,7 @@ package com.microsoft.jenkins.containeragents.builders;
 
 
 import com.microsoft.jenkins.containeragents.PodTemplate;
+import com.microsoft.jenkins.containeragents.strategy.ContainerIdleRetentionStrategy;
 
 public class PodTemplateBuilder extends PodTemplateFluent<PodTemplateBuilder> {
 
@@ -11,8 +12,62 @@ public class PodTemplateBuilder extends PodTemplateFluent<PodTemplateBuilder> {
         this.fluent = this;
     }
 
+    public PodTemplateBuilder(PodTemplate template) {
+        this.fluent = this;
+        this.fluent.withName(template.getName());
+        this.fluent.withDescription(template.getDescription());
+        this.fluent.withImage(template.getImage());
+        this.fluent.withCommand(template.getCommand());
+        this.fluent.withArgs(template.getArgs());
+        this.fluent.withLabel(template.getLabel());
+        this.fluent.withRootFs(template.getRootFs());
+        if (template.getRetentionStrategy() instanceof ContainerIdleRetentionStrategy) {
+            this.fluent.withIdleRetentionStrategy(((ContainerIdleRetentionStrategy) template.getRetentionStrategy())
+                    .getIdleMinutes());
+        } else {
+            this.fluent.withOnceRetentionStrategy();
+        }
+        this.fluent.withPrivileged(template.getPrivileged());
+        this.fluent.withSpecifyNode(template.getSpecifyNode());
+        this.fluent.withRequestCpu(template.getRequestCpu());
+        this.fluent.withRequestMemory(template.getRequestMemory());
+        this.fluent.withLimitCpu(template.getLimitCpu());
+        this.fluent.withLimitMemory(template.getLimitMemory());
+        this.fluent.withEnvVars(template.getEnvVars());
+        this.fluent.withVolumes(template.getVolumes());
+        this.fluent.withImagePullSecrets(template.getImagePullSecrets());
+        this.fluent.withPrivateRegistryCredentials(template.getPrivateRegistryCredentials());
+    }
+
     public PodTemplateBuilder(PodTemplateFluent<?> fluent) {
         this.fluent = fluent;
+    }
+
+    public PodTemplateBuilder(PodTemplateFluent<?> fluent, PodTemplate template) {
+        this.fluent = fluent;
+        this.fluent.withName(template.getName());
+        this.fluent.withDescription(template.getDescription());
+        this.fluent.withImage(template.getImage());
+        this.fluent.withCommand(template.getCommand());
+        this.fluent.withArgs(template.getArgs());
+        this.fluent.withLabel(template.getLabel());
+        this.fluent.withRootFs(template.getRootFs());
+        if (template.getRetentionStrategy() instanceof ContainerIdleRetentionStrategy) {
+            this.fluent.withIdleRetentionStrategy(((ContainerIdleRetentionStrategy) template.getRetentionStrategy())
+                    .getIdleMinutes());
+        } else {
+            this.fluent.withOnceRetentionStrategy();
+        }
+        this.fluent.withPrivileged(template.getPrivileged());
+        this.fluent.withSpecifyNode(template.getSpecifyNode());
+        this.fluent.withRequestCpu(template.getRequestCpu());
+        this.fluent.withRequestMemory(template.getRequestMemory());
+        this.fluent.withLimitCpu(template.getLimitCpu());
+        this.fluent.withLimitMemory(template.getLimitMemory());
+        this.fluent.withEnvVars(template.getEnvVars());
+        this.fluent.withVolumes(template.getVolumes());
+        this.fluent.withImagePullSecrets(template.getImagePullSecrets());
+        this.fluent.withPrivateRegistryCredentials(template.getPrivateRegistryCredentials());
     }
 
     public PodTemplate build() {

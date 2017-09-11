@@ -91,6 +91,30 @@ def myCloud = new KubernetesCloudBuilder()
 
 Jenkins.getInstance().clouds.add(myCloud);
 ```
+```groovy
+//inherit template from existing template
+import com.microsoft.jenkins.containeragents.builders.*
+
+def baseTemplate = new PodTemplateBuilder()
+.withImage("privateImage")
+.addNewImagePullSecret("yourSecret")
+.addNewEnvVar("key", "value")
+.build();
+
+def myCloud = new KubernetesCloudBuilder()
+.withCloudName("mycloud")
+.withAzureCredentialsId("<Azure Credentials Id>")
+.withResourceGroup("myResourceGroup")
+.withServiceName("myServiceName")
+.withAcsCredentialsId("<ACS Credentials Id>")
+.addNewTemplateLike(baseTemplate)
+    .withName("mytemplate")
+    .withLabel("k8s")
+.endTemplate()
+.build();
+
+Jenkins.getInstance().clouds.add(myCloud);
+```
 
 ## Azure Container Instance
 
@@ -138,4 +162,27 @@ def myCloud = new AciCloudBuilder()
 
 Jenkins.getInstance().clouds.add(myCloud);
 ```
+```groovy
+//inherit template from existing template
+import com.microsoft.jenkins.containeragents.builders.*
+
+def baseTemplate = new AciContainerTemplateBuilder()
+.withImage("privateImage")
+.addNewPort("80")
+.addNewEnvVar("key", "value")
+.build();
+
+def myCloud = new AciCloudBuilder()
+.withCloudName("mycloud")
+.withAzureCredentialsId("<Your Credentials Id>")
+.withResourceGroup("myResourceGroup")
+.addNewTemplateLike(baseTemplate)
+    .withName("mytemplate")
+    .withLabel("aci")
+.endTemplate()
+.build();
+
+Jenkins.getInstance().clouds.add(myCloud);
+```
+
 

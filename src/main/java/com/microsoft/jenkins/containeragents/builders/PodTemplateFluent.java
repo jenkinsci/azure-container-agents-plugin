@@ -140,6 +140,12 @@ public class PodTemplateFluent<T extends PodTemplateFluent<T>> {
         return (T) this;
     }
 
+    public T withEnvVars(List<PodEnvVar> envVars) {
+        this.envVars.clear();
+        this.envVars.addAll(envVars);
+        return (T) this;
+    }
+
     public T addToEnvVars(PodEnvVar... envVars) {
         this.envVars.addAll(Arrays.asList(envVars));
         return (T) this;
@@ -147,6 +153,12 @@ public class PodTemplateFluent<T extends PodTemplateFluent<T>> {
 
     public T addNewEnvVar(String key, String value) {
         this.envVars.add(new PodEnvVar(key, value));
+        return (T) this;
+    }
+
+    public T withVolumes(List<PodVolume> volumes) {
+        this.volumes.clear();
+        this.volumes.addAll(volumes);
         return (T) this;
     }
 
@@ -185,6 +197,12 @@ public class PodTemplateFluent<T extends PodTemplateFluent<T>> {
         return (T) this;
     }
 
+    public T withImagePullSecrets(List<PodImagePullSecrets> imagePullSecrets) {
+        this.imagePullSecrets.clear();
+        this.imagePullSecrets.addAll(imagePullSecrets);
+        return (T) this;
+    }
+
     public T addToImagePullSecrets(PodImagePullSecrets... imagePullSecrets) {
         this.imagePullSecrets.addAll(Arrays.asList(imagePullSecrets));
         return (T) this;
@@ -192,6 +210,12 @@ public class PodTemplateFluent<T extends PodTemplateFluent<T>> {
 
     public T addNewImagePullSecret(String secretName) {
         this.imagePullSecrets.add(new PodImagePullSecrets(secretName));
+        return (T) this;
+    }
+
+    public T withPrivateRegistryCredentials(List<DockerRegistryEndpoint> privateRegistryCredentials) {
+        this.privateRegistryCredentials.clear();
+        this.privateRegistryCredentials.addAll(privateRegistryCredentials);
         return (T) this;
     }
 

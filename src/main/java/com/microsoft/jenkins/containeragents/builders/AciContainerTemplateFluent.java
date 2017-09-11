@@ -89,6 +89,12 @@ public class AciContainerTemplateFluent<T extends AciContainerTemplateFluent<T>>
         return (T) this;
     }
 
+    public T withPorts(List<AciPort> ports) {
+        this.ports.clear();
+        this.ports.addAll(ports);
+        return (T) this;
+    }
+
     public T addToPorts(AciPort... ports) {
         this.ports.addAll(Arrays.asList(ports));
         return (T) this;
@@ -119,6 +125,12 @@ public class AciContainerTemplateFluent<T extends AciContainerTemplateFluent<T>>
         return (T) this;
     }
 
+    public T withEnvVars(List<PodEnvVar> envVars) {
+        this.envVars.clear();
+        this.envVars.addAll(envVars);
+        return (T) this;
+    }
+
     public T addToEnvVars(PodEnvVar... envVars) {
         this.envVars.addAll(Arrays.asList(envVars));
         return (T) this;
@@ -129,6 +141,12 @@ public class AciContainerTemplateFluent<T extends AciContainerTemplateFluent<T>>
         return (T) this;
     }
 
+    public T withPrivateRegistryCredentials(List<DockerRegistryEndpoint> privateRegistryCredentials) {
+        this.privateRegistryCredentials.clear();
+        this.privateRegistryCredentials.addAll(privateRegistryCredentials);
+        return (T) this;
+    }
+
     public T addToPrivateRegistryCredentials(DockerRegistryEndpoint... privateRegistryCredentials) {
         this.privateRegistryCredentials.addAll(Arrays.asList(privateRegistryCredentials));
         return (T) this;
@@ -136,6 +154,12 @@ public class AciContainerTemplateFluent<T extends AciContainerTemplateFluent<T>>
 
     public T addNewPrivateRegistryCredential(String registryUrl, String credentialsId) {
         this.privateRegistryCredentials.add(new DockerRegistryEndpoint(registryUrl, credentialsId));
+        return (T) this;
+    }
+
+    public T withVolume(List<AzureFileVolume> volumes) {
+        this.volumes.clear();
+        this.volumes.addAll(volumes);
         return (T) this;
     }
 
