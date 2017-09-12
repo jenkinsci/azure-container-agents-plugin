@@ -21,8 +21,8 @@
 
     <f:advanced>
         <f:entry title="${%Private_Registry_Credentials}">
-            <f:repeatableHeteroProperty field="privateRegistryCredentials" hasHeader="true" addCaption="${%Add_Private_Registry_Registry}"
-                                    deleteCaption="${%Delete_Private_Registry_Registry}"/>
+            <f:repeatableHeteroProperty field="privateRegistryCredentials" hasHeader="false" addCaption="${%Add_Private_Registry_Credential}"
+                                    deleteCaption="${%Delete_Private_Registry_Credential}"/>
         </f:entry>
     </f:advanced>
 
