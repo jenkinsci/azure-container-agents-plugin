@@ -71,6 +71,50 @@ Please note this software is experimental and should not be used for anything re
 
 Only very few configurations are supported now.
 
+## Configure Azure Container Service (Kubernetes) via Groovy Script
+If you want to configure Azure Container Service (Kubernetes) via script rather than manually configure it in UI.
+You can use the sample below in Manage Jenkins -> Script Console. The sample only contains a few of arguments. Find all the arguments in folder [builders](src/main/java/com/microsoft/jenkins/containeragents/builders/).
+```groovy
+import com.microsoft.jenkins.containeragents.builders.*
+
+def myCloud = new KubernetesCloudBuilder()
+.withCloudName("mycloud")
+.withAzureCredentialsId("<Azure Credentials Id>")
+.withResourceGroup("myResourceGroup")
+.withServiceName("myServiceName")
+.withAcsCredentialsId("<ACS Credentials Id>")
+.addNewTemplate()
+    .withName("mytemplate")
+    .withLabel("k8s")
+.endTemplate()
+.build();
+
+Jenkins.getInstance().clouds.add(myCloud);
+```
+```groovy
+//inherit template from existing template
+import com.microsoft.jenkins.containeragents.builders.*
+
+def baseTemplate = new PodTemplateBuilder()
+.withImage("privateImage")
+.addNewImagePullSecret("yourSecret")
+.addNewEnvVar("key", "value")
+.build();
+
+def myCloud = new KubernetesCloudBuilder()
+.withCloudName("mycloud")
+.withAzureCredentialsId("<Azure Credentials Id>")
+.withResourceGroup("myResourceGroup")
+.withServiceName("myServiceName")
+.withAcsCredentialsId("<ACS Credentials Id>")
+.addNewTemplateLike(baseTemplate)
+    .withName("mytemplate")
+    .withLabel("k8s")
+.endTemplate()
+.build();
+
+Jenkins.getInstance().clouds.add(myCloud);
+```
 
 ## Azure Container Instance
 
@@ -97,5 +141,48 @@ Only very few configurations are supported now.
 8. Add `Ports`, `Environment Variables` and `Volumes`
 9. Choose a retention strategy. You can get details in help.
 10. Specify `Cpu Requirement` and `Memory Requirement`, ACI containers costs per second. Find more detail in [Price Details](https://azure.microsoft.com/en-us/pricing/details/container-instances/).
+
+## Configure Azure Container Instance via Groovy Script
+If you want to configure Azure Container Instance via script rather than manually configure it in UI.
+You can use the sample below in Manage Jenkins -> Script Console. The sample only contains a few of arguments. Find all the arguments in folder [builders](src/main/java/com/microsoft/jenkins/containeragents/builders/).
+```groovy
+import com.microsoft.jenkins.containeragents.builders.*
+
+def myCloud = new AciCloudBuilder()
+.withCloudName("mycloud")
+.withAzureCredentialsId("<Your Credentials Id>")
+.withResourceGroup("myResourceGroup")
+.addNewTemplate()
+    .withName("mytemplate")
+    .withLabel("aci")
+    .addNewPort("80")
+    .addNewEnvVar("key","value")
+.endTemplate()
+.build();
+
+Jenkins.getInstance().clouds.add(myCloud);
+```
+```groovy
+//inherit template from existing template
+import com.microsoft.jenkins.containeragents.builders.*
+
+def baseTemplate = new AciContainerTemplateBuilder()
+.withImage("privateImage")
+.addNewPort("80")
+.addNewEnvVar("key", "value")
+.build();
+
+def myCloud = new AciCloudBuilder()
+.withCloudName("mycloud")
+.withAzureCredentialsId("<Your Credentials Id>")
+.withResourceGroup("myResourceGroup")
+.addNewTemplateLike(baseTemplate)
+    .withName("mytemplate")
+    .withLabel("aci")
+.endTemplate()
+.build();
+
+Jenkins.getInstance().clouds.add(myCloud);
+```
 
 
