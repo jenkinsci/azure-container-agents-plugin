@@ -1,6 +1,6 @@
-# Azure Container Agent Plugin
+# Azure Container Agents Plugin
 
-Azure Container Agent Plugin can help you to run a container as an agent in Jenkins
+Azure Container Agents Plugin can help you to run a container as an agent in Jenkins
 
 We have two different orchestrators:
 * Azure Container Service (Kubernetes)
