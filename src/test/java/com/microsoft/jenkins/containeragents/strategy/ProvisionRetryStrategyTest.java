@@ -20,7 +20,7 @@ public class ProvisionRetryStrategyTest {
     @Test
     public void testSuccess() {
         final String templateName = "TEMPLATE1";
-        strategy.getRecords().put(templateName, null);
+        strategy.getRecords().put(templateName, new ProvisionRetryStrategy.Record());
         Assert.assertTrue(strategy.getRecords().containsKey(templateName));
         strategy.success(templateName);
         Assert.assertFalse(strategy.getRecords().containsKey(templateName));

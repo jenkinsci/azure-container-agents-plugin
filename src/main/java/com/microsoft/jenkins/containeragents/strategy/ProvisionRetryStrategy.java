@@ -1,6 +1,5 @@
 package com.microsoft.jenkins.containeragents.strategy;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
