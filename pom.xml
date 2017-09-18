@@ -10,7 +10,7 @@
     <artifactId>azure-container-agents</artifactId>
     <version>0.1.0-SNAPSHOT</version>
     <packaging>hpi</packaging>
-    <name>Azure Container Agents</name>
+    <name>Azure Container Agents Plugin</name>
     <description>Provisions agents on Azure Container Service</description>
     <url>https://wiki.jenkins-ci.org/display/JENKINS/Azure+VM+Agents+Plugin</url>
 
@@ -32,8 +32,8 @@
 
     <licenses>
         <license>
-            <name>The Apache Software License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <name>MIT License</name>
+            <url>http://www.opensource.org/licenses/mit-license.php</url>
             <distribution>repo</distribution>
         </license>
     </licenses>
@@ -191,6 +191,16 @@
     </pluginRepositories>
 
     <build>
+        <resources>
+            <resource>
+                <directory>${project.basedir}</directory>
+                <includes>
+                    <include>EULA.txt</include>
+                    <include>LICENSE</include>
+                    <include>ThirdPartyNotices.txt</include>
+                </includes>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.jenkins-ci.tools</groupId>
