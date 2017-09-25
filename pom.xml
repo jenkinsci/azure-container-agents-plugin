@@ -19,7 +19,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <azuresdk.version>1.1.0</azuresdk.version>
         <jackson.version>2.7.2</jackson.version>
-        <jenkins.version>1.653</jenkins.version>
+        <jenkins.version>1.651.3</jenkins.version>
         <java.level>8</java.level>
         <findbugs.failOnError>false</findbugs.failOnError>
         <maven.javadoc.skip>true</maven.javadoc.skip>
