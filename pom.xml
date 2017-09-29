@@ -194,9 +194,9 @@
             <resource>
                 <directory>${project.basedir}</directory>
                 <includes>
-                    <include>EULA.txt</include>
+                    <include>RuntimeLicenses/License.txt</include>
+                    <include>RuntimeLicenses/ThirdPartyNotices.txt</include>
                     <include>LICENSE</include>
-                    <include>ThirdPartyNotices.txt</include>
                 </includes>
             </resource>
             <resource>
