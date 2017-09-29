@@ -19,6 +19,7 @@
         <azuresdk.version>1.1.0</azuresdk.version>
         <jackson.version>2.7.2</jackson.version>
         <jenkins.version>1.651.3</jenkins.version>
+        <guava.version>20.0</guava.version>
         <java.level>8</java.level>
         <findbugs.failOnError>false</findbugs.failOnError>
         <maven.javadoc.skip>true</maven.javadoc.skip>
@@ -46,6 +47,11 @@
     </developers>
 
     <dependencies>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
+        </dependency>
         <dependency>
             <groupId>com.microsoft.azure</groupId>
             <artifactId>azure</artifactId>
