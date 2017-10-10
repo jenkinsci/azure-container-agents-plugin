@@ -267,7 +267,7 @@ public class KubernetesCloud extends Cloud {
 
             boolean result = client.pods().inNamespace(namespace).withName(podName).delete();
 
-            ContainerPlugin.sendEvent(Constants.AI_CONTAINER_AGENT, "DeletedFailed", properties);
+            ContainerPlugin.sendEvent(Constants.AI_CONTAINER_AGENT, "Deleted", properties);
 
             if (result) {
                 LOGGER.log(Level.INFO, "Terminated Kubernetes instance for slave {0}", podName);
