@@ -14,7 +14,6 @@ import com.microsoft.jenkins.containeragents.strategy.ContainerOnceRetentionStra
 import com.microsoft.jenkins.containeragents.util.Constants;
 import com.microsoft.jenkins.containeragents.util.DockerConfigBuilder;
 import com.microsoft.jenkins.containeragents.volumes.PodVolume;
-import com.microsoft.azure.management.compute.ContainerService;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.RelativePath;
@@ -48,7 +47,6 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -58,13 +56,11 @@ import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static com.microsoft.jenkins.containeragents.KubernetesService.getContainerService;
 
 
-public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements Serializable {
+public class PodTemplate extends AbstractDescribableImpl<PodTemplate> {
     private static final Logger LOGGER = Logger.getLogger(PodTemplate.class.getName());
 
-    private static final long serialVersionUID = 640431693814718337L;
 
     private String name;
 
@@ -451,29 +447,32 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> implements
             if (StringUtils.isBlank(azureCredentialsId)
                     || StringUtils.isBlank(resourceGroup)
                     || StringUtils.isBlank(serviceName)
-                    || StringUtils.isBlank(namespace)
-                    || StringUtils.isBlank(acsCredentialsId)) {
+                    || StringUtils.isBlank(namespace)) {
                 return listBoxModel;
             }
 
-            ContainerService containerService = getContainerService(azureCredentialsId, resourceGroup, serviceName);
-            //When changing resource group, serviceName may delay. Mismatching will lead containerService to null.
-            if (containerService == null) {
-                return listBoxModel;
-            }
-
-            String masterFqdn = containerService.masterFqdn();
-            try (KubernetesClient client = KubernetesService.connect(masterFqdn, namespace, acsCredentialsId)) {
+            try (KubernetesClient client = KubernetesService.getKubernetesClient(azureCredentialsId,
+                    resourceGroup,
+                    serviceName,
+                    namespace,
+                    acsCredentialsId)) {
                 List<Node> nodeList = client.nodes().list().getItems();
                 for (Node node : nodeList) {
-                    if (!node.getMetadata().getLabels().get(Constants.NODE_ROLE).equals(Constants.NODE_MASTER)) {
+                    Map<String, String> labels = node.getMetadata().getLabels();
+                    if (labels.containsKey(Constants.NODE_ROLE)
+                            && !labels.get(Constants.NODE_ROLE).equals(Constants.NODE_MASTER)) {
+                        listBoxModel.add(node.getMetadata().getName());
+                    } else if (labels.containsKey(Constants.NODE_ROLE_AKS)
+                            && !labels.get(Constants.NODE_ROLE_AKS).equals(Constants.NODE_MASTER)) {
                         listBoxModel.add(node.getMetadata().getName());
                     }
                 }
-                return listBoxModel;
+            } catch (NullPointerException e) {
+                LOGGER.log(Level.INFO, "Specify Node: Cannot list nodes", e);
             } catch (Exception e) {
-                return listBoxModel;
+
             }
+            return listBoxModel;
         }
     }
 }

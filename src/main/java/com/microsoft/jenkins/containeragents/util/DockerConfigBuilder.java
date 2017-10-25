@@ -13,6 +13,7 @@ import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryToken;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -24,10 +25,14 @@ import static com.cloudbees.plugins.credentials.CredentialsMatchers.withId;
  * Builds docker configuration for use of private repository authentication.
  */
 public class DockerConfigBuilder {
-    private final List<DockerRegistryEndpoint> endpoints;
+    private final List<DockerRegistryEndpoint> endpoints = new ArrayList<>();
 
     public DockerConfigBuilder(final List<DockerRegistryEndpoint> credentials) {
-        this.endpoints = credentials;
+        endpoints.clear();
+        for (DockerRegistryEndpoint credential : credentials) {
+            endpoints.add(new DockerRegistryEndpoint(DockerRegistryUtils.formatUrlToWithProtocal(credential.getUrl()),
+                    credential.getCredentialsId()));
+        }
     }
 
 

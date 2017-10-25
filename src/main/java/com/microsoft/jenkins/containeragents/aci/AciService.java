@@ -15,6 +15,7 @@ import com.microsoft.jenkins.containeragents.aci.volumes.AzureFileVolume;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.management.resources.Deployment;
 import com.microsoft.azure.management.resources.DeploymentMode;
+import com.microsoft.jenkins.containeragents.util.DockerRegistryUtils;
 import hudson.EnvVars;
 import hudson.security.ACL;
 import jenkins.model.Jenkins;
@@ -23,6 +24,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -44,11 +46,13 @@ public final class AciService {
                                         final AciAgent agent,
                                         final StopWatch stopWatch) throws Exception {
         String deployName = getDeploymentName(template);
+        InputStream stream = null;
         try {
             final Azure azureClient = cloud.getAzureClient();
 
             final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode tmp = mapper.readTree(AciService.class.getResourceAsStream(DEPLOY_TEMPLATE_FILENAME));
+            stream = AciService.class.getResourceAsStream(DEPLOY_TEMPLATE_FILENAME);
+            final JsonNode tmp = mapper.readTree(stream);
 
             ObjectNode.class.cast(tmp.get("variables")).put("containerName", agent.getNodeName());
             ObjectNode.class.cast(tmp.get("variables")).put("containerImage", template.getImage());
@@ -116,6 +120,10 @@ public final class AciService {
             }
         } catch (Exception e) {
             throw new Exception(e.getMessage());
+        } finally {
+            if (stream != null) {
+                stream.close();
+            }
         }
     }
 
@@ -168,7 +176,7 @@ public final class AciService {
         ObjectNode newCredentialNode = mapper.createObjectNode();
         newCredentialNode.put("server", StringUtils.isBlank(endpoint.getUrl())
                 ? "index.docker.io"
-                : endpoint.getUrl());
+                : DockerRegistryUtils.formatUrlToWithoutProtocal(endpoint.getUrl()));
         newCredentialNode.put("username", credentials.getUsername());
         newCredentialNode.put("password", credentials.getPassword().getPlainText());
 
@@ -230,10 +238,11 @@ public final class AciService {
                                                String resourceGroup,
                                                String containerGroupName,
                                                String deployName) {
-        final Azure azureClient = AzureContainerUtils.getAzureClient(credentialsId);
+        Azure azureClient = null;
         final Map<String, String> properties = new HashMap<>();
 
         try {
+            azureClient = AzureContainerUtils.getAzureClient(credentialsId);
             azureClient.genericResources().delete(resourceGroup,
                     "Microsoft.ContainerInstance",
                     "",

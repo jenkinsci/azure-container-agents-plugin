@@ -46,7 +46,7 @@ public class AciCloud extends Cloud {
 
     private List<AciContainerTemplate> templates;
 
-    private transient Azure azure = null;
+    private transient volatile Azure azure = null;
 
     private static ExecutorService threadPool;
 
@@ -63,7 +63,7 @@ public class AciCloud extends Cloud {
         this.templates = templates;
     }
 
-    public Azure getAzureClient() {
+    public Azure getAzureClient() throws Exception {
         if (azure == null) {
             synchronized (this) {
                 if (azure == null) {
@@ -149,7 +149,6 @@ public class AciCloud extends Cloud {
     public boolean canProvision(Label label) {
         AciContainerTemplate template = getFirstTemplate(label);
         if (template == null) {
-            LOGGER.log(Level.WARNING, "Cannot provision: template for label {0} not found", label);
             return false;
         }
         if (!provisionRetryStrategy.isEnabled(template.getName())) {

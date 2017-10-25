@@ -6,6 +6,8 @@ public final class Constants {
 
     public static final String NODE_ROLE = "role";
 
+    public static final String NODE_ROLE_AKS = "kubernetes.io/role";
+
     public static final String AI_CONTAINER_AGENT = "ContainerAgent";
 
     public static final String AI_CONTAINER_NAME = "AcsContainerName";
@@ -30,7 +32,17 @@ public final class Constants {
 
     public static final int ACI_VOLUME_NAME_LENGTH = 3;
 
+    public static final String AKS_NAMESPACE = "Microsoft.ContainerService";
 
+    public static final String AKS_RESOURCE_TYPE = "managedClusters";
+
+    public static final String ACS_NAMESPACE = "Microsoft.ContainerService";
+
+    public static final String ACS_RESOURCE_TYPE = "containerServices";
+
+    public static final String CONTAINER_SERVICE_TYPE_ACS = "acs";
+
+    public static final String CONTAINER_SERVICE_TYPE_AKS = "aks";
 
     private Constants() {
 
