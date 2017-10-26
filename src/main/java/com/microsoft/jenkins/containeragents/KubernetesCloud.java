@@ -448,29 +448,20 @@ public class KubernetesCloud extends Cloud {
                 return FormValidation.error("Configurations cannot be empty");
             }
             String masterFqdn = null;
-            KubernetesClient client = null;
-            try {
-                client = KubernetesService.getKubernetesClient(azureCredentialsId,
+            try (KubernetesClient client = KubernetesService.getKubernetesClient(azureCredentialsId,
                         resourceGroup,
                         serviceName,
                         namespace,
-                        acsCredentialsId);
+                        acsCredentialsId)) {
                 masterFqdn = client.getMasterUrl().toString();
-            } catch (Exception e) {
-                return FormValidation.ok(Messages.Container_Service_Get_Failed(serviceName, e));
-            }
-
-            try {
-                client.pods().list();
-                return FormValidation.ok("Connect to %s successfully", client.getMasterUrl());
-            } catch (KubernetesClientException e) {
-                return FormValidation.error("Connect to %s failed", masterFqdn);
+                try {
+                    client.pods().list();
+                    return FormValidation.ok("Connect to %s successfully", client.getMasterUrl());
+                } catch (KubernetesClientException e) {
+                    return FormValidation.error("Connect to %s failed", masterFqdn);
+                }
             } catch (Exception e) {
                 return FormValidation.error("Connect to %s failed: %s", masterFqdn, e.getMessage());
-            } finally {
-                if (client != null) {
-                    client.close();
-                }
             }
         }
     }
