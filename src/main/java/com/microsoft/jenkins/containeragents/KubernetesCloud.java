@@ -199,8 +199,8 @@ public class KubernetesCloud extends Cloud {
 
                 return slave;
             } catch (Exception ex) {
-                LOGGER.log(Level.WARNING, "Error in provisioning; slave={0}, template={1}",
-                        new Object[] {slave, template});
+                LOGGER.log(Level.WARNING, "Error in provisioning; slave={0}, template={1}: {2}",
+                        new Object[] {slave, template, ex});
 
                 properties.put("Message", ex.getMessage());
                 ContainerPlugin.sendEvent(Constants.AI_CONTAINER_AGENT, "ProvisionFailed", properties);

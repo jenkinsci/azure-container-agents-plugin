@@ -154,7 +154,7 @@ public final class KubernetesService {
                                         final int timeout) throws TimeoutException {
         while (true) {
             if (AzureContainerUtils.isTimeout(stopWatch.getTime(), timeout)) {
-                throw new TimeoutException(Messages.Kubernetes_Pod_Start_Failed(podName, timeout));
+                throw new TimeoutException(Messages.Kubernetes_pod_Start_Time_Exceed(podName, timeout));
             }
 
             Pod pod = client.pods().inNamespace(namespace).withName(podName).get();
@@ -162,15 +162,18 @@ public final class KubernetesService {
             if (status.equals("Running")) {
                 break;
             } else if (status.equals("Pending") || status.equals("PodInitializing")) {
-                ContainerState containerState = pod.getStatus().getContainerStatuses().get(0).getState();
-                if (containerState.getTerminated() != null) {
-                    throw new IllegalStateException(Messages.Kubernetes_Container_Terminated(containerState
-                            .getTerminated().getMessage()));
-                }
-                if (containerState.getWaiting() != null
-                        && containerState.getWaiting().getReason().equals("ImagePullBackOff")) {
-                    throw new IllegalStateException(Messages.Kubernetes_Container_Image_Pull_Backoff(containerState
-                            .getWaiting().getMessage()));
+                if (pod.getStatus().getContainerStatuses() != null
+                        || !pod.getStatus().getContainerStatuses().isEmpty()) {
+                    ContainerState containerState = pod.getStatus().getContainerStatuses().get(0).getState();
+                    if (containerState.getTerminated() != null) {
+                        throw new IllegalStateException(Messages.Kubernetes_Container_Terminated(containerState
+                                .getTerminated().getMessage()));
+                    }
+                    if (containerState.getWaiting() != null
+                            && containerState.getWaiting().getReason().equals("ImagePullBackOff")) {
+                        throw new IllegalStateException(Messages.Kubernetes_Container_Image_Pull_Backoff(containerState
+                                .getWaiting().getMessage()));
+                    }
                 }
                 try {
                     Thread.sleep(retryInterval);
@@ -195,7 +198,7 @@ public final class KubernetesService {
                     serviceName,
                     "");
             Object properties = azureClient.genericResources().getById(resourceId).properties();
-            if (properties instanceof Map) {
+            if (properties instanceof Map<?, ?>) {
                 return (Map<String, Object>) azureClient.genericResources().getById(resourceId).properties();
             } else {
                 return null;
