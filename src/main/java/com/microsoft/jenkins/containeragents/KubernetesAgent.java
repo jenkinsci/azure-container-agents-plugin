@@ -62,8 +62,6 @@ public class KubernetesAgent extends AbstractCloudSlave {
         if (computer == null || StringUtils.isEmpty(cloudName)) {
             return;
         }
-
-
         final Cloud cloud = Jenkins.getInstance().getCloud(cloudName);
         if (cloud == null) {
             return;
