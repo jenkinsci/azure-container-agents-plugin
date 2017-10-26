@@ -59,13 +59,12 @@ public class KubernetesAgent extends AbstractCloudSlave {
     @Override
     protected void _terminate(TaskListener listener) throws IOException, InterruptedException {
         final Computer computer = toComputer();
-        final Jenkins instance = Jenkins.getInstance();
-        if (instance == null || computer == null || StringUtils.isEmpty(cloudName)) {
+        if (computer == null || StringUtils.isEmpty(cloudName)) {
             return;
         }
 
 
-        final Cloud cloud = instance.getCloud(cloudName);
+        final Cloud cloud = Jenkins.getInstance().getCloud(cloudName);
         if (cloud == null) {
             return;
         }
