@@ -30,7 +30,7 @@ public class DockerConfigBuilder {
     public DockerConfigBuilder(final List<DockerRegistryEndpoint> credentials) {
         endpoints.clear();
         for (DockerRegistryEndpoint credential : credentials) {
-            endpoints.add(new DockerRegistryEndpoint(DockerRegistryUtils.formatUrlToWithProtocal(credential.getUrl()),
+            endpoints.add(new DockerRegistryEndpoint(DockerRegistryUtils.formatUrlToWithProtocol(credential.getUrl()),
                     credential.getCredentialsId()));
         }
     }

@@ -176,7 +176,7 @@ public final class AciService {
         ObjectNode newCredentialNode = mapper.createObjectNode();
         newCredentialNode.put("server", StringUtils.isBlank(endpoint.getUrl())
                 ? "index.docker.io"
-                : DockerRegistryUtils.formatUrlToWithoutProtocal(endpoint.getUrl()));
+                : DockerRegistryUtils.formatUrlToWithoutProtocol(endpoint.getUrl()));
         newCredentialNode.put("username", credentials.getUsername());
         newCredentialNode.put("password", credentials.getPassword().getPlainText());
 

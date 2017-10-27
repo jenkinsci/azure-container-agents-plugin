@@ -5,7 +5,7 @@ import org.apache.commons.lang.StringUtils;
 
 public final class DockerRegistryUtils {
 
-    public static String formatUrlToWithProtocal(String url) {
+    public static String formatUrlToWithProtocol(String url) {
         if (StringUtils.isBlank(url)) {
             return url;
         }
@@ -16,7 +16,7 @@ public final class DockerRegistryUtils {
         }
     }
 
-    public static String formatUrlToWithoutProtocal(String url) {
+    public static String formatUrlToWithoutProtocol(String url) {
         if (StringUtils.isBlank(url)) {
             return url;
         }
