@@ -163,7 +163,7 @@ public final class KubernetesService {
                 break;
             } else if (status.equals("Pending") || status.equals("PodInitializing")) {
                 if (pod.getStatus().getContainerStatuses() != null
-                        || !pod.getStatus().getContainerStatuses().isEmpty()) {
+                        && !pod.getStatus().getContainerStatuses().isEmpty()) {
                     ContainerState containerState = pod.getStatus().getContainerStatuses().get(0).getState();
                     if (containerState.getTerminated() != null) {
                         throw new IllegalStateException(Messages.Kubernetes_Container_Terminated(containerState

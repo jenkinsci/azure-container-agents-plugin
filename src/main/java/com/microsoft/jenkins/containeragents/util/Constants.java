@@ -22,7 +22,11 @@ public final class Constants {
 
     public static final String AI_ACI_NAME = "AciName";
 
+    public static final String AI_ACI_DEPLOYMENT_NAME = "AciDeploymentName";
+
     public static final String AI_ACI_AGENT = "AciAgent";
+
+    public static final String AI_ACI_CPU_CORE = "CpuCores";
 
     public static final int KUBERNETES_RANDOM_NAME_LENGTH = 5;
 
@@ -35,14 +39,6 @@ public final class Constants {
     public static final String AKS_NAMESPACE = "Microsoft.ContainerService";
 
     public static final String AKS_RESOURCE_TYPE = "managedClusters";
-
-    public static final String ACS_NAMESPACE = "Microsoft.ContainerService";
-
-    public static final String ACS_RESOURCE_TYPE = "containerServices";
-
-    public static final String CONTAINER_SERVICE_TYPE_ACS = "acs";
-
-    public static final String CONTAINER_SERVICE_TYPE_AKS = "aks";
 
     private Constants() {
 

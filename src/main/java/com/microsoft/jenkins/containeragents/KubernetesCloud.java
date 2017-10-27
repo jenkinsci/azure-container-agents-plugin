@@ -22,6 +22,7 @@ import com.microsoft.jenkins.azurecommons.telemetry.AppInsightsConstants;
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
+import hudson.model.Item;
 import hudson.model.Label;
 import hudson.model.Node;
 import hudson.security.ACL;
@@ -29,7 +30,6 @@ import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
-import hudson.model.Item;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -163,7 +163,7 @@ public class KubernetesCloud extends Cloud {
                     }
 
                     k8sClient.pods().inNamespace(getNamespace()).create(pod);
-                    LOGGER.log(Level.INFO, "KubernetesCloud: Pended Pod: {0}", podId);
+                    LOGGER.log(Level.INFO, "KubernetesCloud: Pending Pod: {0}", podId);
                     // wait the pod to be running
                     KubernetesService.waitPodToRunning(k8sClient,
                             podId,
@@ -214,7 +214,7 @@ public class KubernetesCloud extends Cloud {
                     }
                 }
                 provisionRetryStrategy.failure(template.getName());
-                throw new Exception(ex);
+                throw ex;
             }
         }
     }
