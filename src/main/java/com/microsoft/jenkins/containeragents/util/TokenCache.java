@@ -12,12 +12,12 @@ import com.microsoft.azure.credentials.ApplicationTokenCredentials;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.util.AzureCredentials;
 
+import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.microsoft.rest.LogLevel;
 import jenkins.model.Jenkins;
-import org.apache.commons.lang.StringUtils;
 
 public class TokenCache {
 
@@ -27,29 +27,18 @@ public class TokenCache {
 
     private static TokenCache cache = null;
 
+    private volatile Azure client = null;
+
     private final AzureCredentials.ServicePrincipal credentials;
 
-    public static TokenCache getInstance(final AzureCredentials.ServicePrincipal servicePrincipal) {
+    public static TokenCache getInstance(final AzureCredentials.ServicePrincipal servicePrincipal) throws Exception {
         synchronized (TSAFE) {
-            if (cache == null) {
+            if (cache == null || cache.credentials != servicePrincipal) {
                 cache = new TokenCache(servicePrincipal);
-            } else if (cache.credentials == null
-                    || !StringUtils.isEmpty(cache.credentials.getSubscriptionId())
-                    || !cache.credentials.getSubscriptionId().equals(servicePrincipal.getSubscriptionId())
-                    || !StringUtils.isEmpty(cache.credentials.getClientId())
-                    || !cache.credentials.getClientId().equals(servicePrincipal.getClientId())
-                    || !StringUtils.isEmpty(cache.credentials.getClientSecret())
-                    || !cache.credentials.getClientSecret().equals(servicePrincipal.getClientSecret())
-                    || !StringUtils.isEmpty(cache.credentials.getTenant())
-                    || !cache.credentials.getTenant().equals(servicePrincipal.getTenant())
-                    || !StringUtils.isEmpty(cache.credentials.getServiceManagementURL())
-                    || !cache.credentials.getServiceManagementURL()
-                        .equals(servicePrincipal.getServiceManagementURL())) {
-                cache = new TokenCache(servicePrincipal);
+                cache.client = cache.getAzureClient();
             }
+            return cache;
         }
-
-        return cache;
     }
 
     protected TokenCache(final AzureCredentials.ServicePrincipal servicePrincipal) {
@@ -82,25 +71,32 @@ public class TokenCache {
                 servicePrincipal.getClientId(),
                 servicePrincipal.getTenant(),
                 servicePrincipal.getClientSecret(),
-                AzureEnvironment.AZURE
-//                new AzureEnvironment(new HashMap<String, String>() {
-//                    {
-//                        put("activeDirectoryEndpointUrl", servicePrincipal.getAuthenticationEndpoint());
-//                        put("managementEndpointUrl", servicePrincipal.getServiceManagementURL());
-//                        put("resourceManagerEndpointUrl", servicePrincipal.getResourceManagerEndpoint());
-//                        put("activeDirectoryGraphResourceId", servicePrincipal.getGraphEndpoint());
-//                    }}
-//                )
+                new AzureEnvironment(new HashMap<String, String>() {
+                    {
+                        this.put("activeDirectoryEndpointUrl", servicePrincipal.getAuthenticationEndpoint());
+                        this.put("activeDirectoryGraphResourceId", servicePrincipal.getGraphEndpoint());
+                        this.put("managementEndpointUrl", servicePrincipal.getServiceManagementURL());
+                        this.put("resourceManagerEndpointUrl", servicePrincipal.getResourceManagerEndpoint());
+                        this.put("activeDirectoryResourceId", "https://management.core.windows.net/");
+                    }
+                })
         );
     }
 
-    public Azure getAzureClient() {
-        return Azure
-                .configure()
-                .withInterceptor(new ContainerPlugin.AzureTelemetryInterceptor())
-                .withLogLevel(LogLevel.NONE)
-                .withUserAgent(getUserAgent())
-                .authenticate(get(credentials))
-                .withSubscription(credentials.getSubscriptionId());
+    public Azure getAzureClient() throws Exception {
+        if (client == null) {
+            synchronized (this) {
+                if (client == null) {
+                    client = Azure
+                        .configure()
+                        .withInterceptor(new ContainerPlugin.AzureTelemetryInterceptor())
+                        .withLogLevel(LogLevel.NONE)
+                        .withUserAgent(getUserAgent())
+                        .authenticate(get(credentials))
+                        .withSubscription(credentials.getSubscriptionId());
+                }
+            }
+        }
+        return client;
     }
 }

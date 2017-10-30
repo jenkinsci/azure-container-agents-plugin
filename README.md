@@ -27,10 +27,12 @@ With Azure Container Service (Kubernetes), you can create a container in you Kub
 
 You need to create your own Kubernetes Cluster in Azure and maintain the number of nodes.
 
+Now we support [Azure Container Service with Kubernetes](https://docs.microsoft.com/en-us/azure/container-service/kubernetes/) and [Azure Container Service (AKS)](https://docs.microsoft.com/en-us/azure/aks/) as well
+
 You can also create containers in ACI using [aci-connector-k8s](https://github.com/Azure/aci-connector-k8s) (experimental).
 
 ## Pre-requirements
-If using Azure Container Service (Kubernetes), you need to [create a Kubernetes Cluster](https://docs.microsoft.com/en-us/azure/container-service/kubernetes/) on Azure.
+If using Azure Container Service (Kubernetes), you need to [create Azure Container Service with Kubernetes](https://docs.microsoft.com/en-us/azure/container-service/kubernetes/container-service-kubernetes-walkthrough) or [create Azure Container Service (AKS)](https://docs.microsoft.com/en-us/azure/aks/kubernetes-walkthrough) on Azure.
 
 ## Configure the plugin
 1. Jenkins -> Manage Jenkins -> Configure System
@@ -39,7 +41,7 @@ If using Azure Container Service (Kubernetes), you need to [create a Kubernetes 
 4. Choose an existing `Azure Service Principal` or create a new credential.
 5. Choose `Resource Group` and `Container Service Name`.
 6. Specify `Namespace`
-7. Choose an existing `ACS Credential` or create a new one. You can choose one of two different kinds of credentials:
+7. Choose an existing `ACS Credential` or create a new one. If you using Azure Container Service (AKS), then you don't need to choose `ACS Credential`. Or you can choose one of two different kinds of credentials:
     * SSH Username with private key
     * Microsoft Azure Container Service
 8. Press `Test Connection` to make sure the configurations above are correct.
@@ -121,7 +123,7 @@ Jenkins.getInstance().clouds.add(myCloud);
 [Azure Container Instances](https://docs.microsoft.com/en-us/azure/container-instances/) offers the fastest and simplest way to run a container in Azure, without having to provision any virtual machines and without having to adopt a higher-level service.
 
 ## Pre-requirements
-* Resource Group in West US or East US (ACI only support these two regions now)
+* Resource Group in West US, East US or West Europe. Get [region availability details](https://azure.microsoft.com/en-us/regions/services/).
 
 ## Configure the plugin
 1. Jenkins -> Manage Jenkins -> Configure System
@@ -135,7 +137,7 @@ Jenkins.getInstance().clouds.add(myCloud);
 2. Set `Startup Timeout`.
 3. Select `Image OS Type`, Windows or Linux.
 4. Fill in `Docker Image`. Please note that the slave will connect with master via JNLP, so make sure JNLP installed in image. Default image is `jenkins/jnlp-slave` and you can also use it as base image.
-5. If you use a private registry, you need to specify a credential. Please note the `URL` should not contain protocol (e.g. index.docker.io).
+5. If you use a private registry, you need to specify a credential.
 6. Specify a `Command`. Now the `Command` will override the ENTRYPOINT. `Arguments`. `${rootUrl}`, `${secret}` and `${nodeName}` will be replace with JenkinsUrl, Secret and ComputerNodeName automatically.
 7. Specify the `Working Dir`. Different from Azure Container Service (Kubernetes), you must ensure login user have the write permission to this directory.
 8. Add `Ports`, `Environment Variables` and `Volumes`

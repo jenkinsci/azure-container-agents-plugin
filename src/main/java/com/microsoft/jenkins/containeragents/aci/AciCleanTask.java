@@ -38,7 +38,12 @@ public class AciCleanTask extends AsyncPeriodicWork {
 
     private void cleanLeakedContainer(final AciCloud cloud)   {
         LOGGER.log(Level.INFO, "Starting to clean leaked containers for cloud " + cloud.getName());
-        Azure azureClient = cloud.getAzureClient();
+        Azure azureClient = null;
+        try {
+            azureClient = cloud.getAzureClient();
+        } catch (Exception e) {
+            return;
+        }
 
         String resourceGroup = cloud.getResourceGroup();
         String credentialsId = cloud.getCredentialsId();

@@ -48,7 +48,7 @@ public class ContainerOnceRetentionStrategy extends CloudRetentionStrategy imple
         // When the slave is idle we should disable accepting tasks and check to see if it is already trying to
         // terminate. If it's not already trying to terminate then lets terminate manually.
         if (c.isIdle() && !disabled) {
-            final long milliBetweenCreationAndIdle = c.getConnectTime() - c.getIdleStartMilliseconds();
+            final long milliBetweenCreationAndIdle = c.getIdleStartMilliseconds() - c.getConnectTime();
             boolean neverConnected = milliBetweenCreationAndIdle < TimeUnit2.SECONDS.toMillis(LAPSE);
 
             final long idleMilliseconds = System.currentTimeMillis() - c.getIdleStartMilliseconds();

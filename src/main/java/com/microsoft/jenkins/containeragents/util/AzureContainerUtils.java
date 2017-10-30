@@ -7,6 +7,7 @@ import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.management.resources.ResourceGroup;
 import com.microsoft.azure.util.AzureCredentials;
+import com.microsoft.jenkins.containeragents.Messages;
 import hudson.model.Item;
 import hudson.security.ACL;
 import hudson.util.ListBoxModel;
@@ -70,14 +71,17 @@ public final class AzureContainerUtils {
                 model.add(resourceGroup.name());
             }
         } catch (Exception e) {
-            LOGGER.log(Level.INFO, "Cannot list resource group name: {}", e);
+            LOGGER.log(Level.INFO, Messages.Resource_Group_List_Failed(e));
         }
         return model;
     }
 
-    public static Azure getAzureClient(String credentialsId) {
+    public static Azure getAzureClient(String credentialsId) throws Exception {
         AzureCredentials.ServicePrincipal servicePrincipal
                 = AzureCredentials.getServicePrincipal(credentialsId);
         return TokenCache.getInstance(servicePrincipal).getAzureClient();
     }
+
+
+
 }

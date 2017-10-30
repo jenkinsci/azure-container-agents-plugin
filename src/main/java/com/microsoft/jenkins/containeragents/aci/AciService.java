@@ -15,6 +15,7 @@ import com.microsoft.jenkins.containeragents.aci.volumes.AzureFileVolume;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.management.resources.Deployment;
 import com.microsoft.azure.management.resources.DeploymentMode;
+import com.microsoft.jenkins.containeragents.util.DockerRegistryUtils;
 import hudson.EnvVars;
 import hudson.security.ACL;
 import jenkins.model.Jenkins;
@@ -23,6 +24,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -44,11 +46,12 @@ public final class AciService {
                                         final AciAgent agent,
                                         final StopWatch stopWatch) throws Exception {
         String deployName = getDeploymentName(template);
-        try {
+
+        try (InputStream stream = AciService.class.getResourceAsStream(DEPLOY_TEMPLATE_FILENAME)) {
             final Azure azureClient = cloud.getAzureClient();
 
             final ObjectMapper mapper = new ObjectMapper();
-            final JsonNode tmp = mapper.readTree(AciService.class.getResourceAsStream(DEPLOY_TEMPLATE_FILENAME));
+            final JsonNode tmp = mapper.readTree(stream);
 
             ObjectNode.class.cast(tmp.get("variables")).put("containerName", agent.getNodeName());
             ObjectNode.class.cast(tmp.get("variables")).put("containerImage", template.getImage());
@@ -168,7 +171,7 @@ public final class AciService {
         ObjectNode newCredentialNode = mapper.createObjectNode();
         newCredentialNode.put("server", StringUtils.isBlank(endpoint.getUrl())
                 ? "index.docker.io"
-                : endpoint.getUrl());
+                : DockerRegistryUtils.formatUrlToWithoutProtocol(endpoint.getUrl()));
         newCredentialNode.put("username", credentials.getUsername());
         newCredentialNode.put("password", credentials.getPassword().getPlainText());
 
@@ -230,16 +233,12 @@ public final class AciService {
                                                String resourceGroup,
                                                String containerGroupName,
                                                String deployName) {
-        final Azure azureClient = AzureContainerUtils.getAzureClient(credentialsId);
+        Azure azureClient = null;
         final Map<String, String> properties = new HashMap<>();
 
         try {
-            azureClient.genericResources().delete(resourceGroup,
-                    "Microsoft.ContainerInstance",
-                    "",
-                    "containerGroups",
-                    containerGroupName,
-                    "2017-08-01-preview");
+            azureClient = AzureContainerUtils.getAzureClient(credentialsId);
+            azureClient.containerGroups().deleteByResourceGroup(resourceGroup, containerGroupName);
             LOGGER.log(Level.INFO, "Delete ACI Container Group: {0} successfully", containerGroupName);
 
             properties.put(Constants.AI_ACI_NAME, containerGroupName);
@@ -254,13 +253,25 @@ public final class AciService {
 
         try {
             //To avoid to many deployments. May over deployment limits.
+            properties.clear();
             if (deployName != null) {
-                azureClient.deployments().deleteByResourceGroup(resourceGroup, deployName);
-                LOGGER.log(Level.INFO, "Delete ACI deployment: {0} successfully", deployName);
+                // Only to delete succeeded deployments for future debugging.
+                if (azureClient.deployments().getByResourceGroup(resourceGroup, deployName).provisioningState()
+                        .equalsIgnoreCase("succeeded")) {
+                    azureClient.deployments().deleteByResourceGroup(resourceGroup, deployName);
+                    LOGGER.log(Level.INFO, "Delete ACI deployment: {0} successfully", deployName);
+                    properties.put(Constants.AI_ACI_NAME, containerGroupName);
+                    properties.put(Constants.AI_ACI_DEPLOYMENT_NAME, deployName);
+                    ContainerPlugin.sendEvent(Constants.AI_ACI_AGENT, "DeploymentDeleted", properties);
+                }
             }
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Delete ACI deployment: {0} failed: {1}",
                     new Object[] {deployName, e});
+            properties.put(Constants.AI_ACI_NAME, containerGroupName);
+            properties.put(Constants.AI_ACI_DEPLOYMENT_NAME, deployName);
+            properties.put("Message", e.getMessage());
+            ContainerPlugin.sendEvent(Constants.AI_ACI_AGENT, "DeploymentDeletedFailed", properties);
         }
     }
 

@@ -15,17 +15,15 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
 
-public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTemplate> implements Serializable {
+public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTemplate> {
 
     private static final Logger LOGGER = Logger.getLogger(AciContainerTemplate.class.getName());
 
-    private static final long serialVersionUID = 640938461214718337L;
 
     private String name;
 

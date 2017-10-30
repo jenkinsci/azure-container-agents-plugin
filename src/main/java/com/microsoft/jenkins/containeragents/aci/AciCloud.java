@@ -1,5 +1,6 @@
 package com.microsoft.jenkins.containeragents.aci;
 
+import com.microsoft.azure.management.containerinstance.ContainerGroup;
 import com.microsoft.azure.util.AzureCredentials;
 import com.microsoft.jenkins.azurecommons.telemetry.AppInsightsConstants;
 import com.microsoft.jenkins.containeragents.ContainerPlugin;
@@ -46,8 +47,6 @@ public class AciCloud extends Cloud {
 
     private List<AciContainerTemplate> templates;
 
-    private transient Azure azure = null;
-
     private static ExecutorService threadPool;
 
     private transient ProvisionRetryStrategy provisionRetryStrategy = new ProvisionRetryStrategy();
@@ -63,15 +62,8 @@ public class AciCloud extends Cloud {
         this.templates = templates;
     }
 
-    public Azure getAzureClient() {
-        if (azure == null) {
-            synchronized (this) {
-                if (azure == null) {
-                    azure = AzureContainerUtils.getAzureClient(credentialsId);
-                }
-            }
-        }
-        return azure;
+    public Azure getAzureClient() throws Exception {
+        return AzureContainerUtils.getAzureClient(credentialsId);
     }
 
     @Override
@@ -105,6 +97,7 @@ public class AciCloud extends Cloud {
                                     properties.put(AppInsightsConstants.AZURE_SUBSCRIPTION_ID,
                                             AzureCredentials.getServicePrincipal(credentialsId).getSubscriptionId());
                                     properties.put(Constants.AI_ACI_NAME, agent.getNodeName());
+                                    properties.put(Constants.AI_ACI_CPU_CORE, template.getCpu());
 
                                     //Deploy ACI and wait
                                     template.provisionAgents(AciCloud.this, agent, stopWatch);
@@ -119,7 +112,9 @@ public class AciCloud extends Cloud {
 
                                     return agent;
                                 } catch (Exception e) {
-                                    LOGGER.log(Level.WARNING, e.toString());
+                                    LOGGER.log(Level.WARNING, "AciCloud: Provision agent {0} failed: {1}",
+                                            new Object[] {agent == null ? "Known agent node" : agent.getNodeName(),
+                                                    e.getMessage()});
 
                                     properties.put("Message", e.getMessage());
                                     ContainerPlugin.sendEvent(Constants.AI_ACI_AGENT, "ProvisionFailed", properties);
@@ -149,7 +144,6 @@ public class AciCloud extends Cloud {
     public boolean canProvision(Label label) {
         AciContainerTemplate template = getFirstTemplate(label);
         if (template == null) {
-            LOGGER.log(Level.WARNING, "Cannot provision: template for label {0} not found", label);
             return false;
         }
         if (!provisionRetryStrategy.isEnabled(template.getName())) {
@@ -170,8 +164,9 @@ public class AciCloud extends Cloud {
     }
 
     private void waitToOnline(AciAgent agent, int startupTimeout, StopWatch stopWatch)
-            throws IllegalStateException, InterruptedException, TimeoutException {
+            throws Exception {
         LOGGER.log(Level.INFO, "Waiting agent {0} to online", agent.getNodeName());
+        Azure azureClient = getAzureClient();
 
         while (true) {
             if (AzureContainerUtils.isTimeout(startupTimeout, stopWatch.getTime())) {
@@ -179,8 +174,17 @@ public class AciCloud extends Cloud {
             }
 
             if (agent.toComputer() == null) {
-                throw new IllegalStateException("ACI container has deleted");
+                throw new IllegalStateException("Agent node has been deleted");
             }
+            ContainerGroup containerGroup =
+                    azureClient.containerGroups().getByResourceGroup(resourceGroup, agent.getNodeName());
+
+            if (containerGroup.containers().containsKey(agent.getNodeName())
+                    && containerGroup.containers().get(agent.getNodeName()).instanceView().currentState().state()
+                    .equals("Terminated")) {
+                throw new IllegalStateException("ACI container terminated");
+            }
+
             if (agent.toComputer().isOnline()) {
                 break;
             }

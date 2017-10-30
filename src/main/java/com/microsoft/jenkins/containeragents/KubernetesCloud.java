@@ -9,18 +9,20 @@ package com.microsoft.jenkins.containeragents;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
+import com.microsoft.azure.management.compute.ContainerServiceOrchestratorTypes;
+import com.microsoft.azure.management.resources.GenericResource;
 import com.microsoft.jenkins.containeragents.helper.AzureContainerServiceCredentials;
 import com.microsoft.jenkins.containeragents.strategy.ProvisionRetryStrategy;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
 import com.microsoft.jenkins.containeragents.util.Constants;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.management.compute.ContainerService;
-import com.microsoft.azure.management.compute.ContainerServiceOchestratorTypes;
 import com.microsoft.azure.util.AzureCredentials;
 import com.microsoft.jenkins.azurecommons.telemetry.AppInsightsConstants;
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
+import hudson.model.Item;
 import hudson.model.Label;
 import hudson.model.Node;
 import hudson.security.ACL;
@@ -28,7 +30,6 @@ import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
-import hudson.model.Item;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -59,8 +60,6 @@ import java.util.logging.Logger;
 
 import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
 
-import javax.naming.AuthenticationException;
-
 
 public class KubernetesCloud extends Cloud {
 
@@ -86,7 +85,7 @@ public class KubernetesCloud extends Cloud {
 
     private static ExecutorService threadPool;
 
-    private transient KubernetesClient client;
+    private transient volatile KubernetesClient client;
 
     private transient ProvisionRetryStrategy provisionRetryStrategy = new ProvisionRetryStrategy();
 
@@ -95,17 +94,15 @@ public class KubernetesCloud extends Cloud {
         super(name);
     }
 
-    private KubernetesClient connect() throws AuthenticationException {
+    private KubernetesClient connect() throws Exception {
         if (client == null) {
             synchronized (this) {
                 if (client == null) {
-                    if (StringUtils.isEmpty(this.masterFqdn)) {
-                        ContainerService containerService = KubernetesService.getContainerService(azureCredentialsId,
-                                resourceGroup,
-                                serviceName);
-                        this.masterFqdn = containerService.masterFqdn();
-                    }
-                    client = KubernetesService.connect(this.masterFqdn, getNamespace(), getAcsCredentialsId());
+                    client = KubernetesService.getKubernetesClient(azureCredentialsId,
+                            resourceGroup,
+                            serviceName,
+                            namespace,
+                            acsCredentialsId);
                 }
             }
         }
@@ -165,22 +162,28 @@ public class KubernetesCloud extends Cloud {
                         k8sClient.secrets().inNamespace(namespace).createOrReplace(registrySecret);
                     }
 
-                    pod = k8sClient.pods().inNamespace(getNamespace()).create(pod);
-                    LOGGER.log(Level.INFO, "Created Pod: {0}", podId);
-
+                    k8sClient.pods().inNamespace(getNamespace()).create(pod);
+                    LOGGER.log(Level.INFO, "KubernetesCloud: Pending Pod: {0}", podId);
                     // wait the pod to be running
-                    KubernetesService.waitPodToOnline(k8sClient,
+                    KubernetesService.waitPodToRunning(k8sClient,
                             podId,
                             namespace,
                             stopwatch,
                             retryInterval,
                             startupTimeout);
+                    LOGGER.log(Level.INFO, "KubernetesCloud: Pod {0} is running successfully,"
+                            + "waiting to be online", podId);
                 }
 
                 // wait the slave to be online
                 while (true) {
                     if (isTimeout(stopwatch.getTime())) {
-                        throw new TimeoutException(Messages.Kubernetes_Pod_Start_Failed(podId, startupTimeout));
+                        throw new TimeoutException(Messages.Kubernetes_pod_Start_Time_Exceed(podId, startupTimeout));
+                    }
+                    Pod podTemp = client.pods().inNamespace(namespace).withName(podId).get();
+                    if (!podTemp.getStatus().getPhase().equals("Running")) {
+                        throw new IllegalStateException(Messages.Kubernetes_Pod_Start_Failed(podId,
+                                podTemp.getStatus().getPhase()));
                     }
                     if (slave.getComputer() == null) {
                         throw new IllegalStateException(Messages.Kubernetes_Pod_Deleted());
@@ -196,8 +199,8 @@ public class KubernetesCloud extends Cloud {
 
                 return slave;
             } catch (Exception ex) {
-                LOGGER.log(Level.WARNING, "Error in provisioning; slave={0}, template={1}",
-                        new Object[] {slave, template});
+                LOGGER.log(Level.WARNING, "Error in provisioning; slave={0}, template={1}: {2}",
+                        new Object[] {slave, template, ex});
 
                 properties.put("Message", ex.getMessage());
                 ContainerPlugin.sendEvent(Constants.AI_CONTAINER_AGENT, "ProvisionFailed", properties);
@@ -211,7 +214,7 @@ public class KubernetesCloud extends Cloud {
                     }
                 }
                 provisionRetryStrategy.failure(template.getName());
-                throw new RuntimeException(ex);
+                throw ex;
             }
         }
     }
@@ -406,14 +409,28 @@ public class KubernetesCloud extends Cloud {
             if (StringUtils.isBlank(azureCredentialsId) || StringUtils.isBlank(resourceGroup)) {
                 return model;
             }
+            try {
+                final Azure azureClient = AzureContainerUtils.getAzureClient(azureCredentialsId);
 
-            final Azure azureClient = AzureContainerUtils.getAzureClient(azureCredentialsId);
-
-            List<ContainerService> list = azureClient.containerServices().listByResourceGroup(resourceGroup);
-            for (ContainerService containerService : list) {
-                if (containerService.orchestratorType().equals(ContainerServiceOchestratorTypes.KUBERNETES)) {
-                    model.add(containerService.name());
+                //Add ACS(kubernetes)
+                List<ContainerService> list = azureClient.containerServices().listByResourceGroup(resourceGroup);
+                for (ContainerService containerService : list) {
+                    if (containerService.orchestratorType().equals(ContainerServiceOrchestratorTypes.KUBERNETES)) {
+                        model.add(containerService.name());
+                    }
                 }
+
+                //Add ACS(AKS)
+                List<GenericResource> genericResourceList
+                        = azureClient.genericResources().listByResourceGroup(resourceGroup);
+                for (GenericResource genericResource: genericResourceList) {
+                    if (genericResource.resourceProviderNamespace().equals(Constants.AKS_NAMESPACE)
+                            && genericResource.resourceType().equals(Constants.AKS_RESOURCE_TYPE)) {
+                        model.add(genericResource.name());
+                    }
+                }
+            } catch (Exception e) {
+                LOGGER.log(Level.INFO, Messages.Container_Service_List_Failed(e));
             }
 
             return model;
@@ -427,18 +444,22 @@ public class KubernetesCloud extends Cloud {
             if (StringUtils.isBlank(azureCredentialsId)
                     || StringUtils.isBlank(resourceGroup)
                     || StringUtils.isBlank(serviceName)
-                    || StringUtils.isBlank(namespace)
-                    || StringUtils.isBlank(acsCredentialsId)) {
+                    || StringUtils.isBlank(namespace)) {
                 return FormValidation.error("Configurations cannot be empty");
             }
-            ContainerService containerService
-                    = KubernetesService.getContainerService(azureCredentialsId, resourceGroup, serviceName);
-            String masterFqdn = containerService.masterFqdn();
-            try (KubernetesClient client = KubernetesService.connect(masterFqdn, namespace, acsCredentialsId)) {
-                client.pods().list();
-                return FormValidation.ok("Connect to %s successfully", client.getMasterUrl());
-            } catch (KubernetesClientException e) {
-                return FormValidation.error("Connect to %s failed", masterFqdn);
+            String masterFqdn = null;
+            try (KubernetesClient client = KubernetesService.getKubernetesClient(azureCredentialsId,
+                        resourceGroup,
+                        serviceName,
+                        namespace,
+                        acsCredentialsId)) {
+                masterFqdn = client.getMasterUrl().toString();
+                try {
+                    client.pods().list();
+                    return FormValidation.ok("Connect to %s successfully", client.getMasterUrl());
+                } catch (KubernetesClientException e) {
+                    return FormValidation.error("Connect to %s failed", masterFqdn);
+                }
             } catch (Exception e) {
                 return FormValidation.error("Connect to %s failed: %s", masterFqdn, e.getMessage());
             }
