@@ -21,9 +21,9 @@ public final class DockerRegistryUtils {
             return url;
         }
         if (url.toLowerCase().startsWith("http://")) {
-            return StringUtils.substringAfter(url.toLowerCase(), "http://");
+            return url.substring("http://".length());
         } else if (url.toLowerCase().startsWith("https://")) {
-            return StringUtils.substringAfter(url.toLowerCase(), "https://");
+            return url.substring("https://".length());
         } else {
             return url;
         }
