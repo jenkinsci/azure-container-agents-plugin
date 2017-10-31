@@ -2,17 +2,15 @@ package com.microsoft.jenkins.containeragents;
 
 import com.gargoylesoftware.htmlunit.html.HtmlForm;
 import hudson.slaves.Cloud;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 
-/**
- * Created by xianyu on 7/20/2017.
- */
+
 public class KubernetesCloudTest {
 
-    @Rule
-    public JenkinsRule rule = new JenkinsRule();
+    @ClassRule
+    public static JenkinsRule rule = new JenkinsRule();
 
     @Test
     public void testConfigRoundtrip() throws Exception {
