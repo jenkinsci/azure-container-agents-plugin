@@ -2,7 +2,10 @@
 THIRD-PARTY SOFTWARE NOTICES AND INFORMATION
 Do Not Translate or Localize
 
-Microsoft Azure Container Agents Plugin incorporates components from the projects listed below. Microsoft licenses these components to you under Microsoft’s licensing terms for the Microsoft Azure Container Service Plugin.  The original copyright notices and the licenses under which Microsoft received such components are set forth below for informational purposes. Microsoft reserves all rights not expressly granted herein, whether by implication, estoppel or otherwise.
+Microsoft Azure Container Agents Plugin incorporates components from the projects listed below.
+Microsoft licenses these components to you under Microsoft’s licensing terms for the Microsoft Azure Container Agents Plugin.
+The original copyright notices and the licenses under which Microsoft received such components are set forth below
+for informational purposes. Microsoft reserves all rights not expressly granted herein, whether by implication, estoppel or otherwise.
 
 
 1.	Azure Management Libraries for Java (https://github.com/Azure/azure-sdk-for-java)
