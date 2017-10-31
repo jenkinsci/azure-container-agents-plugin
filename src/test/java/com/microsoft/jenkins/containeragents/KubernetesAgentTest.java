@@ -1,10 +1,7 @@
 package com.microsoft.jenkins.containeragents;
 
 import hudson.model.Descriptor;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.mockito.Mockito;
 
@@ -13,13 +10,11 @@ import java.io.IOException;
 import static org.hamcrest.core.StringStartsWith.startsWith;
 import static org.junit.Assert.*;
 
-/**
- * Created by xianyu on 7/20/2017.
- */
+
 public class KubernetesAgentTest {
 
-    @Rule
-    public JenkinsRule rule = new JenkinsRule();
+    @ClassRule
+    public static JenkinsRule rule = new JenkinsRule();
 
     private KubernetesAgent agent;
 
