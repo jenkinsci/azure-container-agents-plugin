@@ -8,12 +8,14 @@ import com.microsoft.azure.management.resources.ResourceGroup;
 import com.microsoft.azure.util.AzureCredentials;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
 import com.microsoft.jenkins.containeragents.util.TokenCache;
+import jenkins.model.Jenkins;
 import org.junit.Assert;
 import org.junit.rules.MethodRule;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.Statement;
+import org.jvnet.hudson.test.JenkinsRule;
 
 import java.util.UUID;
 
@@ -36,6 +38,8 @@ public abstract class AzureContainerRule implements TestRule, MethodRule {
     public final String location;
     public final String resourceGroup;
     public final String credentialsId;
+    public final String jenkinsUrl;
+    public final String jnlpPort;
 
     public AzureCredentials.ServicePrincipal servicePrincipal = null;
 
@@ -53,6 +57,8 @@ public abstract class AzureContainerRule implements TestRule, MethodRule {
         location = loadProperty("ACS_AGENT_TEST_AZURE_LOCATION", "East US");
         resourceGroup = AzureContainerUtils.generateName(loadProperty("ACS_AGENT_TEST_RESOURCE_GROUP", "AzureContainerTest"), 3);
         credentialsId = UUID.randomUUID().toString();
+        jenkinsUrl = loadProperty("ACS_AGENT_TEST_JENKINS_URL", "localhost");
+        jnlpPort = loadProperty("ACS_AGENT_TEST_JNLP_PORT", "60000");
     }
 
     public void before() throws Exception {
@@ -60,6 +66,7 @@ public abstract class AzureContainerRule implements TestRule, MethodRule {
         prepareServicePrincipal();
         prepareResourceGroup();
     }
+
 
     protected void prepareCredentials() throws Exception {
         AzureCredentials azureCredentials = new AzureCredentials(
