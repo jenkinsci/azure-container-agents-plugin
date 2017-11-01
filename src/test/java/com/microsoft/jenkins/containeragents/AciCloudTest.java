@@ -5,12 +5,14 @@ import com.microsoft.jenkins.containeragents.aci.AciAgent;
 import com.microsoft.jenkins.containeragents.aci.AciService;
 
 import com.microsoft.jenkins.containeragents.util.TokenCache;
+import hudson.model.Node;
 import hudson.slaves.NodeProvisioner;
 import org.apache.commons.lang3.time.StopWatch;
 import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,18 +24,10 @@ public class AciCloudTest extends IntegrationTest {
     @Test
     public void provisionAgent() throws Exception {
         List<NodeProvisioner.PlannedNode> r = new ArrayList<>();
+        aciRule.cloud.doProvision(aciRule.template, 1, r);
 
-        AciAgent agent = new AciAgent(aciRule.cloud, aciRule.template);
-        jenkinsRule.getInstance().addNode(agent);
+        Node node = r.get(0).future.get();
 
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
-        AciService.createDeployment(aciRule.cloud, aciRule.template, agent, stopWatch);
-
-        Azure azureClient = TokenCache.getInstance(aciRule.servicePrincipal).getAzureClient();
-        Assert.assertNotNull(azureClient.containerGroups().getByResourceGroup(aciRule.resourceGroup, agent.getNodeName()));
-
-        AciService.deleteAciContainerGroup(aciRule.credentialsId, aciRule.resourceGroup, agent.getNodeName(), null);
-        Assert.assertNull(azureClient.containerGroups().getByResourceGroup(aciRule.resourceGroup, agent.getNodeName()));
+        Assert.assertTrue(node instanceof AciAgent);
     }
 }
