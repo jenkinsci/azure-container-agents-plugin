@@ -13,9 +13,6 @@ public class IntegrationTest {
         {
             timeout = -1;
         }
-        public URL getURL() throws IOException {
-            return new URL("http://"+TestUtils.loadProperty("ACS_AGENT_TEST_REGISTRY_URL", "localhost")+":"+localPort+contextPath+"/");
-        }
 
         @Override
         public void before() throws Throwable {

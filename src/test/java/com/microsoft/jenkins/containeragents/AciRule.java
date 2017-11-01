@@ -28,6 +28,8 @@ import org.junit.Test;
 
 import java.util.UUID;
 
+import static com.microsoft.jenkins.containeragents.IntegrationTest.jenkinsRule;
+
 public class AciRule extends AzureContainerRule {
 
     public AciContainerTemplate template = null;
@@ -129,6 +131,7 @@ public class AciRule extends AzureContainerRule {
                 .addNewEnvVar("ENV", "echo pass")
                 .addNewPort("8080")
                 .addNewAzureFileVolume("/afs", fileShareName, storageAccountCredentialsId)
+                .withCommand("jenkins-slave -url "+jenkinsRule.getURL().toString().replaceAll("localhost", privateRegistryUrl)+" ${secret} ${nodeName}")
                 .withImage(image)
                 .addNewPrivateRegistryCredential(privateRegistryUrl, privateRegistryCredentialsId)
                 .withIdleRetentionStrategy(60)
