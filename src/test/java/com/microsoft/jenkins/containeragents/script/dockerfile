@@ -1,4 +1,4 @@
 FROM ubuntu:latest
 
-#set command line: "/test.sh"
+#set command line: "bash -c /test.sh"
 ADD test.sh /test.sh
