@@ -2,13 +2,16 @@ package com.microsoft.jenkins.containeragents;
 
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.Domain;
+import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.management.resources.ResourceGroup;
 import com.microsoft.azure.util.AzureCredentials;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
 import com.microsoft.jenkins.containeragents.util.TokenCache;
 import jenkins.model.Jenkins;
+import org.apache.commons.lang.StringUtils;
 import org.junit.Assert;
 import org.junit.rules.MethodRule;
 import org.junit.rules.TestRule;
@@ -41,7 +44,12 @@ public abstract class AzureContainerRule implements TestRule, MethodRule {
     public final String jenkinsUrl;
     public final String jnlpPort;
 
+    public String image;
+    public String privateRegistryUrl;
+    public String privateRegistryCredentialsId;
+
     public AzureCredentials.ServicePrincipal servicePrincipal = null;
+    public Azure azureClient = null;
 
     public AzureContainerRule() {
         subscriptionId = loadProperty("ACS_AGENT_TEST_SUBSCRIPTION_ID");
@@ -67,6 +75,27 @@ public abstract class AzureContainerRule implements TestRule, MethodRule {
         prepareResourceGroup();
     }
 
+    public void prepareImage(String imageEnv, String privateRegistryUrlEnv, String privateRegistryNameEnv, String privateRegistryKeyEnv) {
+        image = TestUtils.loadProperty(imageEnv, "jenkinsci/jnlp-slave");
+        privateRegistryUrl = TestUtils.loadProperty(privateRegistryUrlEnv);
+
+        final String privateRegistryName = TestUtils.loadProperty(privateRegistryNameEnv);
+        final String privateRegistryKey = TestUtils.loadProperty(privateRegistryKeyEnv);
+
+        if (StringUtils.isBlank(privateRegistryName) || StringUtils.isBlank(privateRegistryKey)) {
+            return;
+        }
+
+        StandardUsernamePasswordCredentials privateRegistryCredential = new UsernamePasswordCredentialsImpl(
+                CredentialsScope.GLOBAL,
+                privateRegistryCredentialsId = UUID.randomUUID().toString(),
+                "Private Registry for Test",
+                privateRegistryName,
+                privateRegistryKey
+        );
+        SystemCredentialsProvider.getInstance().getDomainCredentialsMap().get(Domain.global()).add(privateRegistryCredential);
+    }
+
 
     protected void prepareCredentials() throws Exception {
         AzureCredentials azureCredentials = new AzureCredentials(
@@ -87,8 +116,9 @@ public abstract class AzureContainerRule implements TestRule, MethodRule {
 
     protected void prepareServicePrincipal() throws Exception {
         servicePrincipal = AzureCredentials.getServicePrincipal(credentialsId);
-
         Assert.assertNotNull(servicePrincipal);
+        azureClient = TokenCache.getInstance(servicePrincipal).getAzureClient();
+        Assert.assertNotNull(azureClient);
     }
 
 

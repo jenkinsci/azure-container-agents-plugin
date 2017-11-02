@@ -16,10 +16,8 @@ import com.microsoft.jenkins.containeragents.aci.AciContainerTemplate;
 import com.microsoft.jenkins.containeragents.builders.AciCloudBuilder;
 import com.microsoft.jenkins.containeragents.builders.AciContainerTemplateBuilder;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
-import com.microsoft.jenkins.containeragents.util.TokenCache;
 import com.microsoftopentechnologies.windowsazurestorage.helper.AzureCredentials;
 import org.apache.commons.lang.RandomStringUtils;
-import org.apache.commons.lang.StringUtils;
 import org.junit.Assert;
 
 import java.util.UUID;
@@ -35,29 +33,19 @@ public class AciRule extends AzureContainerRule {
     public String privateRegistryUrl;
     public String privateRegistryCredentialsId;
 
-
-    public AciRule() {
-        super();
-        image = TestUtils.loadProperty("ACS_AGENT_TEST_IMAGE", "jenkinsci/jnlp-slave");
-        privateRegistryUrl = TestUtils.loadProperty("ACS_AGENT_TEST_REGISTRY_URL");
-    }
-
     @Override
     public void before() throws Exception {
         super.before();
         prepareStorageAccount();
-        preparePrivateRegistry();
+        prepareImage("ACI_AGENT_TEST_IMAGE",
+                "ACI_AGENT_TEST_REGISTRY_URL",
+                "ACI_AGENT_TEST_REGISTRY_NAME",
+                "ACI_AGENT_TEST_REGISTRY_KEY");
         prepareTemplate();
         prepareCloud();
     }
 
-    @Override
-    public void after() throws Exception {
-        super.after();
-    }
-
     public void prepareStorageAccount() throws Exception {
-        Azure azureClient = TokenCache.getInstance(servicePrincipal).getAzureClient();
         String accountName;
         StorageAccountKey accountKey;
 
@@ -92,25 +80,6 @@ public class AciRule extends AzureContainerRule {
                 "");
         SystemCredentialsProvider.getInstance().getDomainCredentialsMap().get(Domain.global()).add(storageCredential);
     }
-
-    public void preparePrivateRegistry() {
-        final String privateRegistryName = TestUtils.loadProperty("ACS_AGENT_TEST_REGISTRY_NAME");
-        final String privateRegistryKey = TestUtils.loadProperty("ACS_AGENT_TEST_REGISTRY_KEY");
-
-        if (StringUtils.isBlank(privateRegistryName) || StringUtils.isBlank(privateRegistryKey)) {
-            return;
-        }
-
-        StandardUsernamePasswordCredentials privateRegistryCredential = new UsernamePasswordCredentialsImpl(
-                CredentialsScope.GLOBAL,
-                privateRegistryCredentialsId = UUID.randomUUID().toString(),
-                "Private Registry for Test",
-                privateRegistryName,
-                privateRegistryKey
-        );
-        SystemCredentialsProvider.getInstance().getDomainCredentialsMap().get(Domain.global()).add(privateRegistryCredential);
-    }
-
 
     public void prepareCloud() throws Exception {
         cloud = new AciCloudBuilder().withCloudName(this.cloudName)

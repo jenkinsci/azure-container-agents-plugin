@@ -43,6 +43,7 @@ public class IntegrationTest {
             return new URL("http://"+TestUtils.loadProperty("ACS_AGENT_TEST_JENKINS_URL", "localhost")+":"+localPort+contextPath+"/");
         }
 
+        // Override createWebServer to listen all interface
         @Override
         protected ServletContext createWebServer() throws Exception {
             server = new Server(new ThreadPoolImpl(new ThreadPoolExecutor(10, 10, 10L, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>(),new ThreadFactory() {
@@ -72,6 +73,7 @@ public class IntegrationTest {
             HttpConfiguration config = connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration();
             // use a bigger buffer as Stapler traces can get pretty large on deeply nested URL
             config.setRequestHeaderSize(12 * 1024);
+            // Change to 0.0.0.0 for listening all interfaces
             connector.setHost("0.0.0.0");
             if (System.getProperty("port")!=null)
                 connector.setPort(Integer.parseInt(System.getProperty("port")));
