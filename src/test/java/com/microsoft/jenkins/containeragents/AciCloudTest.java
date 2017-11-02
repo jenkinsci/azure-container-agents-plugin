@@ -1,12 +1,16 @@
 package com.microsoft.jenkins.containeragents;
 
 
+import com.microsoft.jenkins.containeragents.aci.AciAgent;
+import com.microsoft.jenkins.containeragents.aci.AciService;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
 import hudson.model.*;
 import hudson.model.labels.LabelAtom;
 import hudson.slaves.NodeProvisioner;
 import hudson.tasks.Shell;
+import org.junit.Assert;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -16,22 +20,32 @@ import java.util.concurrent.TimeUnit;
 
 public class AciCloudTest extends IntegrationTest {
 
-    @ClassRule
-    public static AciRule aciRule = new AciRule();
+    @Rule
+    public AciRule aciRule = new AciRule();
 
     @Test
-    public void provisionAgent() throws Exception {
+    public void testProvisionAgent() throws Exception {
+        //Test provisioning node
         List<NodeProvisioner.PlannedNode> r = new ArrayList<>();
         aciRule.cloud.doProvision(aciRule.template, 1, r);
+        Node node = r.get(0).future.get();
+        Assert.assertTrue(node instanceof AciAgent);
+        AciAgent agent = (AciAgent) node;
 
-        //wait to online
-        r.get(0).future.get();
-
+        //Test running job on slave
         FreeStyleProject project = jenkinsRule.createFreeStyleProject(AzureContainerUtils.generateName("AciTestJob", 5));
         project.setAssignedLabel(new LabelAtom("AciTemplateTest"));
         project.getBuildersList().add(new Shell("cd /afs"));
         Future<FreeStyleBuild> build = project.scheduleBuild2(0);
-
         jenkinsRule.assertBuildStatus(Result.SUCCESS, build.get(60, TimeUnit.SECONDS));
+
+        //Test deleting remote agent and deployment
+        AciService.deleteAciContainerGroup(aciRule.credentialsId, aciRule.resourceGroup, agent.getNodeName(), agent.getDeployName());
+        Assert.assertNull(aciRule.azureClient.containerGroups().getByResourceGroup(aciRule.resourceGroup, agent.getNodeName()));
+        Assert.assertNull(aciRule.azureClient.deployments().getByResourceGroup(aciRule.resourceGroup, agent.getDeployName()));
+
+        //Test deleting Jenkins node
+        agent.terminate();
+        Assert.assertNull(jenkinsRule.getInstance().getNode(agent.getNodeName()));
     }
 }
