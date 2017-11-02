@@ -1,6 +1,5 @@
 package com.microsoft.jenkins.containeragents;
 
-import com.cloudbees.plugins.credentials.CredentialsDescriptor;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
@@ -19,16 +18,12 @@ import com.microsoft.jenkins.containeragents.builders.AciContainerTemplateBuilde
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
 import com.microsoft.jenkins.containeragents.util.TokenCache;
 import com.microsoftopentechnologies.windowsazurestorage.helper.AzureCredentials;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import hudson.util.Secret;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.junit.Assert;
-import org.junit.Test;
 
 import java.util.UUID;
 
-import static com.microsoft.jenkins.containeragents.IntegrationTest.jenkinsRule;
 
 public class AciRule extends AzureContainerRule {
 
@@ -131,7 +126,6 @@ public class AciRule extends AzureContainerRule {
                 .addNewEnvVar("ENV", "echo pass")
                 .addNewPort("8080")
                 .addNewAzureFileVolume("/afs", fileShareName, storageAccountCredentialsId)
-                .withCommand("jenkins-slave -url "+jenkinsRule.getURL().toString().replaceAll("localhost", privateRegistryUrl)+" ${secret} ${nodeName}")
                 .withImage(image)
                 .addNewPrivateRegistryCredential(privateRegistryUrl, privateRegistryCredentialsId)
                 .withIdleRetentionStrategy(60)
