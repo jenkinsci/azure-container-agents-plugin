@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-public class AciCloudTest extends IntegrationTest {
+public class AciCloudIT extends IntegrationTest {
 
     @Rule
     public AciRule aciRule = new AciRule();
@@ -34,7 +34,7 @@ public class AciCloudTest extends IntegrationTest {
 
         //Test running job on slave
         FreeStyleProject project = jenkinsRule.createFreeStyleProject(AzureContainerUtils.generateName("AciTestJob", 5));
-        project.setAssignedLabel(new LabelAtom("AciTemplateTest"));
+        project.setAssignedLabel(new LabelAtom(aciRule.label));
         project.getBuildersList().add(new Shell("cd /afs"));
         Future<FreeStyleBuild> build = project.scheduleBuild2(0);
         jenkinsRule.assertBuildStatus(Result.SUCCESS, build.get(60, TimeUnit.SECONDS));
@@ -42,7 +42,6 @@ public class AciCloudTest extends IntegrationTest {
         //Test deleting remote agent and deployment
         AciService.deleteAciContainerGroup(aciRule.credentialsId, aciRule.resourceGroup, agent.getNodeName(), agent.getDeployName());
         Assert.assertNull(aciRule.azureClient.containerGroups().getByResourceGroup(aciRule.resourceGroup, agent.getNodeName()));
-        Assert.assertNull(aciRule.azureClient.deployments().getByResourceGroup(aciRule.resourceGroup, agent.getDeployName()));
 
         //Test deleting Jenkins node
         agent.terminate();

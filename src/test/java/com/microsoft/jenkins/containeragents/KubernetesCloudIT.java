@@ -20,7 +20,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 
-public class KubernetesCloudTest extends IntegrationTest{
+public class KubernetesCloudIT extends IntegrationTest {
 
     @Rule
     public KubernetesRule k8sRule = new KubernetesRule(KubernetesRule.K8S);

@@ -61,7 +61,7 @@ public abstract class AzureContainerRule implements TestRule, MethodRule {
         resourceManagerEndpoint = loadProperty("ACS_AGENT_TEST_AZURE_RESOURCE_URL", "https://management.azure.com/");
         graphEndpoint = loadProperty("ACS_AGENT_TEST_AZURE_GRAPH_URL", "https://graph.windows.net/");
 
-        cloudName = AzureContainerUtils.generateName("AciCloudTest", 5);
+        cloudName = AzureContainerUtils.generateName("AzureContainerTest", 5);
         location = loadProperty("ACS_AGENT_TEST_AZURE_LOCATION", "East US");
         resourceGroup = AzureContainerUtils.generateName(loadProperty("ACS_AGENT_TEST_RESOURCE_GROUP", "AzureContainerTest"), 3);
         credentialsId = UUID.randomUUID().toString();
