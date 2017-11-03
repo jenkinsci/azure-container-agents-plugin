@@ -29,9 +29,7 @@ public class AciRule extends AzureContainerRule {
     public AciCloud cloud = null;
     public String storageAccountCredentialsId;
     public String fileShareName;
-    public String image;
-    public String privateRegistryUrl;
-    public String privateRegistryCredentialsId;
+    public String label;
 
     @Override
     public void before() throws Exception {
@@ -82,16 +80,17 @@ public class AciRule extends AzureContainerRule {
     }
 
     public void prepareCloud() throws Exception {
-        cloud = new AciCloudBuilder().withCloudName(this.cloudName)
-                .withAzureCredentialsId(this.credentialsId)
-                .withResourceGroup(this.resourceGroup)
+        cloud = new AciCloudBuilder().withCloudName(cloudName)
+                .withAzureCredentialsId(credentialsId)
+                .withResourceGroup(resourceGroup)
+                .addToTemplates(template)
                 .build();
     }
 
     public void prepareTemplate() throws Exception {
         template =  new AciContainerTemplateBuilder()
                 .withName(AzureContainerUtils.generateName("AciTemplate", 5))
-                .withLabel("AciTemplateTest")
+                .withLabel(label = AzureContainerUtils.generateName("AciTemplateTest",3))
                 .addNewEnvVar("ENV", "echo pass")
                 .addNewPort("8080")
                 .addNewAzureFileVolume("/afs", fileShareName, storageAccountCredentialsId)
