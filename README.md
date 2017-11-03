@@ -192,3 +192,23 @@ Jenkins.getInstance().clouds.add(myCloud);
 Azure Container Agents Plugin collects usage data and sends it to Microsoft to help improve our products and services. Read our [privacy statement](http://go.microsoft.com/fwlink/?LinkId=521839) to learn more.
 
 You can turn off usage data collection in Manage Jenkins -> Configure System -> Azure -> Help make Azure Jenkins plugins better by sending anonymous usage statistics to Azure Application Insights.
+
+Changelog
+=========
+
+Version 0.2.0, 2017-11-3
+--------------------------
+- Support Azure Kubernetes Service
+- Various bugs fix
+
+Version 0.1.2, 2017-10-18
+--------------------------
+- Remove runtime licenses
+
+Version 0.1.1, 2017-09-29
+--------------------------
+- Fixed a guava dependency issue
+
+Version 0.1.0, 2017-09-27
+--------------------------
+- Initial release
