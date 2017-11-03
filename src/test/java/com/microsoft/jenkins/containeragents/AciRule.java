@@ -2,10 +2,7 @@ package com.microsoft.jenkins.containeragents;
 
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
-import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.Domain;
-import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
-import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.management.storage.StorageAccount;
 import com.microsoft.azure.management.storage.StorageAccountKey;
 import com.microsoft.azure.storage.CloudStorageAccount;
