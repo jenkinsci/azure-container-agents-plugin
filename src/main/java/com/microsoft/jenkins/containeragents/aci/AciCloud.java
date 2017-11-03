@@ -74,74 +74,70 @@ public class AciCloud extends Cloud {
             List<NodeProvisioner.PlannedNode> r = new ArrayList<>();
             AciContainerTemplate template = getFirstTemplate(label);
             LOGGER.log(Level.INFO, "Using ACI Container template: {0}", template.getName());
-            doProvision(template, excessWorkload, r);
+            for (int i = 1; i <= excessWorkload; i++) {
+                r.add(new NodeProvisioner.PlannedNode(template.getName(), Computer.threadPoolForRemoting.submit(
+                        new Callable<Node>() {
+
+                            @Override
+                            public Node call() throws Exception {
+                                AciAgent agent = null;
+                                final Map<String, String> properties = new HashMap<>();
+
+                                try {
+                                    agent = new AciAgent(AciCloud.this, template);
+
+                                    LOGGER.log(Level.INFO, "Add ACI node: {0}", agent.getNodeName());
+                                    Jenkins.getInstance().addNode(agent);
+
+                                    //start a timeWatcher
+                                    StopWatch stopWatch = new StopWatch();
+                                    stopWatch.start();
+
+                                    //BI properties
+                                    properties.put(AppInsightsConstants.AZURE_SUBSCRIPTION_ID,
+                                            AzureCredentials.getServicePrincipal(credentialsId).getSubscriptionId());
+                                    properties.put(Constants.AI_ACI_NAME, agent.getNodeName());
+                                    properties.put(Constants.AI_ACI_CPU_CORE, template.getCpu());
+
+                                    //Deploy ACI and wait
+                                    template.provisionAgents(AciCloud.this, agent, stopWatch);
+
+                                    //wait JNLP to online
+                                    waitToOnline(agent, template.getTimeout(), stopWatch);
+
+                                    provisionRetryStrategy.success(template.getName());
+
+                                    //Send BI
+                                    ContainerPlugin.sendEvent(Constants.AI_ACI_AGENT, "Provision", properties);
+
+                                    return agent;
+                                } catch (Exception e) {
+                                    LOGGER.log(Level.WARNING, "AciCloud: Provision agent {0} failed: {1}",
+                                            new Object[] {agent == null ? "Known agent node" : agent.getNodeName(),
+                                                    e.getMessage()});
+
+                                    properties.put("Message", e.getMessage());
+                                    ContainerPlugin.sendEvent(Constants.AI_ACI_AGENT, "ProvisionFailed", properties);
+
+                                    if (agent != null) {
+                                        agent.terminate();
+                                    }
+
+                                    provisionRetryStrategy.failure(template.getName());
+
+                                    throw new Exception(e);
+                                }
+                            }
+                        }
+                ), 1));
+            }
+
             return r;
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, e.toString());
 
         }
         return Collections.emptyList();
-    }
-
-    public void doProvision(AciContainerTemplate template, int excessWorkload, List<NodeProvisioner.PlannedNode> r)
-        throws Exception {
-        for (int i = 1; i <= excessWorkload; i++) {
-            r.add(new NodeProvisioner.PlannedNode(template.getName(), Computer.threadPoolForRemoting.submit(
-                    new Callable<Node>() {
-
-                        @Override
-                        public Node call() throws Exception {
-                            AciAgent agent = null;
-                            final Map<String, String> properties = new HashMap<>();
-
-                            try {
-                                agent = new AciAgent(AciCloud.this, template);
-
-                                LOGGER.log(Level.INFO, "Add ACI node: {0}", agent.getNodeName());
-                                Jenkins.getInstance().addNode(agent);
-
-                                //start a timeWatcher
-                                StopWatch stopWatch = new StopWatch();
-                                stopWatch.start();
-
-                                //BI properties
-                                properties.put(AppInsightsConstants.AZURE_SUBSCRIPTION_ID,
-                                        AzureCredentials.getServicePrincipal(credentialsId).getSubscriptionId());
-                                properties.put(Constants.AI_ACI_NAME, agent.getNodeName());
-                                properties.put(Constants.AI_ACI_CPU_CORE, template.getCpu());
-
-                                //Deploy ACI and wait
-                                template.provisionAgents(AciCloud.this, agent, stopWatch);
-
-                                //wait JNLP to online
-                                waitToOnline(agent, template.getTimeout(), stopWatch);
-
-                                provisionRetryStrategy.success(template.getName());
-
-                                //Send BI
-                                ContainerPlugin.sendEvent(Constants.AI_ACI_AGENT, "Provision", properties);
-
-                                return agent;
-                            } catch (Exception e) {
-                                LOGGER.log(Level.WARNING, "AciCloud: Provision agent {0} failed: {1}",
-                                        new Object[] {agent == null ? "Known agent node" : agent.getNodeName(),
-                                                e.getMessage()});
-
-                                properties.put("Message", e.getMessage());
-                                ContainerPlugin.sendEvent(Constants.AI_ACI_AGENT, "ProvisionFailed", properties);
-
-                                if (agent != null) {
-                                    agent.terminate();
-                                }
-
-                                provisionRetryStrategy.failure(template.getName());
-
-                                throw new Exception(e);
-                            }
-                        }
-                    }
-            ), 1));
-        }
     }
 
     @Override
