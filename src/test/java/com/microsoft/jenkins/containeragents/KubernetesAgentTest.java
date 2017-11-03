@@ -1,7 +1,10 @@
 package com.microsoft.jenkins.containeragents;
 
 import hudson.model.Descriptor;
-import org.junit.*;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.mockito.Mockito;
 

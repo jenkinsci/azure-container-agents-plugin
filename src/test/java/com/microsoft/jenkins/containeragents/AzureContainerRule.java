@@ -10,7 +10,6 @@ import com.microsoft.azure.management.resources.ResourceGroup;
 import com.microsoft.azure.util.AzureCredentials;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
 import com.microsoft.jenkins.containeragents.util.TokenCache;
-import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.junit.Assert;
 import org.junit.rules.MethodRule;
@@ -18,7 +17,6 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.Statement;
-import org.jvnet.hudson.test.JenkinsRule;
 
 import java.util.UUID;
 
