@@ -47,7 +47,7 @@ public class KubernetesAgent extends AbstractCloudSlave {
                 template.getLabel(),
                 new JNLPLauncher(),
                 template.getRetentionStrategy(),
-                new ArrayList<>());
+                new ArrayList());
         cloudName = cloud.getDisplayName();
     }
 
@@ -73,7 +73,12 @@ public class KubernetesAgent extends AbstractCloudSlave {
             return;
         }
 
-        Computer.threadPoolForRemoting.execute(() -> ((KubernetesCloud) cloud).deletePod(name));
+        Computer.threadPoolForRemoting.execute(new Runnable() {
+            @Override
+            public void run() {
+                ((KubernetesCloud) cloud).deletePod(name);
+            }
+        });
     }
 
     static String generateAgentName(PodTemplate template) {

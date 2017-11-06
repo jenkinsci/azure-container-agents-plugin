@@ -9,6 +9,7 @@ package com.microsoft.jenkins.containeragents;
 import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.microsoft.azure.management.resources.fluentcore.arm.ResourceUtils;
 import com.microsoft.jenkins.containeragents.helper.AzureContainerServiceCredentials;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
@@ -21,20 +22,18 @@ import io.fabric8.kubernetes.api.model.ContainerState;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import jenkins.model.Jenkins;
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.time.StopWatch;
 
 import javax.naming.AuthenticationException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import static com.microsoft.jenkins.containeragents.util.AzureContainerUtils.getAzureClient;
 
 public final class KubernetesService {
     private static final Logger LOGGER = Logger.getLogger(KubernetesService.class.getName());
@@ -65,7 +64,7 @@ public final class KubernetesService {
     }
 
     public static File getConfigViaBase64(String encodedConfig) throws Exception {
-        byte[] data = Base64.getDecoder().decode(encodedConfig);
+        byte[] data = Base64.decodeBase64(encodedConfig);
 
         File configFile = File.createTempFile("kube",
                 ".config",
@@ -135,14 +134,14 @@ public final class KubernetesService {
                 CredentialsProvider.lookupCredentials(BasicSSHUserPrivateKey.class,
                         Jenkins.getInstance(),
                         ACL.SYSTEM,
-                        Collections.emptyList()),
+                        Collections.<DomainRequirement>emptyList()),
                 CredentialsMatchers.withId(credentialsId));
     }
 
     public static ContainerService getContainerService(final String azureCredentialsId,
                                                        final String resourceGroup,
                                                        final String serviceName) throws Exception {
-        final Azure azureClient = getAzureClient(azureCredentialsId);
+        final Azure azureClient = AzureContainerUtils.getAzureClient(azureCredentialsId);
         return azureClient.containerServices().getByResourceGroup(resourceGroup, serviceName);
     }
 
@@ -190,7 +189,7 @@ public final class KubernetesService {
                                                        String resourceGroup,
                                                        String serviceName) {
         try {
-            Azure azureClient = getAzureClient(azureCredentialsId);
+            Azure azureClient = AzureContainerUtils.getAzureClient(azureCredentialsId);
             String resourceId = ResourceUtils.constructResourceId(azureClient.subscriptionId(),
                     resourceGroup,
                     Constants.AKS_NAMESPACE,

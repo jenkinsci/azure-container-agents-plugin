@@ -3,6 +3,7 @@ package com.microsoft.jenkins.containeragents.aci;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
+import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -167,7 +168,7 @@ public final class AciService {
                         StandardUsernamePasswordCredentials.class,
                         Jenkins.getInstance(),
                         ACL.SYSTEM,
-                        Collections.emptyList()),
+                        Collections.<DomainRequirement>emptyList()),
                 CredentialsMatchers.withId(endpoint.getCredentialsId()));
         ArrayNode credentialNode = ArrayNode.class.cast(tmp.get("resources").get(0)
                 .get("properties").get("imageRegistryCredentials"));

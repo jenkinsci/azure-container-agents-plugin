@@ -72,7 +72,7 @@ public class AciCloud extends Cloud {
             LOGGER.log(Level.INFO, "Start ACI container for label {0} workLoad {1}",
                     new Object[] {label, excessWorkload});
             List<NodeProvisioner.PlannedNode> r = new ArrayList<>();
-            AciContainerTemplate template = getFirstTemplate(label);
+            final AciContainerTemplate template = getFirstTemplate(label);
             LOGGER.log(Level.INFO, "Using ACI Container template: {0}", template.getName());
             for (int i = 1; i <= excessWorkload; i++) {
                 r.add(new NodeProvisioner.PlannedNode(template.getName(), Computer.threadPoolForRemoting.submit(

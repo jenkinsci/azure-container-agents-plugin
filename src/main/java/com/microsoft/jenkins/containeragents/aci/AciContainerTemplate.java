@@ -76,16 +76,30 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
         this.osType = osType;
         this.command = command;
         this.rootFs = rootFs;
-        this.ports = ports == null ? new ArrayList<>() : ports;
+        if (ports == null) {
+            this.ports = new ArrayList<>();
+        } else {
+            this.ports = ports;
+        }
         this.cpu = cpu;
         this.memory = memory;
         this.timeout = timeout;
         this.retentionStrategy = retentionStrategy;
-        this.envVars = envVars == null ? new ArrayList<>() : envVars;
-        this.privateRegistryCredentials = privateRegistryCredentials == null
-                ? new ArrayList<>()
-                : privateRegistryCredentials;
-        this.volumes = volumes == null ? new ArrayList<>() : volumes;
+        if (envVars == null) {
+            this.envVars = new ArrayList<>();
+        } else {
+            this.envVars = envVars;
+        }
+        if (privateRegistryCredentials == null) {
+            this.privateRegistryCredentials = new ArrayList<>();
+        } else {
+            this.privateRegistryCredentials = privateRegistryCredentials;
+        }
+        if (volumes == null) {
+            this.volumes = new ArrayList<>();
+        } else {
+            this.volumes = volumes;
+        }
         setAvailable(true);
     }
 

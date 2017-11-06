@@ -65,7 +65,7 @@ public class TokenCache {
         return "AzureContainerService(Kubernetes)/" + version + "/" + instanceId;
     }
 
-    public static ApplicationTokenCredentials get(AzureCredentials.ServicePrincipal servicePrincipal) {
+    public static ApplicationTokenCredentials get(final AzureCredentials.ServicePrincipal servicePrincipal) {
         //only support Azure global currently
         return new ApplicationTokenCredentials(
                 servicePrincipal.getClientId(),

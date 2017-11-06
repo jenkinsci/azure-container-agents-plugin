@@ -4,6 +4,7 @@ package com.microsoft.jenkins.containeragents.util;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
+import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.microsoft.azure.AzureEnvironment;
 import com.microsoft.azure.credentials.ApplicationTokenCredentials;
 import com.microsoft.azure.credentials.AzureTokenCredentials;
@@ -33,6 +34,10 @@ import java.util.logging.Logger;
 public final class AzureContainerUtils {
     private static final Logger LOGGER = Logger.getLogger(AzureContainerUtils.class.getName());
 
+    static {
+        System.out.println("here");
+    }
+
     public static String generateName(String name, int randomLength) {
         final int maxNameLength = 62;
         String randString = RandomStringUtils.random(randomLength, "bcdfghjklmnpqrstvwxz0123456789");
@@ -60,11 +65,11 @@ public final class AzureContainerUtils {
         listBoxModel.withAll(CredentialsProvider.lookupCredentials(AzureCredentials.class,
                 owner,
                 ACL.SYSTEM,
-                Collections.emptyList()));
+                Collections.<DomainRequirement>emptyList()));
         listBoxModel.withAll(CredentialsProvider.lookupCredentials(AzureMsiCredentials.class,
                 owner,
                 ACL.SYSTEM,
-                Collections.emptyList()));
+                Collections.<DomainRequirement>emptyList()));
         return listBoxModel;
     }
 
@@ -94,7 +99,7 @@ public final class AzureContainerUtils {
                         AzureMsiCredentials.class,
                         Jenkins.getInstance(),
                         ACL.SYSTEM,
-                        Collections.emptyList()),
+                        Collections.<DomainRequirement>emptyList()),
                 CredentialsMatchers.withId(credentialsId));
         if (credential != null) {
             try {
