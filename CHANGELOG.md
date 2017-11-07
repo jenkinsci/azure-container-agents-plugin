@@ -2,6 +2,7 @@
 
 ## Version 0.2.0, 2017-11-3
 * Support Azure Kubernetes Service
+* Add Third Party Notice
 * Various bugs fix
 
 ## Version 0.1.2, 2017-10-18
