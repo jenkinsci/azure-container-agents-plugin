@@ -159,6 +159,9 @@ public final class AciService {
     private static void addImageRegistryCredentialNode(JsonNode tmp,
                                                        ObjectMapper mapper,
                                                        DockerRegistryEndpoint endpoint) throws IOException {
+        if (StringUtils.isBlank(endpoint.getCredentialsId())) {
+            return;
+        }
         StandardUsernamePasswordCredentials credentials = CredentialsMatchers.firstOrNull(
                 CredentialsProvider.lookupCredentials(
                         StandardUsernamePasswordCredentials.class,
