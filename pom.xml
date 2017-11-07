@@ -7,7 +7,7 @@
     </parent>
 
     <artifactId>azure-container-agents</artifactId>
-    <version>0.2.0</version>
+    <version>0.2.1-SNAPSHOT</version>
     <packaging>hpi</packaging>
     <name>Azure Container Agents Plugin</name>
     <description>A Jenkins plugin to provisions agents on Azure Container Service and Azure Container Instances</description>
@@ -175,7 +175,7 @@
         <connection>scm:git:ssh://git@github.com/jenkinsci/azure-container-agents-plugin.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/jenkinsci/azure-container-agents-plugin.git</developerConnection>
         <url>https://github.com/jenkinsci/azure-container-agents-plugin</url>
-        <tag>azure-container-agents-0.2.0</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <repositories>
