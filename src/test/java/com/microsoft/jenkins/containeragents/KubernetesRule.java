@@ -2,13 +2,19 @@ package com.microsoft.jenkins.containeragents;
 
 import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.CredentialsScope;
+import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
+import com.cloudbees.plugins.credentials.domains.Domain;
 import com.microsoft.jenkins.containeragents.builders.KubernetesCloudBuilder;
 import com.microsoft.jenkins.containeragents.builders.PodTemplateBuilder;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 
+import java.io.File;
 import java.util.UUID;
+
+import static com.microsoft.jenkins.containeragents.TestUtils.loadProperty;
 
 public class KubernetesRule extends AzureContainerRule {
 
@@ -28,13 +34,17 @@ public class KubernetesRule extends AzureContainerRule {
     public KubernetesRule(String type) {
         super();
         TYPE = type;
+        location = loadProperty(TYPE+"_AGENT_TEST_AZURE_LOCATION", "East US");
+        resourceGroup = loadProperty(TYPE+"_AGENT_TEST_RESOURCE_GROUP");
     }
 
     @Override
     public void before() throws Exception {
         super.before();
         serviceName = TestUtils.loadProperty(TYPE+"_AGENT_TEST_SERVICE_NAME");
-        prepareAcsCredential();
+        if (TYPE.equals(KubernetesRule.K8S)) {
+            prepareAcsCredential();
+        }
         prepareImage(TYPE+"_AGENT_TEST_IMAGE",
                 TYPE+"_AGENT_TEST_REGISTRY_URL",
                 TYPE+"_AGENT_TEST_REGISTRY_NAME",
@@ -52,15 +62,15 @@ public class KubernetesRule extends AzureContainerRule {
     }
 
     public void prepareAcsCredential() throws Exception {
-        String username = TestUtils.loadProperty(TYPE+"_AGENT_SSH_USERNAME");
-        String privateKey = TestUtils.loadProperty(TYPE+"_AGENT_SSH_PRIVATE_KEY");
-        String passphrase = TestUtils.loadProperty(TYPE+"_AGENT_SSH_PASSPHRASE");
+        String username = TestUtils.loadProperty(TYPE+"_AGENT_TEST_SSH_USERNAME");
+        String privateKey = FileUtils.readFileToString(new File(TestUtils.loadProperty(TYPE+"_AGENT_TEST_SSH_PRIVATE_KEY_PATH")));
+        String passphrase = TestUtils.loadProperty(TYPE+"_AGENT_TEST_SSH_PASSPHRASE");
 
         if (StringUtils.isBlank(username) || StringUtils.isBlank(privateKey)) {
             return;
         }
 
-        new BasicSSHUserPrivateKey(
+        BasicSSHUserPrivateKey acsCredentials = new BasicSSHUserPrivateKey(
                 CredentialsScope.GLOBAL,
                 acsCredentialsId = UUID.randomUUID().toString(),
                 username,
@@ -68,6 +78,8 @@ public class KubernetesRule extends AzureContainerRule {
                 passphrase,
                 "Acs Credentials for Test"
         );
+        SystemCredentialsProvider.getInstance().getDomainCredentialsMap().get(Domain.global()).add(acsCredentials);
+
     }
 
     public void prepareTemplate() throws Exception {

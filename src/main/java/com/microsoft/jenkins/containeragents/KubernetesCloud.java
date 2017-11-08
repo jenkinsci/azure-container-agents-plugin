@@ -298,8 +298,8 @@ public class KubernetesCloud extends Cloud {
 
     @DataBoundSetter
     public void setAcsCredentialsId(String acsCredentialsId) {
-        this.acsCredentialsId = acsCredentialsId;
-        this.acsCredentials = AzureContainerServiceCredentials.getKubernetesCredential(acsCredentialsId);
+        this.acsCredentialsId = StringUtils.defaultString(acsCredentialsId);
+        this.acsCredentials = AzureContainerServiceCredentials.getKubernetesCredential(this.acsCredentialsId);
     }
 
     public String getAcsCredentialsId() {

@@ -21,10 +21,7 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.net.URL;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -90,7 +87,7 @@ public class IntegrationTest {
         @Override
         public void before() throws Throwable {
             super.before();
-            jenkins.setSlaveAgentPort(60000);
+            jenkins.setSlaveAgentPort(ThreadLocalRandom.current().nextInt(50001, 60001));
             jenkins.save();
         }
     };

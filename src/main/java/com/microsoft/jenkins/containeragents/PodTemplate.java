@@ -159,7 +159,7 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> {
         Container container = new ContainerBuilder()
                 .withName(agent.getNodeName())
                 .withImage(image)
-                .withCommand(command.equals("") ? null : Lists.newArrayList(command))
+                .withCommand(StringUtils.isBlank(command) ? null : Lists.newArrayList(command))
                 .withArgs(arguments.expand(args).split(" "))
                 .withVolumeMounts(volumeMounts)
                 .withNewResources()
@@ -349,9 +349,15 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> {
 
     @DataBoundSetter
     public void setPrivateRegistryCredentials(List<DockerRegistryEndpoint> privateRegistryCredentials) {
-        this.privateRegistryCredentials = privateRegistryCredentials == null
-                ? new ArrayList<>()
-                : privateRegistryCredentials;
+        if (privateRegistryCredentials == null) {
+            this.privateRegistryCredentials = new ArrayList<>();
+            return;
+        }
+        for (DockerRegistryEndpoint endpoint : privateRegistryCredentials) {
+            if (StringUtils.isNotBlank(endpoint.getCredentialsId())) {
+                this.privateRegistryCredentials.add(endpoint);
+            }
+        }
     }
 
     public List<DockerRegistryEndpoint> getPrivateRegistryCredentials() {

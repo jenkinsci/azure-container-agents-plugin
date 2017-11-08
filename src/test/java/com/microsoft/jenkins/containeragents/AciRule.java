@@ -3,6 +3,8 @@ package com.microsoft.jenkins.containeragents;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
 import com.cloudbees.plugins.credentials.domains.Domain;
+import com.microsoft.azure.management.Azure;
+import com.microsoft.azure.management.resources.ResourceGroup;
 import com.microsoft.azure.management.storage.StorageAccount;
 import com.microsoft.azure.management.storage.StorageAccountKey;
 import com.microsoft.azure.storage.CloudStorageAccount;
@@ -13,11 +15,14 @@ import com.microsoft.jenkins.containeragents.aci.AciContainerTemplate;
 import com.microsoft.jenkins.containeragents.builders.AciCloudBuilder;
 import com.microsoft.jenkins.containeragents.builders.AciContainerTemplateBuilder;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
+import com.microsoft.jenkins.containeragents.util.TokenCache;
 import com.microsoftopentechnologies.windowsazurestorage.helper.AzureCredentials;
 import org.apache.commons.lang.RandomStringUtils;
 import org.junit.Assert;
 
 import java.util.UUID;
+
+import static com.microsoft.jenkins.containeragents.TestUtils.loadProperty;
 
 
 public class AciRule extends AzureContainerRule {
@@ -28,9 +33,16 @@ public class AciRule extends AzureContainerRule {
     public String fileShareName;
     public String label;
 
+    public AciRule() {
+        super();
+        location = loadProperty("ACI_AGENT_TEST_AZURE_LOCATION", "East US");
+        resourceGroup = AzureContainerUtils.generateName(loadProperty("ACI_AGENT_TEST_RESOURCE_GROUP", "AzureContainerTest"), 3);
+    }
+
     @Override
     public void before() throws Exception {
         super.before();
+        prepareResourceGroup();
         prepareStorageAccount();
         prepareImage("ACI_AGENT_TEST_IMAGE",
                 "ACI_AGENT_TEST_REGISTRY_URL",
@@ -38,6 +50,22 @@ public class AciRule extends AzureContainerRule {
                 "ACI_AGENT_TEST_REGISTRY_KEY");
         prepareTemplate();
         prepareCloud();
+    }
+
+    @Override
+    public void after() throws Exception {
+        super.after();
+        cleanResourceGroup();
+    }
+
+    public void prepareResourceGroup() throws Exception {
+        Azure azureClient = TokenCache.getInstance(servicePrincipal).getAzureClient();
+        ResourceGroup rg = azureClient.resourceGroups().getByName(resourceGroup);
+        if (rg == null) {
+            rg = azureClient.resourceGroups().define(resourceGroup).withRegion(location).create();
+        }
+
+        Assert.assertNotNull(rg);
     }
 
     public void prepareStorageAccount() throws Exception {
@@ -99,5 +127,10 @@ public class AciRule extends AzureContainerRule {
         Assert.assertNotNull(template);
     }
 
+    public void cleanResourceGroup() throws Exception {
+        Azure azureClient = TokenCache.getInstance(servicePrincipal).getAzureClient();
+        azureClient.resourceGroups().deleteByName(resourceGroup);
 
+        Assert.assertNull(azureClient.resourceGroups().getByName(resourceGroup));
+    }
 }

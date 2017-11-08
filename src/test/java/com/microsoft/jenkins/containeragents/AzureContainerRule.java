@@ -6,7 +6,6 @@ import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredenti
 import com.cloudbees.plugins.credentials.domains.Domain;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.microsoft.azure.management.Azure;
-import com.microsoft.azure.management.resources.ResourceGroup;
 import com.microsoft.azure.util.AzureCredentials;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
 import com.microsoft.jenkins.containeragents.util.TokenCache;
@@ -36,8 +35,8 @@ public abstract class AzureContainerRule implements TestRule, MethodRule {
     public final String graphEndpoint;
 
     public final String cloudName;
-    public final String location;
-    public final String resourceGroup;
+    public String location;
+    public String resourceGroup;
     public final String credentialsId;
     public final String jenkinsUrl;
     public final String jnlpPort;
@@ -60,8 +59,7 @@ public abstract class AzureContainerRule implements TestRule, MethodRule {
         graphEndpoint = loadProperty("ACS_AGENT_TEST_AZURE_GRAPH_URL", "https://graph.windows.net/");
 
         cloudName = AzureContainerUtils.generateName("AzureContainerTest", 5);
-        location = loadProperty("ACS_AGENT_TEST_AZURE_LOCATION", "East US");
-        resourceGroup = AzureContainerUtils.generateName(loadProperty("ACS_AGENT_TEST_RESOURCE_GROUP", "AzureContainerTest"), 3);
+
         credentialsId = UUID.randomUUID().toString();
         jenkinsUrl = loadProperty("ACS_AGENT_TEST_JENKINS_URL", "localhost");
         jnlpPort = loadProperty("ACS_AGENT_TEST_JNLP_PORT", "60000");
@@ -70,7 +68,6 @@ public abstract class AzureContainerRule implements TestRule, MethodRule {
     public void before() throws Exception {
         prepareCredentials();
         prepareServicePrincipal();
-        prepareResourceGroup();
     }
 
     public void prepareImage(String imageEnv, String privateRegistryUrlEnv, String privateRegistryNameEnv, String privateRegistryKeyEnv) {
@@ -119,27 +116,11 @@ public abstract class AzureContainerRule implements TestRule, MethodRule {
         Assert.assertNotNull(azureClient);
     }
 
-
-    public void prepareResourceGroup() throws Exception {
-        Azure azureClient = TokenCache.getInstance(servicePrincipal).getAzureClient();
-        ResourceGroup rg = azureClient.resourceGroups().getByName(resourceGroup);
-        if (rg == null) {
-            rg = azureClient.resourceGroups().define(resourceGroup).withRegion(location).create();
-        }
-
-        Assert.assertNotNull(rg);
-    }
-
     public void after() throws Exception {
-        cleanResourceGroup();
+
     }
 
-    public void cleanResourceGroup() throws Exception {
-        Azure azureClient = TokenCache.getInstance(servicePrincipal).getAzureClient();
-        azureClient.resourceGroups().deleteByName(resourceGroup);
 
-        Assert.assertNull(azureClient.resourceGroups().getByName(resourceGroup));
-    }
 
     @Override
     public Statement apply(Statement base, FrameworkMethod method, Object target) {
