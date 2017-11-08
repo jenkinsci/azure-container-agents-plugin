@@ -17,6 +17,7 @@ import hudson.slaves.AbstractCloudComputer;
 import hudson.slaves.AbstractCloudSlave;
 import hudson.slaves.Cloud;
 import hudson.slaves.JNLPLauncher;
+import hudson.slaves.NodeProperty;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
@@ -25,7 +26,7 @@ import org.kohsuke.stapler.StaplerRequest;
 
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -47,7 +48,7 @@ public class KubernetesAgent extends AbstractCloudSlave {
                 template.getLabel(),
                 new JNLPLauncher(),
                 template.getRetentionStrategy(),
-                new ArrayList());
+                Collections.<NodeProperty<Node>>emptyList());
         cloudName = cloud.getDisplayName();
     }
 
