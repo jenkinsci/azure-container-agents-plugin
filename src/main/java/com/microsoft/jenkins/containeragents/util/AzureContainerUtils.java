@@ -12,7 +12,6 @@ import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.management.resources.ResourceGroup;
 import com.microsoft.azure.util.AzureCredentials;
 import com.microsoft.azure.util.AzureMsiCredentials;
-import com.microsoft.jenkins.azurecommons.credentials.MsiTokenCredentials;
 import com.microsoft.jenkins.containeragents.Messages;
 import com.microsoft.jenkins.containeragents.ContainerPlugin;
 import com.microsoft.rest.LogLevel;
@@ -114,17 +113,33 @@ public final class AzureContainerUtils {
     }
 
     public static Azure getAzureClient(AzureCredentials.ServicePrincipal servicePrincipal) {
+        AzureEnvironment environment = getAzureEnvironment(servicePrincipal);
         AzureTokenCredentials token = new ApplicationTokenCredentials(
                 servicePrincipal.getClientId(),
                 servicePrincipal.getTenant(),
                 servicePrincipal.getClientSecret(),
-                servicePrincipal.getAzureEnvironment());
+                environment);
         return Azure.configure()
                 .withInterceptor(new ContainerPlugin.AzureTelemetryInterceptor())
                 .withLogLevel(LogLevel.NONE)
                 .withUserAgent(getUserAgent())
                 .authenticate(token)
                 .withSubscription(servicePrincipal.getSubscriptionId());
+    }
+
+    private static AzureEnvironment getAzureEnvironment(AzureCredentials.ServicePrincipal servicePrincipal) {
+        String managementEndpoint = servicePrincipal.getManagementEndpoint();
+        if (managementEndpoint.equals(AzureEnvironment.AZURE.managementEndpoint())) {
+            return AzureEnvironment.AZURE;
+        } else if (managementEndpoint.equals(AzureEnvironment.AZURE_CHINA.managementEndpoint())) {
+            return AzureEnvironment.AZURE_CHINA;
+        } else if (managementEndpoint.equals(AzureEnvironment.AZURE_GERMANY.managementEndpoint())) {
+            return AzureEnvironment.AZURE_GERMANY;
+        } else if (managementEndpoint.equals(AzureEnvironment.AZURE_US_GOVERNMENT.managementEndpoint())) {
+            return AzureEnvironment.AZURE_US_GOVERNMENT;
+        } else {
+            return AzureEnvironment.AZURE;
+        }
     }
 
     public static Azure getAzureClient(int msiPort) throws IOException {
