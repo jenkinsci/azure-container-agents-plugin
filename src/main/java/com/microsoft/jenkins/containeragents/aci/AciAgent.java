@@ -11,6 +11,7 @@ import hudson.slaves.AbstractCloudComputer;
 import hudson.slaves.AbstractCloudSlave;
 import hudson.slaves.Cloud;
 import hudson.slaves.JNLPLauncher;
+import hudson.slaves.NodeProperty;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
@@ -19,7 +20,7 @@ import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.StaplerRequest;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -45,7 +46,7 @@ public class AciAgent extends AbstractCloudSlave {
                 template.getLabel(),
                 new JNLPLauncher(),
                 template.getRetentionStrategy(),
-                new ArrayList<>());
+                Collections.<NodeProperty<Node>>emptyList());
         this.credentialsId = cloud.getCredentialsId();
         this.cloudName = cloud.getName();
         this.resourceGroup = cloud.getResourceGroup();
@@ -73,10 +74,15 @@ public class AciAgent extends AbstractCloudSlave {
             return;
         }
 
-        Computer.threadPoolForRemoting.execute(() -> AciService.deleteAciContainerGroup(credentialsId,
-                resourceGroup,
-                getNodeName(),
-                deployName));
+        Computer.threadPoolForRemoting.execute(new Runnable() {
+            @Override
+            public void run() {
+                AciService.deleteAciContainerGroup(credentialsId,
+                        resourceGroup,
+                        AciAgent.this.getNodeName(),
+                        deployName);
+            }
+        });
     }
 
     static String generateAgentName(AciContainerTemplate template) {

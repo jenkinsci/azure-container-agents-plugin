@@ -20,7 +20,7 @@
         <jackson.version>2.7.2</jackson.version>
         <jenkins.version>1.651.3</jenkins.version>
         <guava.version>20.0</guava.version>
-        <java.level>8</java.level>
+        <java.level>7</java.level>
         <findbugs.failOnError>true</findbugs.failOnError>
         <findbugs.excludeFilterFile>findbugs-exclude.xml</findbugs.excludeFilterFile>
         <maven.javadoc.skip>true</maven.javadoc.skip>
@@ -149,11 +149,6 @@
             <version>0.1.54</version>
         </dependency>
         <dependency>
-            <groupId>com.github.cverges.expect4j</groupId>
-            <artifactId>expect4j</artifactId>
-            <version>1.6</version>
-        </dependency>
-        <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>azure-commons</artifactId>
             <version>${azure-commons.version}</version>
@@ -182,16 +177,6 @@
         <repository>
             <id>repo.jenkins-ci.org</id>
             <url>http://repo.jenkins-ci.org/public/</url>
-        </repository>
-        <repository>
-            <id>com.springsource.repository.bundles.release</id>
-            <name>SpringSource Enterprise Bundle Repository - SpringSource Bundle Releases</name>
-            <url>http://repository.springsource.com/maven/bundles/release</url>
-        </repository>
-        <repository>
-            <id>com.springsource.repository.bundles.external</id>
-            <name>SpringSource Enterprise Bundle Repository - External Bundle Releases</name>
-            <url>http://repository.springsource.com/maven/bundles/external</url>
         </repository>
     </repositories>
 

@@ -45,8 +45,8 @@ public class AciCleanTask extends AsyncPeriodicWork {
             return;
         }
 
-        String resourceGroup = cloud.getResourceGroup();
-        String credentialsId = cloud.getCredentialsId();
+        final String resourceGroup = cloud.getResourceGroup();
+        final String credentialsId = cloud.getCredentialsId();
         if (StringUtils.isBlank(resourceGroup) || StringUtils.isBlank(credentialsId)) {
             return;
         }
@@ -54,17 +54,22 @@ public class AciCleanTask extends AsyncPeriodicWork {
         Set<String> validContainerSet = getValidContainer();
 
         List<GenericResource> resourceList = azureClient.genericResources().listByResourceGroup(resourceGroup);
-        for (GenericResource resource : resourceList) {
+        for (final GenericResource resource : resourceList) {
             if (resource.resourceProviderNamespace().equalsIgnoreCase("Microsoft.ContainerInstance")
                     && resource.resourceType().equalsIgnoreCase("containerGroups")
                     && resource.tags().containsKey("JenkinsInstance")
                     && resource.tags().get("JenkinsInstance")
                         .equalsIgnoreCase(Jenkins.getInstance().getLegacyInstanceId())) {
                 if (!validContainerSet.contains(resource.name())) {
-                    AciCloud.getThreadPool().submit(() -> AciService.deleteAciContainerGroup(credentialsId,
-                            resourceGroup,
-                            resource.name(),
-                            null));
+                    AciCloud.getThreadPool().submit(new Runnable() {
+                        @Override
+                        public void run() {
+                            AciService.deleteAciContainerGroup(credentialsId,
+                                    resourceGroup,
+                                    resource.name(),
+                                    null);
+                        }
+                    });
                 }
             }
         }
