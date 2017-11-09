@@ -33,10 +33,6 @@ import java.util.logging.Logger;
 public final class AzureContainerUtils {
     private static final Logger LOGGER = Logger.getLogger(AzureContainerUtils.class.getName());
 
-    static {
-        System.out.println("here");
-    }
-
     public static String generateName(String name, int randomLength) {
         final int maxNameLength = 62;
         String randString = RandomStringUtils.random(randomLength, "bcdfghjklmnpqrstvwxz0123456789");

@@ -20,6 +20,7 @@ You can also manually install the plugin if you want to try the latest feature b
 
 ## Pre-requirements
 * Service Principal: [Create Service Principal via Azure CLI 2.0](https://docs.microsoft.com/en-us/cli/azure/create-an-azure-service-principal-azure-cli?toc=%2fazure%2fazure-resource-manager%2ftoc.json)
+* or Managed Service Identity: [Configure a VM Managed Service Identity (MSI) using the Azure portal](https://docs.microsoft.com/en-us/azure/active-directory/msi-qs-configure-portal-windows-vm)
 
 ## Azure Container Service (Kubernetes)
 
@@ -38,7 +39,7 @@ If using Azure Container Service (Kubernetes), you need to [create Azure Contain
 1. Jenkins -> Manage Jenkins -> Configure System
 2. Press `Add a new cloud` and choose `Azure Container Service(Kubernetes)`
 3. Specify `Cloud Name` and it should be unique.
-4. Choose an existing `Azure Service Principal` or create a new credential.
+4. Choose an existing `Azure Credential` or create a new credential.
 5. Choose `Resource Group` and `Container Service Name`.
 6. Specify `Namespace`
 7. Choose an existing `ACS Credential` or create a new one. If you using Azure Container Service (AKS), then you don't need to choose `ACS Credential`. Or you can choose one of two different kinds of credentials:
@@ -129,7 +130,7 @@ Jenkins.getInstance().clouds.add(myCloud);
 1. Jenkins -> Manage Jenkins -> Configure System
 2. Press `Add a new cloud` and choose `Azure Container Instance`
 3. Specify `Cloud Name` and it should be unique.
-4. Choose an existing `Azure Service Principal` or create a new credential.
+4. Choose an existing `Azure Credential` or create a new credential.
 5. Choose `Resource Group`.
 
 ## Configure the Container Template

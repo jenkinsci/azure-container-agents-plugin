@@ -6,7 +6,7 @@
         <f:textbox default="Aci"/>
     </f:entry>
 
-    <f:entry title="${%Azure_Service_Principal}" field="credentialsId">
+    <f:entry title="${%Azure_Credential}" field="credentialsId">
         <c:select expressionAllowed="false"/>
     </f:entry>
 
