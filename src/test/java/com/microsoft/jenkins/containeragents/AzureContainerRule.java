@@ -8,7 +8,6 @@ import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.util.AzureCredentials;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
-import com.microsoft.jenkins.containeragents.util.TokenCache;
 import org.apache.commons.lang.StringUtils;
 import org.junit.Assert;
 import org.junit.rules.MethodRule;
@@ -112,7 +111,7 @@ public abstract class AzureContainerRule implements TestRule, MethodRule {
     protected void prepareServicePrincipal() throws Exception {
         servicePrincipal = AzureCredentials.getServicePrincipal(credentialsId);
         Assert.assertNotNull(servicePrincipal);
-        azureClient = TokenCache.getInstance(servicePrincipal).getAzureClient();
+        azureClient = AzureContainerUtils.getAzureClient(credentialsId);
         Assert.assertNotNull(azureClient);
     }
 

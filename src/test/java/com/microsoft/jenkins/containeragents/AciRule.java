@@ -15,7 +15,6 @@ import com.microsoft.jenkins.containeragents.aci.AciContainerTemplate;
 import com.microsoft.jenkins.containeragents.builders.AciCloudBuilder;
 import com.microsoft.jenkins.containeragents.builders.AciContainerTemplateBuilder;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
-import com.microsoft.jenkins.containeragents.util.TokenCache;
 import com.microsoftopentechnologies.windowsazurestorage.helper.AzureCredentials;
 import org.apache.commons.lang.RandomStringUtils;
 import org.junit.Assert;
@@ -59,7 +58,7 @@ public class AciRule extends AzureContainerRule {
     }
 
     public void prepareResourceGroup() throws Exception {
-        Azure azureClient = TokenCache.getInstance(servicePrincipal).getAzureClient();
+        Azure azureClient = AzureContainerUtils.getAzureClient(credentialsId);
         ResourceGroup rg = azureClient.resourceGroups().getByName(resourceGroup);
         if (rg == null) {
             rg = azureClient.resourceGroups().define(resourceGroup).withRegion(location).create();
@@ -128,7 +127,7 @@ public class AciRule extends AzureContainerRule {
     }
 
     public void cleanResourceGroup() throws Exception {
-        Azure azureClient = TokenCache.getInstance(servicePrincipal).getAzureClient();
+        Azure azureClient = AzureContainerUtils.getAzureClient(credentialsId);
         azureClient.resourceGroups().deleteByName(resourceGroup);
 
         Assert.assertNull(azureClient.resourceGroups().getByName(resourceGroup));
