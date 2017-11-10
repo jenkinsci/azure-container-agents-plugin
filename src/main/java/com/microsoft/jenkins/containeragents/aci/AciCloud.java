@@ -15,6 +15,7 @@ import hudson.model.Item;
 import hudson.model.Label;
 import hudson.model.Node;
 import hudson.slaves.Cloud;
+import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.slaves.NodeProvisioner;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
@@ -72,7 +73,7 @@ public class AciCloud extends Cloud {
             LOGGER.log(Level.INFO, "Start ACI container for label {0} workLoad {1}",
                     new Object[] {label, excessWorkload});
             List<NodeProvisioner.PlannedNode> r = new ArrayList<>();
-            AciContainerTemplate template = getFirstTemplate(label);
+            final AciContainerTemplate template = getFirstTemplate(label);
             LOGGER.log(Level.INFO, "Using ACI Container template: {0}", template.getName());
             for (int i = 1; i <= excessWorkload; i++) {
                 r.add(new NodeProvisioner.PlannedNode(template.getName(), Computer.threadPoolForRemoting.submit(
@@ -104,6 +105,8 @@ public class AciCloud extends Cloud {
 
                                     //wait JNLP to online
                                     waitToOnline(agent, template.getTimeout(), stopWatch);
+
+                                    addIpEnv(agent);
 
                                     provisionRetryStrategy.success(template.getName());
 
@@ -161,6 +164,19 @@ public class AciCloud extends Cloud {
             }
         }
         return null;
+    }
+
+    public void addIpEnv(AciAgent agent) throws Exception {
+        Azure azureClient = getAzureClient();
+
+        String ip = azureClient.containerGroups().getByResourceGroup(resourceGroup, agent.getNodeName()).ipAddress();
+
+        EnvironmentVariablesNodeProperty ipEnv = new EnvironmentVariablesNodeProperty(
+                new EnvironmentVariablesNodeProperty.Entry("IP", ip)
+        );
+
+        agent.getNodeProperties().add(ipEnv);
+        agent.save();
     }
 
     private void waitToOnline(AciAgent agent, int startupTimeout, StopWatch stopWatch)

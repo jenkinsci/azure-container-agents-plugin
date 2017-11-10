@@ -9,6 +9,7 @@ package com.microsoft.jenkins.containeragents.helper;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.CredentialsScope;
+import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.cloudbees.plugins.credentials.impl.BaseStandardCredentials;
 import hudson.Extension;
 import hudson.security.ACL;
@@ -84,7 +85,7 @@ public class AzureContainerServiceCredentials extends BaseStandardCredentials {
                         AzureContainerServiceCredentials.class,
                         Jenkins.getInstance(),
                         ACL.SYSTEM,
-                        Collections.emptyList()),
+                        Collections.<DomainRequirement>emptyList()),
                 CredentialsMatchers.withId(kubernetesCredentialId));
         if (creds == null) {
             return new AzureContainerServiceCredentials.KubernetesCredential();
