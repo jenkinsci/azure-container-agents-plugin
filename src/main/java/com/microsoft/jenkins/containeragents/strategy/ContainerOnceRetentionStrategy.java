@@ -19,6 +19,7 @@ import hudson.slaves.CloudRetentionStrategy;
 import hudson.slaves.EphemeralNode;
 import hudson.slaves.RetentionStrategy;
 import hudson.util.TimeUnit2;
+import jenkins.model.Jenkins;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -50,6 +51,13 @@ public class ContainerOnceRetentionStrategy extends CloudRetentionStrategy imple
         if (c.isIdle() && !disabled) {
             final long milliBetweenCreationAndIdle = c.getIdleStartMilliseconds() - c.getConnectTime();
             boolean neverConnected = milliBetweenCreationAndIdle < TimeUnit2.SECONDS.toMillis(LAPSE);
+
+            // neverConnected will always be true if jenkins restart so that slave will not be deleted
+            // So overwrite neverConnected if slave exists after restart
+            if (c.getIdleStartMilliseconds() - Jenkins.getInstance().toComputer().getConnectTime()
+                    < TimeUnit2.SECONDS.toMillis(LAPSE)) {
+                neverConnected = false;
+            }
 
             final long idleMilliseconds = System.currentTimeMillis() - c.getIdleStartMilliseconds();
             if (!neverConnected && idleMilliseconds > TimeUnit2.MINUTES.toMillis(IDLE_MINUTES)) {
