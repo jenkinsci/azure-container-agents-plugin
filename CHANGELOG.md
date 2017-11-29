@@ -1,6 +1,6 @@
 # Azure Container Agents Plugin Changelog
 
-## Version 0.2.1, 2017-11-29
+## Version 0.3.0, 2017-11-29
 * Add support for MSI
 * Fix bugs in retention strategy
 
