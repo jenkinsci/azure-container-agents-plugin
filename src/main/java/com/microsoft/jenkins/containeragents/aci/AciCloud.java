@@ -103,8 +103,13 @@ public class AciCloud extends Cloud {
                                     //Deploy ACI and wait
                                     template.provisionAgents(AciCloud.this, agent, stopWatch);
 
-                                    //wait JNLP to online
-                                    waitToOnline(agent, template.getTimeout(), stopWatch);
+                                    if (template.getLaunchMethodType().equals(Constants.LAUNCH_METHOD_JNLP)) {
+                                        //wait JNLP to online
+                                        waitToOnline(agent, template.getTimeout(), stopWatch);
+                                    } else {
+                                        addHost(agent);
+                                        agent.toComputer().connect(false).get();
+                                    }
 
                                     addIpEnv(agent);
 
@@ -176,6 +181,15 @@ public class AciCloud extends Cloud {
         );
 
         agent.getNodeProperties().add(ipEnv);
+        agent.save();
+    }
+
+    public void addHost(AciAgent agent) throws Exception {
+        Azure azureClient = getAzureClient();
+
+        String ip = azureClient.containerGroups().getByResourceGroup(resourceGroup, agent.getNodeName()).ipAddress();
+
+        agent.setHost(ip);
         agent.save();
     }
 

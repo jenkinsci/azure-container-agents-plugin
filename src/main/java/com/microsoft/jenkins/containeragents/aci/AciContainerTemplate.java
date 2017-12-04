@@ -1,21 +1,33 @@
 package com.microsoft.jenkins.containeragents.aci;
 
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
+import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
+import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.microsoft.jenkins.containeragents.PodEnvVar;
+import com.microsoft.jenkins.containeragents.remote.LaunchMethodTypeContent;
 import com.microsoft.jenkins.containeragents.strategy.ContainerIdleRetentionStrategy;
 import com.microsoft.jenkins.containeragents.strategy.ContainerOnceRetentionStrategy;
 import com.microsoft.jenkins.containeragents.aci.volumes.AzureFileVolume;
+import com.microsoft.jenkins.containeragents.util.Constants;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
+import hudson.model.Item;
 import hudson.model.Label;
 import hudson.model.labels.LabelAtom;
+import hudson.security.ACL;
 import hudson.slaves.RetentionStrategy;
 import hudson.util.ListBoxModel;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
@@ -52,6 +64,12 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
     private List<DockerRegistryEndpoint> privateRegistryCredentials = new ArrayList<>();
 
     private List<AzureFileVolume> volumes = new ArrayList<>();
+
+    private String launchMethodType;
+
+    private String sshCredentialsId;
+
+    private String sshPort;
 
     private boolean isAvailable = true;
 
@@ -105,6 +123,13 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
 
     public void provisionAgents(AciCloud cloud, AciAgent agent, StopWatch stopWatch) throws Exception {
         AciService.createDeployment(cloud, this, agent, stopWatch);
+    }
+
+    public boolean isJnlp() {
+        if (StringUtils.isBlank(launchMethodType) || launchMethodType.equals(Constants.LAUNCH_METHOD_JNLP)) {
+            return true;
+        }
+        return false;
     }
 
     public String getName() {
@@ -175,6 +200,31 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
         return isAvailable;
     }
 
+    public String getLaunchMethodType() {
+        return StringUtils.defaultString(launchMethodType, Constants.LAUNCH_METHOD_JNLP);
+    }
+
+    @DataBoundSetter
+    public void setLaunchMethodType(String launchMethodType) {
+        this.launchMethodType = StringUtils.defaultString(launchMethodType, Constants.LAUNCH_METHOD_JNLP);
+    }
+
+    public String getSshCredentialsId() {
+        return StringUtils.defaultString(sshCredentialsId);
+    }
+
+    public String getSshPort() {
+        return StringUtils.defaultString(sshPort);
+    }
+
+    @DataBoundSetter
+    public void setLaunchMethodTypeContent(LaunchMethodTypeContent launchMethodTypeContent) {
+        if (launchMethodTypeContent != null) {
+            this.sshCredentialsId = StringUtils.defaultString(launchMethodTypeContent.getSshCredentialsId());
+            this.sshPort = StringUtils.defaultString(launchMethodTypeContent.getSshPort(), "22");
+        }
+    }
+
     @Extension
     public static class DescriptorImpl extends Descriptor<AciContainerTemplate> {
 
@@ -195,6 +245,21 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
             model.add("Linux");
             model.add("Windows");
             return model;
+        }
+
+        // Return null because it's a static dropDownList.
+        public ListBoxModel doFillLaunchMethodTypeItems() {
+            return null;
+        }
+
+        public ListBoxModel doFillSshCredentialsIdItems(@AncestorInPath Item owner) {
+            StandardListBoxModel listBoxModel = new StandardListBoxModel();
+            listBoxModel.add("--- Select Azure Container Service Credentials ---", "");
+            listBoxModel.withAll(CredentialsProvider.lookupCredentials(StandardUsernameCredentials.class,
+                    owner,
+                    ACL.SYSTEM,
+                    Collections.<DomainRequirement>emptyList()));
+            return listBoxModel;
         }
     }
 }

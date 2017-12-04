@@ -6,9 +6,13 @@
 
 package com.microsoft.jenkins.containeragents;
 
+import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
+import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
+import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.microsoft.jenkins.containeragents.remote.LaunchMethodTypeContent;
 import com.microsoft.jenkins.containeragents.strategy.ContainerIdleRetentionStrategy;
 import com.microsoft.jenkins.containeragents.strategy.ContainerOnceRetentionStrategy;
 import com.microsoft.jenkins.containeragents.util.Constants;
@@ -19,8 +23,10 @@ import hudson.Extension;
 import hudson.RelativePath;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
+import hudson.model.Item;
 import hudson.model.Label;
 import hudson.model.labels.LabelAtom;
+import hudson.security.ACL;
 import hudson.slaves.RetentionStrategy;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
@@ -42,12 +48,14 @@ import io.fabric8.kubernetes.client.KubernetesClient;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -75,6 +83,12 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> {
     private String label;
 
     private String rootFs;
+
+    private String launchMethodType;
+
+    private String sshCredentialsId;
+
+    private String sshPort;
 
     private RetentionStrategy<?> retentionStrategy;
 
@@ -206,6 +220,13 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> {
                 .withData(data)
                 .withType("kubernetes.io/dockercfg")
                 .build();
+    }
+
+    public boolean isJnlp() {
+        if (StringUtils.isBlank(launchMethodType) || launchMethodType.equals(Constants.LAUNCH_METHOD_JNLP)) {
+            return true;
+        }
+        return false;
     }
 
     public String getName() {
@@ -354,6 +375,31 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> {
                 : privateRegistryCredentials;
     }
 
+    public String getLaunchMethodType() {
+        return launchMethodType;
+    }
+
+    @DataBoundSetter
+    public void setLaunchMethodType(String launchMethodType) {
+        this.launchMethodType = StringUtils.defaultString(launchMethodType, Constants.LAUNCH_METHOD_JNLP);
+    }
+
+    public String getSshCredentialsId() {
+        return StringUtils.defaultString(sshCredentialsId);
+    }
+
+    public String getSshPort() {
+        return StringUtils.defaultString(sshPort);
+    }
+
+    @DataBoundSetter
+    public void setLaunchMethodTypeContent(LaunchMethodTypeContent launchMethodTypeContent) {
+        if (launchMethodTypeContent != null) {
+            this.sshCredentialsId = StringUtils.defaultString(launchMethodTypeContent.getSshCredentialsId());
+            this.sshPort = StringUtils.defaultString(launchMethodTypeContent.getSshPort(), "22");
+        }
+    }
+
     public List<DockerRegistryEndpoint> getPrivateRegistryCredentials() {
         return privateRegistryCredentials;
     }
@@ -437,6 +483,21 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> {
             return FormValidation.error(Messages.Pod_Template_Not_Number_Error());
         }
 
+        // Return null because it's a static dropDownList.
+        public ListBoxModel doFillLaunchMethodTypeItems() {
+            return null;
+        }
+
+        public ListBoxModel doFillSshCredentialsIdItems(@AncestorInPath Item owner) {
+            StandardListBoxModel listBoxModel = new StandardListBoxModel();
+            listBoxModel.add("--- Select Azure Container Service Credentials ---", "");
+            listBoxModel.withAll(CredentialsProvider.lookupCredentials(StandardUsernameCredentials.class,
+                    owner,
+                    ACL.SYSTEM,
+                    Collections.<DomainRequirement>emptyList()));
+            return listBoxModel;
+        }
+
         public ListBoxModel doFillSpecifyNodeItems(@RelativePath("..") @QueryParameter String azureCredentialsId,
                                                    @RelativePath("..") @QueryParameter String resourceGroup,
                                                    @RelativePath("..") @QueryParameter String serviceName,
@@ -468,9 +529,9 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> {
                     }
                 }
             } catch (NullPointerException e) {
-                LOGGER.log(Level.INFO, "Specify Node: Cannot list nodes", e);
+                // ignore.
             } catch (Exception e) {
-
+                LOGGER.log(Level.INFO, "Specify Node: Cannot list nodes", e);
             }
             return listBoxModel;
         }

@@ -6,6 +6,12 @@
 
 package com.microsoft.jenkins.containeragents;
 
+import com.cloudbees.plugins.credentials.CredentialsMatchers;
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
+import com.cloudbees.plugins.credentials.domains.DomainRequirement;
+import com.microsoft.jenkins.containeragents.remote.ISSHLaunchable;
+import com.microsoft.jenkins.containeragents.remote.SSHLauncher;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
 import com.microsoft.jenkins.containeragents.util.Constants;
 import hudson.Extension;
@@ -13,6 +19,7 @@ import hudson.model.Computer;
 import hudson.model.Descriptor;
 import hudson.model.Node;
 import hudson.model.TaskListener;
+import hudson.security.ACL;
 import hudson.slaves.AbstractCloudComputer;
 import hudson.slaves.AbstractCloudSlave;
 import hudson.slaves.Cloud;
@@ -30,12 +37,20 @@ import java.util.Collections;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class KubernetesAgent extends AbstractCloudSlave {
+public class KubernetesAgent extends AbstractCloudSlave implements ISSHLaunchable {
 
     private static final Logger LOGGER = Logger.getLogger(KubernetesAgent.class.getName());
     public static final String ROOT_FS = "/jenkins";
 
     private final String cloudName;
+
+    private final String sshCredentialsId;
+
+    private final String sshPort;
+
+    private final String launchType;
+
+    private String host;
 
     @DataBoundConstructor
     public KubernetesAgent(KubernetesCloud cloud, PodTemplate template)
@@ -46,10 +61,15 @@ public class KubernetesAgent extends AbstractCloudSlave {
                 1,
                 Mode.NORMAL,
                 template.getLabel(),
-                new JNLPLauncher(),
+                template.getLaunchMethodType().equals(Constants.LAUNCH_METHOD_JNLP)
+                        ? new JNLPLauncher()
+                        : new SSHLauncher(),
                 template.getRetentionStrategy(),
                 Collections.<NodeProperty<Node>>emptyList());
         cloudName = cloud.getDisplayName();
+        sshCredentialsId = template.getSshCredentialsId();
+        sshPort = template.getSshPort();
+        launchType = template.getLaunchMethodType();
     }
 
     @Override
@@ -88,6 +108,45 @@ public class KubernetesAgent extends AbstractCloudSlave {
 
     public String getCloudName() {
         return cloudName;
+    }
+
+    @Override
+    public StandardUsernameCredentials getSshCredential() throws IllegalArgumentException {
+        StandardUsernameCredentials credentials = CredentialsMatchers.firstOrNull(
+                CredentialsProvider.lookupCredentials(
+                        StandardUsernameCredentials.class,
+                        Jenkins.getInstance(),
+                        ACL.SYSTEM,
+                        Collections.<DomainRequirement>emptyList()),
+                CredentialsMatchers.withId(sshCredentialsId));
+        if (credentials == null) {
+            throw new IllegalArgumentException("Could not find credentials with id: " + sshCredentialsId);
+        }
+
+        return credentials;
+    }
+
+    @Override
+    public int getSshPort() {
+        try {
+            return Integer.valueOf(sshPort);
+        } catch (NumberFormatException e) {
+            return Constants.DEFAULT_SSH_PORT;
+        }
+    }
+
+    @Override
+    public boolean isSshLaunchType() {
+        return launchType.equals(Constants.LAUNCH_METHOD_SSH);
+    }
+
+    @Override
+    public String getHost() {
+        return StringUtils.defaultString(host);
+    }
+
+    public void setHost(String host) {
+        this.host = host;
     }
 
     @Override

@@ -1,6 +1,6 @@
 <?jelly escape-by-default='true'?>
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
-         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form" xmlns:c="/lib/credentials" xmlns:ui="/lib/azure">
 
     <f:entry field="name" title="${%Name}">
         <f:textbox/>
@@ -49,6 +49,19 @@
         <f:repeatableHeteroProperty field="volumes" hasHeader="true" addCaption="${%Add_Volume}"
                                     deleteCaption="${%Delete_Volume}"/>
     </f:entry>
+
+    <ui:dropdownList selectedName="launchMethodType" title="${%Launch_Method}" name="launchMethodTypeContent">
+        <f:dropdownListBlock title="JNLP" value="jnlp" selected="${instance == null || instance.isJnlp()}"/>
+
+        <f:dropdownListBlock title="SSH" value="ssh" selected="${instance.isJnlp() == false}">
+            <f:entry title="${%SSH_Credentials}" field="sshCredentialsId">
+                <c:select expressionAllowed="false" />
+            </f:entry>
+            <f:entry title="${%SSH_Port}" field="sshPort">
+                <f:textbox default="22"/>
+            </f:entry>
+        </f:dropdownListBlock>
+    </ui:dropdownList>
 
     <f:advanced>
 
