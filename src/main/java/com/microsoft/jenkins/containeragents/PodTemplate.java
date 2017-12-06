@@ -376,7 +376,7 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> {
     }
 
     public String getLaunchMethodType() {
-        return launchMethodType;
+        return StringUtils.defaultString(launchMethodType, Constants.LAUNCH_METHOD_JNLP);
     }
 
     @DataBoundSetter
@@ -477,6 +477,13 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> {
         }
 
         public FormValidation doCheckLimitMemory(@QueryParameter String value) {
+            if (value.matches("^[0-9]*$")) {
+                return FormValidation.ok();
+            }
+            return FormValidation.error(Messages.Pod_Template_Not_Number_Error());
+        }
+
+        public FormValidation doCheckSshPort(@QueryParameter String value) {
             if (value.matches("^[0-9]*$")) {
                 return FormValidation.ok();
             }

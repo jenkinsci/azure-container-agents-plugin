@@ -70,6 +70,9 @@ public final class AciService {
                 }
                 addPortNode(tmp, mapper, port.getPort());
             }
+            if (template.getLaunchMethodType().equals(Constants.LAUNCH_METHOD_SSH)) {
+                addPortNode(tmp, mapper, String.valueOf(template.getSshPort()));
+            }
 
             addEnvNode(tmp, mapper, template.getEnvVars());
 

@@ -149,6 +149,11 @@
             <version>0.1.54</version>
         </dependency>
         <dependency>
+            <groupId>com.jcraft</groupId>
+            <artifactId>jsch</artifactId>
+            <version>0.1.54</version>
+        </dependency>
+        <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>azure-commons</artifactId>
             <version>${azure-commons.version}</version>
@@ -215,7 +220,32 @@
                 <groupId>org.jenkins-ci.tools</groupId>
                 <artifactId>maven-hpi-plugin</artifactId>
                 <configuration>
-                    <pluginFirstClassLoader>true</pluginFirstClassLoader>
+                    <!--<pluginFirstClassLoader>true</pluginFirstClassLoader>-->
+                    <maskClasses>
+                        com.fasterxml.
+                        com.google.
+                        org.slf4j.
+                        com.microsoft.azure.AzureAsyncOperation
+                        com.microsoft.azure.AzureClient
+                        com.microsoft.azure.AzureEnvironment
+                        com.microsoft.azure.AzureResponseBuilder
+                        com.microsoft.azure.AzureServiceClient
+                        com.microsoft.azure.AzureServiceFuture
+                        com.microsoft.azure.CloudError
+                        com.microsoft.azure.CloudException
+                        com.microsoft.azure.ListOperationCallback
+                        com.microsoft.azure.Page
+                        com.microsoft.azure.PagedList
+                        com.microsoft.azure.PollingState
+                        com.microsoft.azure.Resource
+                        com.microsoft.azure.SubResource
+                        com.microsoft.azure.credentials.
+                        com.microsoft.azure.management.
+                        com.microsoft.azure.storage.
+                        com.microsoft.azure.serializer.
+                        com.microsoft.rest.
+
+                    </maskClasses>
                 </configuration>
             </plugin>
             <plugin>

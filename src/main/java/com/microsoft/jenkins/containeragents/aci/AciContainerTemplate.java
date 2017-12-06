@@ -4,6 +4,7 @@ import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
+import com.microsoft.jenkins.containeragents.Messages;
 import com.microsoft.jenkins.containeragents.PodEnvVar;
 import com.microsoft.jenkins.containeragents.remote.LaunchMethodTypeContent;
 import com.microsoft.jenkins.containeragents.strategy.ContainerIdleRetentionStrategy;
@@ -18,6 +19,7 @@ import hudson.model.Label;
 import hudson.model.labels.LabelAtom;
 import hudson.security.ACL;
 import hudson.slaves.RetentionStrategy;
+import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -25,6 +27,7 @@ import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
+import org.kohsuke.stapler.QueryParameter;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -260,6 +263,13 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
                     ACL.SYSTEM,
                     Collections.<DomainRequirement>emptyList()));
             return listBoxModel;
+        }
+
+        public FormValidation doCheckSshPort(@QueryParameter String value) {
+            if (value.matches("^[0-9]*$")) {
+                return FormValidation.ok();
+            }
+            return FormValidation.error(Messages.Pod_Template_Not_Number_Error());
         }
     }
 }

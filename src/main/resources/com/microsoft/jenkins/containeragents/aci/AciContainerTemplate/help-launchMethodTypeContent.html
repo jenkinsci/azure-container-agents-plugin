@@ -1,0 +1,15 @@
+<dev>
+    Choose JNLP or SSH to launch your slave.<br/><br/>
+
+    JNLP<br/>
+    Make sure Jenkins master has a public ip. Take image jenkinsci/jnlp-slave as a reference<br/><br/>
+
+    SSH<br/>
+    Make sure container initialize with a SSH server. Take image jenkinsci/ssh-slave as a reference<br/><br/>
+
+    If using SSH, here is a sample of arguments:<br/>
+    &ensp;Docker image: jenkinsci/ssh-slave<br/>
+    &ensp;Command: setup-sshd<br/>
+    &ensp;Environment Variable: Key: JENKINS_SLAVE_SSH_PUBKEY, Value: Your public key<br/>
+    &ensp;Launch Method: SSH
+</dev>
