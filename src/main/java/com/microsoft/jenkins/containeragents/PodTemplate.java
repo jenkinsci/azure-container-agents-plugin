@@ -170,6 +170,12 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> {
         String nodeName = agent.getNodeName();
         String secret = agent.getComputer().getJnlpMac();
         EnvVars arguments = new EnvVars("rootUrl", serverUrl, "nodeName", nodeName, "secret", secret);
+
+        Integer port = null;
+        if (getLaunchMethodType().equals(Constants.LAUNCH_METHOD_SSH)) {
+            port = Integer.valueOf(getSshPort());
+        }
+
         Container container = new ContainerBuilder()
                 .withName(agent.getNodeName())
                 .withImage(image)
@@ -183,6 +189,9 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> {
                 .withNewSecurityContext()
                     .withPrivileged(privileged)
                 .endSecurityContext()
+                .addNewPort()
+                    .withContainerPort(port)
+                .endPort()
                 .withEnv(containerEnvVars)
                 .build();
 

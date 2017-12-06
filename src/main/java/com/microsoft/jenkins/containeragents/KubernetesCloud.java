@@ -113,6 +113,8 @@ public class KubernetesCloud extends Cloud {
 
         private final PodTemplate template;
 
+        private final int retryInterval = 1000;
+
         ProvisionCallback(PodTemplate template) {
             this.template = template;
         }
@@ -123,7 +125,6 @@ public class KubernetesCloud extends Cloud {
             final Map<String, String> properties = new HashMap<>();
 
             try {
-                final int retryInterval = 1000;
                 slave = new KubernetesAgent(KubernetesCloud.this, template);
 
                 LOGGER.log(Level.INFO, "Adding Jenkins node: {0}", slave.getNodeName());
@@ -173,25 +174,14 @@ public class KubernetesCloud extends Cloud {
                             startupTimeout);
                     LOGGER.log(Level.INFO, "KubernetesCloud: Pod {0} is running successfully,"
                             + "waiting to be online", podId);
-                }
 
-                // wait the slave to be online
-                while (true) {
-                    if (isTimeout(stopwatch.getTime())) {
-                        throw new TimeoutException(Messages.Kubernetes_pod_Start_Time_Exceed(podId, startupTimeout));
+                    if (template.getLaunchMethodType().equals(Constants.LAUNCH_METHOD_JNLP)) {
+                        //wait JNLP to online
+                        waitToOnline(slave, podId, stopwatch);
+                    } else {
+                        addHost(slave, client, podId);
+                        slave.toComputer().connect(false).get();
                     }
-                    Pod podTemp = client.pods().inNamespace(namespace).withName(podId).get();
-                    if (!podTemp.getStatus().getPhase().equals("Running")) {
-                        throw new IllegalStateException(Messages.Kubernetes_Pod_Start_Failed(podId,
-                                podTemp.getStatus().getPhase()));
-                    }
-                    if (slave.getComputer() == null) {
-                        throw new IllegalStateException(Messages.Kubernetes_Pod_Deleted());
-                    }
-                    if (slave.getComputer().isOnline()) {
-                        break;
-                    }
-                    Thread.sleep(retryInterval);
                 }
 
                 provisionRetryStrategy.success(template.getName());
@@ -216,6 +206,33 @@ public class KubernetesCloud extends Cloud {
                 provisionRetryStrategy.failure(template.getName());
                 throw ex;
             }
+        }
+
+        private void waitToOnline(KubernetesAgent slave, String podId, StopWatch stopwatch) throws Exception {
+            while (true) {
+                if (isTimeout(stopwatch.getTime())) {
+                    throw new TimeoutException(Messages.Kubernetes_pod_Start_Time_Exceed(podId, startupTimeout));
+                }
+                Pod podTemp = client.pods().inNamespace(namespace).withName(podId).get();
+                if (!podTemp.getStatus().getPhase().equals("Running")) {
+                    throw new IllegalStateException(Messages.Kubernetes_Pod_Start_Failed(podId,
+                            podTemp.getStatus().getPhase()));
+                }
+                if (slave.getComputer() == null) {
+                    throw new IllegalStateException(Messages.Kubernetes_Pod_Deleted());
+                }
+                if (slave.getComputer().isOnline()) {
+                    break;
+                }
+                Thread.sleep(retryInterval);
+            }
+        }
+
+        private void addHost(KubernetesAgent slave,
+                             KubernetesClient kubernetesClient,
+                             String podId) throws IOException {
+            slave.setHost(kubernetesClient.pods().inNamespace(namespace).withName(podId).get().getStatus().getPodIP());
+            slave.save();
         }
     }
 

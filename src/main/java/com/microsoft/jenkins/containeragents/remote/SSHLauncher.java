@@ -60,7 +60,8 @@ public class SSHLauncher extends ComputerLauncher {
 
         final PrintStream logger = listener.getLogger();
 
-        LOGGER.log(Level.INFO, "SSHLauncher: Start to connect node {0} via SSH", node.getDisplayName());
+        LOGGER.log(Level.INFO, "SSHLauncher: Start to connect node {0} : {1} via SSH",
+                new Object[]{node.getDisplayName(), host});
         try {
             SSHClient sshClient = new RetryTask<SSHClient>(new Callable<SSHClient>() {
                 @Override
