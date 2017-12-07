@@ -128,7 +128,7 @@ public class KubernetesAgent extends AbstractCloudSlave implements ISSHLaunchabl
 
     @Override
     public int getSshPort() {
-        return Integer.valueOf(sshPort);
+        return Integer.parseInt(sshPort);
     }
 
     @Override

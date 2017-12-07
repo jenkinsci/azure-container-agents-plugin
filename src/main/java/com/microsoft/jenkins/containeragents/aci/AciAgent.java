@@ -141,7 +141,7 @@ public class AciAgent extends AbstractCloudSlave implements ISSHLaunchable {
 
     @Override
     public int getSshPort() {
-        return Integer.valueOf(sshPort);
+        return Integer.parseInt(sshPort);
     }
 
     @Override

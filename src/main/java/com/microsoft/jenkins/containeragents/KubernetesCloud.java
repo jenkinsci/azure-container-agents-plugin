@@ -113,7 +113,7 @@ public class KubernetesCloud extends Cloud {
 
         private final PodTemplate template;
 
-        private final int retryInterval = 1000;
+        private static final int RETRY_INTERVAL = 1000;
 
         ProvisionCallback(PodTemplate template) {
             this.template = template;
@@ -170,7 +170,7 @@ public class KubernetesCloud extends Cloud {
                             podId,
                             namespace,
                             stopwatch,
-                            retryInterval,
+                            RETRY_INTERVAL,
                             startupTimeout);
                     LOGGER.log(Level.INFO, "KubernetesCloud: Pod {0} is running successfully,"
                             + "waiting to be online", podId);
@@ -224,7 +224,7 @@ public class KubernetesCloud extends Cloud {
                 if (slave.getComputer().isOnline()) {
                     break;
                 }
-                Thread.sleep(retryInterval);
+                Thread.sleep(RETRY_INTERVAL);
             }
         }
 
