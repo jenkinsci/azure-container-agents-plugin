@@ -32,6 +32,8 @@ import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
+import io.fabric8.kubernetes.api.model.ContainerPort;
+import io.fabric8.kubernetes.api.model.ContainerPortBuilder;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.LocalObjectReference;
 import io.fabric8.kubernetes.api.model.Node;
@@ -41,7 +43,6 @@ import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
 import io.fabric8.kubernetes.api.model.Volume;
-import io.fabric8.kubernetes.api.model.VolumeBuilder;
 import io.fabric8.kubernetes.api.model.VolumeMount;
 import io.fabric8.kubernetes.api.model.VolumeMountBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -125,22 +126,7 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> {
         LOGGER.log(Level.INFO, "Start building pod for agent: " + agent.getNodeName());
         // Build volumes and volume mounts.
         List<Volume> tempVolumes = new ArrayList<>();
-        Volume emptyDir = new VolumeBuilder()
-                .withName("rootfs")
-                .withNewEmptyDir()
-                .endEmptyDir()
-                .build();
-
-        tempVolumes.add(emptyDir);
-
         List<VolumeMount> volumeMounts = new ArrayList<>();
-
-        VolumeMount mount = new VolumeMountBuilder()
-                .withName("rootfs")
-                .withMountPath(rootFs)
-                .build();
-
-        volumeMounts.add(mount);
 
         for (int index = 0; index < volumes.size(); index++) {
             PodVolume podVolume = volumes.get(index);
@@ -153,6 +139,7 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> {
                                 .build());
         }
 
+        // Add Environment
         List<EnvVar> containerEnvVars = new ArrayList<>();
         for (PodEnvVar envVar : getEnvVars()) {
             containerEnvVars.add(new EnvVar(envVar.getKey(), envVar.getValue(), null));
@@ -171,16 +158,19 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> {
         String secret = agent.getComputer().getJnlpMac();
         EnvVars arguments = new EnvVars("rootUrl", serverUrl, "nodeName", nodeName, "secret", secret);
 
-        Integer port = null;
+        // If using SSH, we need to open a SSH port
+
+        List<ContainerPort> containerPort = new ArrayList<>();
         if (getLaunchMethodType().equals(Constants.LAUNCH_METHOD_SSH)) {
-            port = Integer.valueOf(getSshPort());
+            Integer port = Integer.valueOf(getSshPort());
+            containerPort.add(new ContainerPortBuilder().withContainerPort(port).build());
         }
 
         Container container = new ContainerBuilder()
                 .withName(agent.getNodeName())
                 .withImage(image)
-                .withCommand(command.equals("") ? null : Lists.newArrayList(command))
-                .withArgs(arguments.expand(args).split(" "))
+                .withCommand(StringUtils.isBlank(command) ? null : Lists.newArrayList(command))
+                .withArgs(StringUtils.isBlank(args) ? null : arguments.expand(args).split(" "))
                 .withVolumeMounts(volumeMounts)
                 .withNewResources()
                     .withLimits(getResourcesMap(limitMemory, limitCpu))
@@ -189,9 +179,7 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> {
                 .withNewSecurityContext()
                     .withPrivileged(privileged)
                 .endSecurityContext()
-                .addNewPort()
-                    .withContainerPort(port)
-                .endPort()
+                .withPorts(containerPort)
                 .withEnv(containerEnvVars)
                 .build();
 
