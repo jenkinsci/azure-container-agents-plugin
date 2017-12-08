@@ -212,6 +212,9 @@ public class AciCloud extends Cloud {
             if (containerGroup.containers().containsKey(agent.getNodeName())
                     && containerGroup.containers().get(agent.getNodeName()).instanceView().currentState().state()
                     .equals("Terminated")) {
+                LOGGER.log(Level.WARNING, "Logs from container {0}: {1}",
+                        new Object[]{agent.getNodeName(),
+                                containerGroup.getLogContent(agent.getNodeName())});
                 throw new IllegalStateException("ACI container terminated");
             }
 

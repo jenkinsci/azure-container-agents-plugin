@@ -54,6 +54,10 @@ public final class AzureContainerUtils {
         return (startupTimeout > 0 && TimeUnit.MILLISECONDS.toMinutes(elaspedTime) >= startupTimeout);
     }
 
+    public static boolean isHalfTimePassed(long startupTimeout, long elaspedTime) {
+        return (startupTimeout > 0 && TimeUnit.MILLISECONDS.toMinutes(elaspedTime) >= startupTimeout / 2);
+    }
+
     public static ListBoxModel listCredentialsIdItems(Item owner) {
         StandardListBoxModel listBoxModel = new StandardListBoxModel();
         listBoxModel.add("--- Select Azure Credentials ---", "");
