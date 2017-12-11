@@ -518,7 +518,7 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> {
 
             try (KubernetesClient client = KubernetesService.getKubernetesClient(azureCredentialsId,
                     resourceGroup,
-                    serviceName,
+                    KubernetesCloud.getServiceNameWithoutOrchestra(serviceName),
                     namespace,
                     acsCredentialsId)) {
                 List<Node> nodeList = client.nodes().list().getItems();

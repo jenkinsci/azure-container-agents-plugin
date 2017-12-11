@@ -38,4 +38,8 @@
                                     deleteCaption="Delete Template"/>
     </f:entry>
 
+    <st:once>
+        <script type="text/javascript" src="${rootURL}/plugin/azure-container-agents/scripts/config-context.js" />
+    </st:once>
+
 </j:jelly>

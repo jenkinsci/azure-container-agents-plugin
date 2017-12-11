@@ -100,7 +100,7 @@ public class KubernetesCloud extends Cloud {
                 if (client == null) {
                     client = KubernetesService.getKubernetesClient(azureCredentialsId,
                             resourceGroup,
-                            serviceName,
+                            getServiceNameWithoutOrchestra(serviceName),
                             namespace,
                             acsCredentialsId);
                 }
@@ -390,11 +390,18 @@ public class KubernetesCloud extends Cloud {
         return this;
     }
 
+    public static String getServiceNameWithoutOrchestra(String serviceName) {
+        if (StringUtils.isBlank(serviceName)) {
+            return serviceName;
+        }
+        return StringUtils.substringBeforeLast(serviceName, "|").trim();
+    }
+
     @Extension
     public static class DescriptorImpl extends Descriptor<Cloud> {
         @Override
         public String getDisplayName() {
-            return "Azure Container Service(Kubernetes)";
+            return "Azure Container Service / Kubernetes Service";
         }
 
         public ListBoxModel doFillAzureCredentialsIdItems(@AncestorInPath Item owner) {
@@ -443,7 +450,7 @@ public class KubernetesCloud extends Cloud {
                 for (GenericResource genericResource: genericResourceList) {
                     if (genericResource.resourceProviderNamespace().equals(Constants.AKS_NAMESPACE)
                             && genericResource.resourceType().equals(Constants.AKS_RESOURCE_TYPE)) {
-                        model.add(genericResource.name());
+                        model.add(genericResource.name() + " | AKS");
                     }
                 }
             } catch (Exception e) {
@@ -467,7 +474,7 @@ public class KubernetesCloud extends Cloud {
             String masterFqdn = null;
             try (KubernetesClient client = KubernetesService.getKubernetesClient(azureCredentialsId,
                         resourceGroup,
-                        serviceName,
+                        getServiceNameWithoutOrchestra(serviceName),
                         namespace,
                         acsCredentialsId)) {
                 masterFqdn = client.getMasterUrl().toString();
