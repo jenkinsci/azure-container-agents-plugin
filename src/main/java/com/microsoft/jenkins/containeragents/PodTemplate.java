@@ -481,7 +481,9 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> {
         }
 
         public FormValidation doCheckSshPort(@QueryParameter String value) {
-            if (value.matches("^[0-9]*$")) {
+            if (StringUtils.isBlank(value) || value.matches("^[0-9]*$")
+                    && Integer.parseInt(value) >= Constants.SSH_PORT_MIN
+                    && Integer.parseInt(value) <= Constants.SSH_PORT_MAX) {
                 return FormValidation.ok();
             }
             return FormValidation.error(Messages.Pod_Template_Not_Number_Error());

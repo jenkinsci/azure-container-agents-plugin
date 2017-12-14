@@ -90,14 +90,6 @@ public class SSHLauncher extends ComputerLauncher {
                 public Session call() throws Exception {
                     Session session = getSession(credentials, host, port);
 
-                    Properties config = new Properties();
-                    config.put("StrictHostKeyChecking", "no");
-                    session.setConfig(config);
-                    if (credentials instanceof StandardUsernamePasswordCredentials) {
-                        session.setPassword(((StandardUsernamePasswordCredentials) credentials)
-                                .getPassword().getPlainText());
-                    }
-
                     session.connect();
                     return session;
                 }
@@ -150,7 +142,16 @@ public class SSHLauncher extends ComputerLauncher {
             }
         }
 
-        return jsch.getSession(credentials.getUsername(), host, port);
+        Session session = jsch.getSession(credentials.getUsername(), host, port);
+
+        Properties config = new Properties();
+        config.put("StrictHostKeyChecking", "no");
+        session.setConfig(config);
+        if (credentials instanceof StandardUsernamePasswordCredentials) {
+            session.setPassword(((StandardUsernamePasswordCredentials) credentials)
+                    .getPassword().getPlainText());
+        }
+        return session;
     }
 
 }
