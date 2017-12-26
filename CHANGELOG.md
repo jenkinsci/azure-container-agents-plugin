@@ -1,6 +1,6 @@
 # Azure Container Agents Plugin Changelog
 
-## Version 0.4.0, 2017-12-26
+## Version 0.4.0, 2018-01-02
 * **Breaking Change**: No longer mount Empty Volume to Working Dir automatically. Make sure that Jenkins have permission
 to R/W in Working Dir or mount Empty Volume by yourself   
 * Add support for SSH 
