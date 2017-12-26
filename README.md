@@ -59,7 +59,7 @@ Please ensure JenkinsURL, secret and nodeName passed to container via arguments 
     * Use a Private Registry Credential. You just need to fill in the credential and we will create a Secret for you.
 4. Specify a `Command` to override the ENTRYPOINT or leave it blank.
 5. Specify the `Arguments`. `${rootUrl}`, `${secret}` and `${nodeName}` will be replace with JenkinsUrl, Secret and ComputerNodeName automatically.
-6. Specify the `Working Dir`. It's the root dir of you job. We will mount an EmptyDir to `Working Dir`, so you'll have permission to access this directory (mod 777).
+6. Specify the `Working Dir`. It's the root dir of you job. You must ensure login user have the write permission to this directory.
 7. Add Environment Variables and Volumes. Please find details in help and you may need some manual operation to use specific Volumes.
 8. Choose a retention strategy. You can get details in help.
 9. Specify node where the container create on. If using Azure Disk or using aci-connector-k8s, you need to specify a node.
@@ -140,7 +140,7 @@ Jenkins.getInstance().clouds.add(myCloud);
 4. Fill in `Docker Image`. Please note that the slave will connect with master via JNLP, so make sure JNLP installed in image. Default image is `jenkins/jnlp-slave` and you can also use it as base image.
 5. If you use a private registry, you need to specify a credential.
 6. Specify a `Command`. Now the `Command` will override the ENTRYPOINT. `Arguments`. `${rootUrl}`, `${secret}` and `${nodeName}` will be replace with JenkinsUrl, Secret and ComputerNodeName automatically.
-7. Specify the `Working Dir`. Different from Azure Container Service (Kubernetes), you must ensure login user have the write permission to this directory.
+7. Specify the `Working Dir`. You must ensure login user have the write permission to this directory.
 8. Add `Ports`, `Environment Variables` and `Volumes`
 9. Choose a retention strategy. You can get details in help.
 10. Specify `Cpu Requirement` and `Memory Requirement`, ACI containers costs per second. Find more detail in [Price Details](https://azure.microsoft.com/en-us/pricing/details/container-instances/).

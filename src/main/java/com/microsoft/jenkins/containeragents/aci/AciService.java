@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.microsoft.azure.management.containerinstance.ContainerGroup;
 import com.microsoft.jenkins.containeragents.ContainerPlugin;
 import com.microsoft.jenkins.containeragents.PodEnvVar;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
@@ -70,6 +71,9 @@ public final class AciService {
                 }
                 addPortNode(tmp, mapper, port.getPort());
             }
+            if (template.getLaunchMethodType().equals(Constants.LAUNCH_METHOD_SSH)) {
+                addPortNode(tmp, mapper, String.valueOf(template.getSshPort()));
+            }
 
             addEnvNode(tmp, mapper, template.getEnvVars());
 
@@ -115,6 +119,17 @@ public final class AciService {
                 } else if (deployment.provisioningState().equalsIgnoreCase("Failed")) {
                     throw new Exception(String.format("Deployment %s status: Failed", deployName));
                 } else {
+                    // If half of time passed, we need to inspect what happened from logs
+                    if (AzureContainerUtils.isHalfTimePassed(template.getTimeout(), stopWatch.getTime())) {
+                        ContainerGroup containerGroup
+                                = azureClient.containerGroups()
+                                .getByResourceGroup(cloud.getResourceGroup(), agent.getNodeName());
+                        if (containerGroup != null) {
+                            LOGGER.log(Level.INFO, "Logs from container {0}: {1}",
+                                    new Object[]{agent.getNodeName(),
+                                            containerGroup.getLogContent(agent.getNodeName())});
+                        }
+                    }
                     Thread.sleep(retryInterval);
                 }
             }

@@ -103,8 +103,13 @@ public class AciCloud extends Cloud {
                                     //Deploy ACI and wait
                                     template.provisionAgents(AciCloud.this, agent, stopWatch);
 
-                                    //wait JNLP to online
-                                    waitToOnline(agent, template.getTimeout(), stopWatch);
+                                    if (template.getLaunchMethodType().equals(Constants.LAUNCH_METHOD_JNLP)) {
+                                        //wait JNLP to online
+                                        waitToOnline(agent, template.getTimeout(), stopWatch);
+                                    } else {
+                                        addHost(agent);
+                                        agent.toComputer().connect(false).get();
+                                    }
 
                                     addIpEnv(agent);
 
@@ -179,6 +184,15 @@ public class AciCloud extends Cloud {
         agent.save();
     }
 
+    public void addHost(AciAgent agent) throws Exception {
+        Azure azureClient = getAzureClient();
+
+        String ip = azureClient.containerGroups().getByResourceGroup(resourceGroup, agent.getNodeName()).ipAddress();
+
+        agent.setHost(ip);
+        agent.save();
+    }
+
     private void waitToOnline(AciAgent agent, int startupTimeout, StopWatch stopWatch)
             throws Exception {
         LOGGER.log(Level.INFO, "Waiting agent {0} to online", agent.getNodeName());
@@ -198,6 +212,9 @@ public class AciCloud extends Cloud {
             if (containerGroup.containers().containsKey(agent.getNodeName())
                     && containerGroup.containers().get(agent.getNodeName()).instanceView().currentState().state()
                     .equals("Terminated")) {
+                LOGGER.log(Level.WARNING, "Logs from container {0}: {1}",
+                        new Object[]{agent.getNodeName(),
+                                containerGroup.getLogContent(agent.getNodeName())});
                 throw new IllegalStateException("ACI container terminated");
             }
 

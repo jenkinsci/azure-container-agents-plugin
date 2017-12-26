@@ -40,6 +40,16 @@ public final class Constants {
 
     public static final String AKS_RESOURCE_TYPE = "managedClusters";
 
+    public static final String LAUNCH_METHOD_SSH = "ssh";
+
+    public static final String LAUNCH_METHOD_JNLP = "jnlp";
+
+    public static final int DEFAULT_SSH_PORT = 22;
+
+    public static final int SSH_PORT_MIN = 0;
+
+    public static final int SSH_PORT_MAX = 65535;
+
     private Constants() {
 
     }
