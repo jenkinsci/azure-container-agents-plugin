@@ -1,5 +1,8 @@
 # Azure Container Agents Plugin Changelog
 
+## Version 0.4.1, 2018-01-10
+* Fix AKS agents after AKS resource API change 
+
 ## Version 0.4.0, 2018-01-02
 * **Breaking Change**: No longer mount Empty Volume to Working Dir automatically. Make sure that Jenkins have permission
 to R/W in Working Dir or mount Empty Volume by yourself   
