@@ -113,7 +113,7 @@ public final class KubernetesService {
         File configFile = null;
         try {
             String encodedConfig =
-                    (String) ((Map) ((Map) properties.get("accessProfiles")).get("clusterUser")).get("kubeConfig");
+                    (String) properties.get("kubeConfig");
             configFile = KubernetesService.getConfigViaBase64(encodedConfig);
             return KubernetesClientFactory.buildWithConfigFile(configFile);
         } catch (Exception e) {
@@ -193,9 +193,9 @@ public final class KubernetesService {
             String resourceId = ResourceUtils.constructResourceId(azureClient.subscriptionId(),
                     resourceGroup,
                     Constants.AKS_NAMESPACE,
-                    Constants.AKS_RESOURCE_TYPE,
-                    serviceName,
-                    "");
+                    "accessProfiles",
+                    "clusterAdmin",
+                    String.format("%s/%s", Constants.AKS_RESOURCE_TYPE, serviceName));
             Object properties = azureClient.genericResources().getById(resourceId).properties();
             if (properties instanceof Map<?, ?>) {
                 return (Map<String, Object>) azureClient.genericResources().getById(resourceId).properties();
