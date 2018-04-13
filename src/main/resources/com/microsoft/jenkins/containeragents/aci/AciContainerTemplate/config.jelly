@@ -19,7 +19,7 @@
     </f:entry>
 
     <f:entry field="image" title="${%Docker_Image}">
-        <f:textbox clazz="required" default="jenkinsci/jnlp-slave"/>
+        <f:textbox clazz="required" default="jenkins/ssh-slave"/>
     </f:entry>
 
     <f:entry title="${%Private_Registry_Credentials}">
@@ -28,7 +28,7 @@
     </f:entry>
 
     <f:entry field="command" title="${%Command}">
-        <f:textbox default="jenkins-slave -url $${rootUrl} $${secret} $${nodeName}"/>
+        <f:textbox default="setup-sshd"/>
     </f:entry>
 
     <f:entry field="rootFs" title="${%Working_Dir}">
@@ -51,9 +51,7 @@
     </f:entry>
 
     <ui:dropdownList selectedName="launchMethodType" title="${%Launch_Method}" name="launchMethodTypeContent">
-        <f:dropdownListBlock title="JNLP" value="jnlp" selected="${instance == null || instance.isJnlp()}"/>
-
-        <f:dropdownListBlock title="SSH" value="ssh" selected="${instance != null &amp;&amp; instance.isJnlp() == false}">
+        <f:dropdownListBlock title="SSH" value="ssh" selected="${instance == null || instance.isJnlp() == false}">
             <f:entry title="${%SSH_Credentials}" field="sshCredentialsId">
                 <c:select expressionAllowed="false" />
             </f:entry>
@@ -61,6 +59,8 @@
                 <f:textbox default="22"/>
             </f:entry>
         </f:dropdownListBlock>
+
+        <f:dropdownListBlock title="JNLP" value="jnlp" selected="${instance != null &amp;&amp; instance.isJnlp()}"/>
     </ui:dropdownList>
 
     <f:advanced>

@@ -129,7 +129,7 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
     }
 
     public boolean isJnlp() {
-        if (StringUtils.isBlank(launchMethodType) || launchMethodType.equals(Constants.LAUNCH_METHOD_JNLP)) {
+        if (StringUtils.isNotBlank(launchMethodType) && launchMethodType.equals(Constants.LAUNCH_METHOD_JNLP)) {
             return true;
         }
         return false;
@@ -204,12 +204,12 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
     }
 
     public String getLaunchMethodType() {
-        return StringUtils.defaultString(launchMethodType, Constants.LAUNCH_METHOD_JNLP);
+        return StringUtils.defaultString(launchMethodType, Constants.LAUNCH_METHOD_SSH);
     }
 
     @DataBoundSetter
     public void setLaunchMethodType(String launchMethodType) {
-        this.launchMethodType = StringUtils.defaultString(launchMethodType, Constants.LAUNCH_METHOD_JNLP);
+        this.launchMethodType = StringUtils.defaultString(launchMethodType, Constants.LAUNCH_METHOD_SSH);
     }
 
     public String getSshCredentialsId() {

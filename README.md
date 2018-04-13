@@ -137,13 +137,21 @@ Jenkins.getInstance().clouds.add(myCloud);
 1. Specify `Name` and `Labels`
 2. Set `Startup Timeout`.
 3. Select `Image OS Type`, Windows or Linux.
-4. Fill in `Docker Image`. Please note that the slave will connect with master via JNLP, so make sure JNLP installed in image. Default image is `jenkins/jnlp-slave` and you can also use it as base image.
+4. Fill in `Docker Image`. We recommend to use SSH to connect to slave, and you can use image `jenkins/ssh-slave` or take it as base image. Default image is `jenkins/jnlp-slave` and you can also use it as base image. A sample setting below.
+    * Use `jenkins/ssh-slave` as Docker Image
+    * Set `setup-sshd` as Command
+    * Choose `SSH` in Launch Method
+    * Create or choose a private key in SSH Credentials. Please NOTE if you're using `jenkins/ssh-slave` image, the username must be **`jenkins`** or you will get auth failed
+    * Create a Environment Variable with Key `JENKINS_SLAVE_SSH_PUBKEY` and Value `<public key related to your private key above>`
 5. If you use a private registry, you need to specify a credential.
 6. Specify a `Command`. Now the `Command` will override the ENTRYPOINT. `Arguments`. `${rootUrl}`, `${secret}` and `${nodeName}` will be replace with JenkinsUrl, Secret and ComputerNodeName automatically.
 7. Specify the `Working Dir`. You must ensure login user have the write permission to this directory.
 8. Add `Ports`, `Environment Variables` and `Volumes`
 9. Choose a retention strategy. You can get details in help.
 10. Specify `Cpu Requirement` and `Memory Requirement`, ACI containers costs per second. Find more detail in [Price Details](https://azure.microsoft.com/en-us/pricing/details/container-instances/).
+
+## Known Issues
+* It's not stable to use JNLP to connect to slave. If you're facing the container terminate error, please change to use SSH. 
 
 ## Configure Azure Container Instance via Groovy Script
 If you want to configure Azure Container Instance via script rather than manually configure it in UI.
