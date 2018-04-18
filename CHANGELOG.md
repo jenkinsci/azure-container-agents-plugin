@@ -1,5 +1,9 @@
 # Azure Container Agents Plugin Changelog
 
+## Version 0.4.2, 2018-04-18
+* Use SSH as default launch method
+* Update README and help files
+
 ## Version 0.4.1, 2018-01-10
 * Fix AKS agents after AKS resource API change 
 
