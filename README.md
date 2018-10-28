@@ -90,9 +90,9 @@ def myCloud = new KubernetesCloudBuilder()
     .withName("mytemplate")
     .withLabel("k8s")
 .endTemplate()
-.build();
+.build()
 
-Jenkins.getInstance().clouds.add(myCloud);
+Jenkins.getInstance().clouds.add(myCloud)
 ```
 ```groovy
 //inherit template from existing template
@@ -102,7 +102,7 @@ def baseTemplate = new PodTemplateBuilder()
 .withImage("privateImage")
 .addNewImagePullSecret("yourSecret")
 .addNewEnvVar("key", "value")
-.build();
+.build()
 
 def myCloud = new KubernetesCloudBuilder()
 .withCloudName("mycloud")
@@ -114,9 +114,9 @@ def myCloud = new KubernetesCloudBuilder()
     .withName("mytemplate")
     .withLabel("k8s")
 .endTemplate()
-.build();
+.build()
 
-Jenkins.getInstance().clouds.add(myCloud);
+Jenkins.getInstance().clouds.add(myCloud)
 ```
 
 ## Azure Container Instance
@@ -161,9 +161,9 @@ def myCloud = new AciCloudBuilder()
     .addNewPort("80")
     .addNewEnvVar("key","value")
 .endTemplate()
-.build();
+.build()
 
-Jenkins.getInstance().clouds.add(myCloud);
+Jenkins.getInstance().clouds.add(myCloud)
 ```
 ```groovy
 //inherit template from existing template
@@ -173,7 +173,7 @@ def baseTemplate = new AciContainerTemplateBuilder()
 .withImage("privateImage")
 .addNewPort("80")
 .addNewEnvVar("key", "value")
-.build();
+.build()
 
 def myCloud = new AciCloudBuilder()
 .withCloudName("mycloud")
@@ -183,9 +183,9 @@ def myCloud = new AciCloudBuilder()
     .withName("mytemplate")
     .withLabel("aci")
 .endTemplate()
-.build();
+.build()
 
-Jenkins.getInstance().clouds.add(myCloud);
+Jenkins.getInstance().clouds.add(myCloud)
 ```
 
 ## Data/Telemetry
