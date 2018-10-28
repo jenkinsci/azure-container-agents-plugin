@@ -59,9 +59,7 @@ public class ContainerIdleRetentionStrategy extends CloudRetentionStrategy {
                 LOGGER.log(Level.INFO, "Disconnecting {0}", c.getName());
                 try {
                     computerNode.terminate();
-                } catch (InterruptedException e) {
-                    LOGGER.log(WARNING, "Failed to terminate " + c.getName(), e);
-                } catch (IOException e) {
+                } catch (InterruptedException | IOException e) {
                     LOGGER.log(WARNING, "Failed to terminate " + c.getName(), e);
                 }
             }
