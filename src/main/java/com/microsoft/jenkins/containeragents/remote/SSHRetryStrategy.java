@@ -2,7 +2,8 @@ package com.microsoft.jenkins.containeragents.remote;
 
 import com.jcraft.jsch.JSchException;
 import com.microsoft.jenkins.containeragents.helper.IRetryStrategy;
-import hudson.util.TimeUnit2;
+
+import java.util.concurrent.TimeUnit;
 
 public class SSHRetryStrategy implements IRetryStrategy {
 
@@ -22,7 +23,7 @@ public class SSHRetryStrategy implements IRetryStrategy {
     public void handleRetry(Exception e) {
         retryTimes++;
         try {
-            Thread.sleep(TimeUnit2.SECONDS.toMillis(retryInterval));
+            Thread.sleep(TimeUnit.SECONDS.toMillis(retryInterval));
         } catch (InterruptedException ignore) {
 
         }
