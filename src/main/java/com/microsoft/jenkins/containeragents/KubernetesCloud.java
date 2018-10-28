@@ -302,8 +302,8 @@ public class KubernetesCloud extends Cloud {
         }
     }
 
-    private boolean isTimeout(long elaspedTime) {
-        return AzureContainerUtils.isTimeout(startupTimeout, elaspedTime);
+    private boolean isTimeout(long elapsedTime) {
+        return AzureContainerUtils.isTimeout(startupTimeout, elapsedTime);
     }
 
     public static synchronized ExecutorService getThreadPool() {

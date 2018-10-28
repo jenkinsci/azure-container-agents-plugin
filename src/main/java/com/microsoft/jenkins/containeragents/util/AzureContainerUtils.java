@@ -50,8 +50,8 @@ public final class AzureContainerUtils {
 
     }
 
-    public static boolean isTimeout(long startupTimeout, long elaspedTime) {
-        return (startupTimeout > 0 && TimeUnit.MILLISECONDS.toMinutes(elaspedTime) >= startupTimeout);
+    public static boolean isTimeout(long startupTimeout, long elapsedTime) {
+        return (startupTimeout > 0 && TimeUnit.MILLISECONDS.toMinutes(elapsedTime) >= startupTimeout);
     }
 
     public static boolean isHalfTimePassed(long startupTimeout, long elaspedTime) {
