@@ -7,7 +7,6 @@ import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
-import com.microsoft.jenkins.azurecommons.Constants;
 import com.microsoft.jenkins.azurecommons.remote.SSHClient;
 import com.microsoft.jenkins.containeragents.helper.RetryTask;
 import hudson.model.Slave;
@@ -22,7 +21,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
@@ -130,7 +129,7 @@ public class SSHLauncher extends ComputerLauncher {
             String passphrase = sshUserPrivateKey.getPassphrase() == null
                     ? null
                     : sshUserPrivateKey.getPassphrase().getPlainText();
-            byte[] passphraseBytes = passphrase == null ? null : passphrase.getBytes(Charset.forName("UTF-8"));
+            byte[] passphraseBytes = passphrase == null ? null : passphrase.getBytes(StandardCharsets.UTF_8);
 
             int seq = 0;
             for (String privateKey : sshUserPrivateKey.getPrivateKeys()) {
@@ -138,7 +137,7 @@ public class SSHLauncher extends ComputerLauncher {
                 if (seq++ != 0) {
                     name += "-" + seq;
                 }
-                jsch.addIdentity(name, privateKey.getBytes(Constants.UTF8), null, passphraseBytes);
+                jsch.addIdentity(name, privateKey.getBytes(StandardCharsets.UTF_8), null, passphraseBytes);
             }
         }
 
