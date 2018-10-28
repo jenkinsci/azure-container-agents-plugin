@@ -5,6 +5,7 @@ import com.microsoft.jenkins.containeragents.KubernetesCloud;
 import com.microsoft.jenkins.containeragents.PodTemplate;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class KubernetesCloudBuilder {
@@ -68,9 +69,7 @@ public class KubernetesCloudBuilder {
     }
 
     public KubernetesCloudBuilder addToTemplates(PodTemplate... templates) {
-        for (PodTemplate template : templates) {
-            this.templates.add(template);
-        }
+        Collections.addAll(this.templates, templates);
         return this;
     }
 
