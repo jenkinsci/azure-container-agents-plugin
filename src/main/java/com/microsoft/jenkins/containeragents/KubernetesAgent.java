@@ -156,7 +156,7 @@ public class KubernetesAgent extends AbstractCloudSlave implements ISSHLaunchabl
         @Override
         public String getDisplayName() {
             return "Kubernetes Agent";
-        };
+        }
 
         @Override
         public boolean isInstantiable() {
