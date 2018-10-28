@@ -31,9 +31,6 @@ public class SSHRetryStrategy implements IRetryStrategy {
 
     @Override
     public boolean canRetry(Exception e) {
-        if (e instanceof JSchException && retryTimes < retryTimesLimit) {
-            return true;
-        }
-        return false;
+        return e instanceof JSchException && retryTimes < retryTimesLimit;
     }
 }

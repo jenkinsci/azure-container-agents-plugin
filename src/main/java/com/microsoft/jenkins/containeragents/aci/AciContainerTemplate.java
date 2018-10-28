@@ -129,10 +129,7 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
     }
 
     public boolean isJnlp() {
-        if (StringUtils.isBlank(launchMethodType) || launchMethodType.equals(Constants.LAUNCH_METHOD_JNLP)) {
-            return true;
-        }
-        return false;
+        return StringUtils.isBlank(launchMethodType) || launchMethodType.equals(Constants.LAUNCH_METHOD_JNLP);
     }
 
     public String getName() {
