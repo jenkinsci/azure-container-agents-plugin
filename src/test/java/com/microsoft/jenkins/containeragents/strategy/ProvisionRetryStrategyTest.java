@@ -1,21 +1,13 @@
 package com.microsoft.jenkins.containeragents.strategy;
 
-import com.microsoft.jenkins.containeragents.strategy.ProvisionRetryStrategy;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.greaterThan;
 
-
 public class ProvisionRetryStrategyTest {
 
     ProvisionRetryStrategy strategy = new ProvisionRetryStrategy();
-
-    @Before
-    public void setUp() {
-
-    }
 
     @Test
     public void testSuccess() {

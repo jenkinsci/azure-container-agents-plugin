@@ -159,8 +159,8 @@ public final class AciService {
                 .get("properties").get("containers").get(0)
                 .get("properties").get("command"));
 
-        for (int i = 0; i < commands.length; i++) {
-            commandNode.add(commands[i]);
+        for (String command : commands) {
+            commandNode.add(command);
         }
     }
 

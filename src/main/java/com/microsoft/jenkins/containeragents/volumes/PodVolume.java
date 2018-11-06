@@ -17,5 +17,5 @@ public abstract class PodVolume extends AbstractDescribableImpl<PodVolume> imple
 
     public abstract String getMountPath();
 
-    public abstract Volume buildVolume(String volumeNmae);
+    public abstract Volume buildVolume(String volumeName);
 }

@@ -164,7 +164,7 @@ public class AciAgent extends AbstractCloudSlave implements ISSHLaunchable {
         @Override
         public String getDisplayName() {
             return "Aci Agent";
-        };
+        }
 
         @Override
         public boolean isInstantiable() {
