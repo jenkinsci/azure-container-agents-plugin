@@ -14,7 +14,7 @@ import com.microsoft.azure.management.resources.fluentcore.arm.ResourceUtils;
 import com.microsoft.jenkins.containeragents.helper.AzureContainerServiceCredentials;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
 import com.microsoft.azure.management.Azure;
-import com.microsoft.azure.management.compute.ContainerService;
+import com.microsoft.azure.management.containerservice.ContainerService;
 import com.microsoft.jenkins.azurecommons.remote.SSHClient;
 import com.microsoft.jenkins.containeragents.util.Constants;
 import hudson.security.ACL;
