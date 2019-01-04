@@ -5,13 +5,21 @@
  */
 
 package com.microsoft.jenkins.containeragents;
+import org.jenkinsci.plugins.cloudstats.ProvisioningActivity;
+import org.jenkinsci.plugins.cloudstats.TrackedItem;
 
 import hudson.slaves.AbstractCloudComputer;
 
-public class KubernetesComputer extends AbstractCloudComputer<KubernetesAgent> {
+import javax.annotation.Nullable;
+
+public class KubernetesComputer extends AbstractCloudComputer<KubernetesAgent> implements TrackedItem {
+
+    private final ProvisioningActivity.Id provisioningId;
 
     public KubernetesComputer(KubernetesAgent slave) {
         super(slave);
+
+        this.provisioningId = slave.getId();
     }
 
     @Override
@@ -19,4 +27,9 @@ public class KubernetesComputer extends AbstractCloudComputer<KubernetesAgent> {
         return String.format("KubernetesComputer name: %s slave: %s", getName(), getNode());
     }
 
+    @Nullable
+    @Override
+    public ProvisioningActivity.Id getId() {
+        return provisioningId;
+    }
 }

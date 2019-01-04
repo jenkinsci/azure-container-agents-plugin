@@ -26,21 +26,26 @@ import hudson.slaves.Cloud;
 import hudson.slaves.JNLPLauncher;
 import hudson.slaves.NodeProperty;
 import jenkins.model.Jenkins;
+import org.jenkinsci.plugins.cloudstats.CloudStatistics;
+import org.jenkinsci.plugins.cloudstats.ProvisioningActivity;
+import org.jenkinsci.plugins.cloudstats.TrackedItem;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
-
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class KubernetesAgent extends AbstractCloudSlave implements ISSHLaunchable {
+public class KubernetesAgent extends AbstractCloudSlave implements ISSHLaunchable, TrackedItem {
 
     private static final Logger LOGGER = Logger.getLogger(KubernetesAgent.class.getName());
     public static final String ROOT_FS = "/jenkins";
+
+    private ProvisioningActivity.Id provisioningId;
 
     private final String cloudName;
 
@@ -72,6 +77,15 @@ public class KubernetesAgent extends AbstractCloudSlave implements ISSHLaunchabl
         launchType = template.getLaunchMethodType();
     }
 
+    public KubernetesAgent(ProvisioningActivity.Id id, KubernetesCloud cloud, PodTemplate template)
+            throws Descriptor.FormException, IOException {
+        
+        this(cloud,
+            template);
+
+        this.provisioningId = id;
+    }
+
     @Override
     public AbstractCloudComputer createComputer() {
         return new KubernetesComputer(this);
@@ -100,6 +114,11 @@ public class KubernetesAgent extends AbstractCloudSlave implements ISSHLaunchabl
                 ((KubernetesCloud) cloud).deletePod(name);
             }
         });
+
+        ProvisioningActivity activity = CloudStatistics.get().getActivityFor(this);
+        if (activity != null) {
+            activity.enterIfNotAlready(ProvisioningActivity.Phase.COMPLETED);
+        }
     }
 
     static String generateAgentName(PodTemplate template) {
@@ -148,6 +167,12 @@ public class KubernetesAgent extends AbstractCloudSlave implements ISSHLaunchabl
     @Override
     public Node reconfigure(StaplerRequest req, JSONObject form) throws Descriptor.FormException {
         return this;
+    }
+
+    @Nullable
+    @Override
+    public ProvisioningActivity.Id getId() {
+        return provisioningId;
     }
 
     @Extension
