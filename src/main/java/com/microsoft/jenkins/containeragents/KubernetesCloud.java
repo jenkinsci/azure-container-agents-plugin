@@ -35,7 +35,6 @@ import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import jenkins.model.Jenkins;
-import org.jenkinsci.plugins.cloudstats.CloudStatistics;
 import org.jenkinsci.plugins.cloudstats.ProvisioningActivity;
 import org.jenkinsci.plugins.cloudstats.TrackedPlannedNode;
 import org.apache.commons.lang3.time.StopWatch;
@@ -242,8 +241,6 @@ public class KubernetesCloud extends Cloud {
     @Override
     public Collection<NodeProvisioner.PlannedNode> provision(Label label, int excessWorkload) {
         try {
-            
-
             LOGGER.info("Excess workload after pending Spot instances: " + excessWorkload);
             List<NodeProvisioner.PlannedNode> r = new ArrayList<>();
             PodTemplate template = findFirstPodTemplateBy(label);
@@ -253,7 +250,8 @@ public class KubernetesCloud extends Cloud {
 
             LOGGER.info("Template: " + template.getDisplayName());
             for (int i = 1; i <= excessWorkload; i++) {
-                r.add(new TrackedPlannedNode(provisioningId, 1, Computer.threadPoolForRemoting.submit(new ProvisionCallback(template))));
+                r.add(new TrackedPlannedNode(provisioningId, 1, 
+                    Computer.threadPoolForRemoting.submit(new ProvisionCallback(template))));
             }
             return r;
         } catch (KubernetesClientException e) {

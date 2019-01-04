@@ -79,7 +79,7 @@ public class KubernetesAgent extends AbstractCloudSlave implements ISSHLaunchabl
 
     public KubernetesAgent(ProvisioningActivity.Id id, KubernetesCloud cloud, PodTemplate template)
             throws Descriptor.FormException, IOException {
-        
+
         this(cloud,
             template);
 
