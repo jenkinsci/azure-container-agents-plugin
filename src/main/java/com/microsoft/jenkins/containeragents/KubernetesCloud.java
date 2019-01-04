@@ -250,7 +250,7 @@ public class KubernetesCloud extends Cloud {
 
             LOGGER.info("Template: " + template.getDisplayName());
             for (int i = 1; i <= excessWorkload; i++) {
-                r.add(new TrackedPlannedNode(provisioningId, 1, 
+                r.add(new TrackedPlannedNode(provisioningId, 1,
                     Computer.threadPoolForRemoting.submit(new ProvisionCallback(template))));
             }
             return r;
