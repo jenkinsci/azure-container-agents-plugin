@@ -115,10 +115,13 @@ public class KubernetesCloud extends Cloud {
 
         private final PodTemplate template;
 
+        private final ProvisioningActivity.Id provisioningId;
+
         private static final int RETRY_INTERVAL = 1000;
 
-        ProvisionCallback(PodTemplate template) {
+        ProvisionCallback(PodTemplate template, ProvisioningActivity.Id provisioningId) {
             this.template = template;
+            this.provisioningId = provisioningId;
         }
 
         @Override
@@ -127,7 +130,7 @@ public class KubernetesCloud extends Cloud {
             final Map<String, String> properties = new HashMap<>();
 
             try {
-                slave = new KubernetesAgent(KubernetesCloud.this, template);
+                slave = new KubernetesAgent(provisioningId, KubernetesCloud.this, template);
 
                 LOGGER.log(Level.INFO, "Adding Jenkins node: {0}", slave.getNodeName());
                 Jenkins.getInstance().addNode(slave);
@@ -251,7 +254,7 @@ public class KubernetesCloud extends Cloud {
             LOGGER.info("Template: " + template.getDisplayName());
             for (int i = 1; i <= excessWorkload; i++) {
                 r.add(new TrackedPlannedNode(provisioningId, 1,
-                    Computer.threadPoolForRemoting.submit(new ProvisionCallback(template))));
+                    Computer.threadPoolForRemoting.submit(new ProvisionCallback(template, provisioningId))));
             }
             return r;
         } catch (KubernetesClientException e) {
