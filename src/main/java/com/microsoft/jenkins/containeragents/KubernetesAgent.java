@@ -26,7 +26,6 @@ import hudson.slaves.Cloud;
 import hudson.slaves.JNLPLauncher;
 import hudson.slaves.NodeProperty;
 import jenkins.model.Jenkins;
-import org.jenkinsci.plugins.cloudstats.CloudStatistics;
 import org.jenkinsci.plugins.cloudstats.ProvisioningActivity;
 import org.jenkinsci.plugins.cloudstats.TrackedItem;
 import net.sf.json.JSONObject;
@@ -114,11 +113,6 @@ public class KubernetesAgent extends AbstractCloudSlave implements ISSHLaunchabl
                 ((KubernetesCloud) cloud).deletePod(name);
             }
         });
-
-        ProvisioningActivity activity = CloudStatistics.get().getActivityFor(this);
-        if (activity != null) {
-            activity.enterIfNotAlready(ProvisioningActivity.Phase.COMPLETED);
-        }
     }
 
     static String generateAgentName(PodTemplate template) {
