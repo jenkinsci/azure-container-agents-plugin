@@ -10,7 +10,7 @@ import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
-import com.microsoft.azure.management.resources.fluentcore.arm.ResourceUtils;
+// import com.microsoft.azure.management.resources.fluentcore.arm.ResourceUtils;
 import com.microsoft.jenkins.containeragents.helper.AzureContainerServiceCredentials;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
 import com.microsoft.azure.management.Azure;
@@ -190,15 +190,23 @@ public final class KubernetesService {
                                                        String serviceName) {
         try {
             Azure azureClient = AzureContainerUtils.getAzureClient(azureCredentialsId);
-            String resourceId = ResourceUtils.constructResourceId(azureClient.subscriptionId(),
-                    resourceGroup,
-                    Constants.AKS_NAMESPACE,
-                    "accessProfiles",
-                    "clusterAdmin",
-                    String.format("%s/%s", Constants.AKS_RESOURCE_TYPE, serviceName));
-            Object properties = azureClient.genericResources().getById(resourceId).properties();
+            // String resourceId = ResourceUtils.constructResourceId(azureClient.subscriptionId(),
+            //         resourceGroup,
+            //         Constants.AKS_NAMESPACE,
+            //         "accessProfiles",
+            //         "clusterAdmin",
+            //         String.format("%s/%s", Constants.AKS_RESOURCE_TYPE, serviceName));
+            // Object properties = azureClient.genericResources().getById(resourceId).properties();
+            Object properties = azureClient.genericResources().get(
+                resourceGroup,
+                Constants.AKS_NAMESPACE,
+                String.format("%s/%s", Constants.AKS_RESOURCE_TYPE, serviceName),
+                "accessProfiles",
+                "clusterAdmin",
+                "2019-02-01"
+            ).properties();
             if (properties instanceof Map<?, ?>) {
-                return (Map<String, Object>) azureClient.genericResources().getById(resourceId).properties();
+                return (Map<String, Object>) properties;
             } else {
                 return null;
             }
