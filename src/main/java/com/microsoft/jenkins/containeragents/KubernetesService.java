@@ -10,27 +10,24 @@ import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
-import com.microsoft.azure.management.resources.fluentcore.arm.ResourceUtils;
 import com.microsoft.jenkins.containeragents.helper.AzureContainerServiceCredentials;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.management.containerservice.ContainerService;
 import com.microsoft.jenkins.azurecommons.remote.SSHClient;
-import com.microsoft.jenkins.containeragents.util.Constants;
 import hudson.security.ACL;
 import io.fabric8.kubernetes.api.model.ContainerState;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import jenkins.model.Jenkins;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.time.StopWatch;
+import org.apache.commons.lang3.ArrayUtils;
 
 import javax.naming.AuthenticationException;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.util.Collections;
-import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -63,19 +60,6 @@ public final class KubernetesService {
         }
     }
 
-    public static File getConfigViaBase64(String encodedConfig) throws Exception {
-        byte[] data = Base64.decodeBase64(encodedConfig);
-
-        File configFile = File.createTempFile("kube",
-                ".config",
-                new File(System.getProperty("java.io.tmpdir")));
-
-        try (OutputStream stream = new FileOutputStream(configFile)) {
-            stream.write(data);
-            return configFile;
-        }
-    }
-
     public static KubernetesClient connect(String masterFqdn,
                                            String namespace,
                                            String acsCredentialsId) throws AuthenticationException {
@@ -104,17 +88,8 @@ public final class KubernetesService {
     }
 
 
-    public static KubernetesClient connect(Map<String, Object> properties) {
-        if (properties == null || properties.isEmpty()) {
-            LOGGER.log(Level.WARNING, "AKS properties is null");
-            return null;
-        }
-
-        File configFile = null;
+    public static KubernetesClient connect(File configFile) {
         try {
-            String encodedConfig =
-                    (String) properties.get("kubeConfig");
-            configFile = KubernetesService.getConfigViaBase64(encodedConfig);
             return KubernetesClientFactory.buildWithConfigFile(configFile);
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Connect failed: {0}", e.getMessage());
@@ -185,43 +160,31 @@ public final class KubernetesService {
         }
     }
 
-    public static Map<String, Object> getAksProperties(String azureCredentialsId,
-                                                       String resourceGroup,
-                                                       String serviceName) {
-        try {
-            Azure azureClient = AzureContainerUtils.getAzureClient(azureCredentialsId);
-            String resourceId = ResourceUtils.constructResourceId(azureClient.subscriptionId(),
-                    resourceGroup,
-                    Constants.AKS_NAMESPACE,
-                    "accessProfiles",
-                    "clusterAdmin",
-                    String.format("%s/%s", Constants.AKS_RESOURCE_TYPE, serviceName));
-            Object properties = azureClient.genericResources().getById(resourceId).properties();
-            if (properties instanceof Map<?, ?>) {
-                return (Map<String, Object>) azureClient.genericResources().getById(resourceId).properties();
-            } else {
-                return null;
-            }
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
     public static KubernetesClient getKubernetesClient(String azureCredentialsId,
-                                                       String resourceGroup,
-                                                       String serviceName,
-                                                       String namespace,
-                                                       String acsCredentialsId) throws Exception {
-        Map<String, Object> properties =
-                KubernetesService.getAksProperties(azureCredentialsId, resourceGroup, serviceName);
+        String resourceGroup,
+        String serviceName,
+        String namespace,
+        String acsCredentialsId) throws Exception {
 
-        if (properties != null) {
-            return KubernetesService.connect(properties);
-        } else {
+        Azure azureClient = AzureContainerUtils.getAzureClient(azureCredentialsId);
+
+        byte[] adminKubeConfigContent = azureClient.kubernetesClusters()
+                    .getAdminKubeConfigContent(resourceGroup, serviceName);
+
+        File kubeconfigFile = File.createTempFile("kube",
+            ".config",
+            new File(System.getProperty("java.io.tmpdir")));
+
+        if (ArrayUtils.isEmpty(adminKubeConfigContent)) {
             ContainerService containerService
                     = KubernetesService.getContainerService(azureCredentialsId, resourceGroup, serviceName);
             String masterFqdn = containerService.masterFqdn();
             return KubernetesService.connect(masterFqdn, namespace, acsCredentialsId);
+        } else {
+            try (OutputStream out = new FileOutputStream(kubeconfigFile)) {
+                out.write(adminKubeConfigContent);
+                return KubernetesService.connect(kubeconfigFile);
+            }
         }
     }
 
