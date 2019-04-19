@@ -1,20 +1,19 @@
 package com.microsoft.jenkins.containeragents.util;
 
 
-import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.microsoft.azure.AzureEnvironment;
-import com.microsoft.azure.credentials.ApplicationTokenCredentials;
-import com.microsoft.azure.credentials.AzureTokenCredentials;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.management.resources.ResourceGroup;
+import com.microsoft.azure.util.AzureBaseCredentials;
+import com.microsoft.azure.util.AzureCredentialUtil;
 import com.microsoft.azure.util.AzureCredentials;
-import com.microsoft.azure.util.AzureMsiCredentials;
-import com.microsoft.jenkins.containeragents.Messages;
+import com.microsoft.jenkins.azurecommons.core.AzureClientFactory;
+import com.microsoft.jenkins.azurecommons.core.credentials.TokenCredentialData;
 import com.microsoft.jenkins.containeragents.ContainerPlugin;
-import com.microsoft.rest.LogLevel;
+import com.microsoft.jenkins.containeragents.Messages;
 import hudson.model.Item;
 import hudson.security.ACL;
 import hudson.util.ListBoxModel;
@@ -61,11 +60,7 @@ public final class AzureContainerUtils {
     public static ListBoxModel listCredentialsIdItems(Item owner) {
         StandardListBoxModel listBoxModel = new StandardListBoxModel();
         listBoxModel.add("--- Select Azure Credentials ---", "");
-        listBoxModel.withAll(CredentialsProvider.lookupCredentials(AzureCredentials.class,
-                owner,
-                ACL.SYSTEM,
-                Collections.<DomainRequirement>emptyList()));
-        listBoxModel.withAll(CredentialsProvider.lookupCredentials(AzureMsiCredentials.class,
+        listBoxModel.withAll(CredentialsProvider.lookupCredentials(AzureBaseCredentials.class,
                 owner,
                 ACL.SYSTEM,
                 Collections.<DomainRequirement>emptyList()));
@@ -93,40 +88,28 @@ public final class AzureContainerUtils {
     }
 
     public static Azure getAzureClient(String credentialsId) {
-        AzureMsiCredentials credential = CredentialsMatchers.firstOrNull(
-                CredentialsProvider.lookupCredentials(
-                        AzureMsiCredentials.class,
-                        Jenkins.getInstance(),
-                        ACL.SYSTEM,
-                        Collections.<DomainRequirement>emptyList()),
-                CredentialsMatchers.withId(credentialsId));
-        if (credential != null) {
-            try {
-                return getAzureClient(credential.getMsiPort());
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        } else {
-            AzureCredentials.ServicePrincipal servicePrincipal = AzureCredentials.getServicePrincipal(credentialsId);
-            return getAzureClient(servicePrincipal);
+        TokenCredentialData token = getToken(credentialsId);
+        return getClient(token);
+    }
+
+    public static TokenCredentialData getToken(String credentialId) {
+        AzureBaseCredentials credential = AzureCredentialUtil.getCredential2(credentialId);
+        if (credential == null) {
+            throw new NullPointerException("Can't find credential with id: " + credentialId);
         }
+        return TokenCredentialData.deserialize(credential.serializeToTokenData());
     }
 
-    public static Azure getAzureClient(AzureCredentials.ServicePrincipal servicePrincipal) {
-        AzureEnvironment environment = getAzureEnvironment(servicePrincipal);
-        AzureTokenCredentials token = new ApplicationTokenCredentials(
-                servicePrincipal.getClientId(),
-                servicePrincipal.getTenant(),
-                servicePrincipal.getClientSecret(),
-                environment);
-        return Azure.configure()
-                .withInterceptor(new ContainerPlugin.AzureTelemetryInterceptor())
-                .withLogLevel(LogLevel.NONE)
-                .withUserAgent(getUserAgent())
-                .authenticate(token)
-                .withSubscription(servicePrincipal.getSubscriptionId());
+    public static Azure getClient(TokenCredentialData token) {
+        return AzureClientFactory.getClient(token, new AzureClientFactory.Configurer() {
+            @Override
+            public Azure.Configurable configure(Azure.Configurable configurable) {
+                return configurable
+                        .withInterceptor(new ContainerPlugin.AzureTelemetryInterceptor())
+                        .withUserAgent(getUserAgent());
+            }
+        });
     }
-
     private static AzureEnvironment getAzureEnvironment(AzureCredentials.ServicePrincipal servicePrincipal) {
         String managementEndpoint = servicePrincipal.getManagementEndpoint();
         if (managementEndpoint.equals(AzureEnvironment.AZURE.managementEndpoint())) {
@@ -140,16 +123,6 @@ public final class AzureContainerUtils {
         } else {
             return AzureEnvironment.AZURE;
         }
-    }
-
-    public static Azure getAzureClient(int msiPort) throws IOException {
-        MsiTokenCredentials msiToken = new MsiTokenCredentials(msiPort, AzureEnvironment.AZURE);
-        return Azure.configure()
-                .withInterceptor(new ContainerPlugin.AzureTelemetryInterceptor())
-                .withLogLevel(LogLevel.NONE)
-                .withUserAgent(getUserAgent())
-                .authenticate(msiToken)
-                .withDefaultSubscription();
     }
 
     private static String getUserAgent() {
