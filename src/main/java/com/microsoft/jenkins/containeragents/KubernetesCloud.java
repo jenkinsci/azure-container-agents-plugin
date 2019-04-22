@@ -6,19 +6,20 @@
 
 package com.microsoft.jenkins.containeragents;
 
+import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
-import com.microsoft.azure.management.compute.ContainerServiceOrchestratorTypes;
+import com.microsoft.azure.management.Azure;
+import com.microsoft.azure.management.containerservice.ContainerService;
+import com.microsoft.azure.management.containerservice.ContainerServiceOrchestratorTypes;
 import com.microsoft.azure.management.resources.GenericResource;
+import com.microsoft.azure.util.AzureCredentials;
+import com.microsoft.jenkins.azurecommons.telemetry.AppInsightsConstants;
 import com.microsoft.jenkins.containeragents.helper.AzureContainerServiceCredentials;
 import com.microsoft.jenkins.containeragents.strategy.ProvisionRetryStrategy;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
 import com.microsoft.jenkins.containeragents.util.Constants;
-import com.microsoft.azure.management.Azure;
-import com.microsoft.azure.management.compute.ContainerService;
-import com.microsoft.azure.util.AzureCredentials;
-import com.microsoft.jenkins.azurecommons.telemetry.AppInsightsConstants;
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
@@ -35,8 +36,8 @@ import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import jenkins.model.Jenkins;
-import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -57,8 +58,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
 
 
 public class KubernetesCloud extends Cloud {
