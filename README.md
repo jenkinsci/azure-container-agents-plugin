@@ -124,7 +124,7 @@ Jenkins.getInstance().clouds.add(myCloud)
 [Azure Container Instances](https://docs.microsoft.com/en-us/azure/container-instances/) offers the fastest and simplest way to run a container in Azure, without having to provision any virtual machines and without having to adopt a higher-level service.
 
 ## Pre-requirements
-* Resource Group in available regions. Get [region availability details](https://azure.microsoft.com/en-us/regions/services/).
+* Resource Group in available regions. Get [region availability details](https://azure.microsoft.com/en-us/global-infrastructure/services/?products=container-instances).
 
 ## Configure the plugin
 1. Jenkins -> Manage Jenkins -> Configure System

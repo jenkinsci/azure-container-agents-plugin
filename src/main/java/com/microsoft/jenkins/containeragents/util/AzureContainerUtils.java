@@ -88,6 +88,9 @@ public final class AzureContainerUtils {
     }
 
     public static Azure getAzureClient(String credentialsId) {
+        if (StringUtils.isBlank(credentialsId)) {
+            throw new IllegalArgumentException("Invalid credential id: " + credentialsId);
+        }
         TokenCredentialData token = getToken(credentialsId);
         return getClient(token);
     }
