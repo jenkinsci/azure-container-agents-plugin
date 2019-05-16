@@ -27,7 +27,7 @@ public class AciCleanTask extends AsyncPeriodicWork {
     }
 
     private void clean()   {
-        Jenkins instance = Jenkins.getInstance();
+        Jenkins instance = Jenkins.getInstanceOrNull();
         if (instance == null) {
             return;
         }
