@@ -52,7 +52,11 @@ public class ContainerOnceRetentionStrategy extends CloudRetentionStrategy imple
 
             // neverConnected will always be true if jenkins restart so that slave will not be deleted
             // So overwrite neverConnected if slave exists after restart
-            if (c.getIdleStartMilliseconds() - Jenkins.getInstance().toComputer().getConnectTime()
+            Computer computer = Jenkins.getInstance().toComputer();
+            if (computer == null) {
+                return 1;
+            }
+            if (c.getIdleStartMilliseconds() - computer.getConnectTime()
                     < TimeUnit.SECONDS.toMillis(LAPSE)) {
                 neverConnected = false;
             }

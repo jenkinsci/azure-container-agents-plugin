@@ -7,6 +7,7 @@
 package com.microsoft.jenkins.containeragents.strategy;
 
 import hudson.Extension;
+import hudson.model.Computer;
 import hudson.model.Descriptor;
 import hudson.slaves.AbstractCloudComputer;
 import hudson.slaves.AbstractCloudSlave;
@@ -47,7 +48,11 @@ public class ContainerIdleRetentionStrategy extends CloudRetentionStrategy {
 
             // neverConnected will always be true after jenkins restart so that slave will not be deleted
             // So overwrite neverConnected if slave exists after restart
-            if (c.getIdleStartMilliseconds() - Jenkins.getInstance().toComputer().getConnectTime()
+            Computer computer = Jenkins.getInstance().toComputer();
+            if (computer == null) {
+                return 1;
+            }
+            if (c.getIdleStartMilliseconds() - computer.getConnectTime()
                     < TimeUnit.SECONDS.toMillis(LAPSE)) {
                 neverConnected = false;
             }

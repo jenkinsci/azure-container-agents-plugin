@@ -108,7 +108,11 @@ public class AciCloud extends Cloud {
                                         waitToOnline(agent, template.getTimeout(), stopWatch);
                                     } else {
                                         addHost(agent);
-                                        agent.toComputer().connect(false).get();
+                                        Computer computer = agent.toComputer();
+                                        if (computer == null) {
+                                            throw new IllegalStateException("Agent node has been deleted");
+                                        }
+                                        computer.connect(false).get();
                                     }
 
                                     addIpEnv(agent);
@@ -203,7 +207,8 @@ public class AciCloud extends Cloud {
                 throw new TimeoutException("ACI container connection timeout");
             }
 
-            if (agent.toComputer() == null) {
+            Computer computer = agent.toComputer();
+            if (computer == null) {
                 throw new IllegalStateException("Agent node has been deleted");
             }
             ContainerGroup containerGroup =
@@ -218,7 +223,7 @@ public class AciCloud extends Cloud {
                 throw new IllegalStateException("ACI container terminated");
             }
 
-            if (agent.toComputer().isOnline()) {
+            if (computer.isOnline()) {
                 break;
             }
             final int retryInterval = 5 * 1000;

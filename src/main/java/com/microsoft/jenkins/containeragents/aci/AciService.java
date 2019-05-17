@@ -185,6 +185,9 @@ public final class AciService {
                         ACL.SYSTEM,
                         Collections.<DomainRequirement>emptyList()),
                 CredentialsMatchers.withId(endpoint.getCredentialsId()));
+        if (credentials == null) {
+            return;
+        }
         ArrayNode credentialNode = ArrayNode.class.cast(tmp.get("resources").get(0)
                 .get("properties").get("imageRegistryCredentials"));
         ObjectNode newCredentialNode = mapper.createObjectNode();

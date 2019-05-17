@@ -14,6 +14,7 @@ import hudson.model.TaskListener;
 import hudson.remoting.Channel;
 import hudson.slaves.ComputerLauncher;
 import hudson.slaves.SlaveComputer;
+import hudson.util.Secret;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 
@@ -126,9 +127,10 @@ public class SSHLauncher extends ComputerLauncher {
         JSch jsch = new JSch();
         if (credentials instanceof SSHUserPrivateKey) {
             SSHUserPrivateKey sshUserPrivateKey = (SSHUserPrivateKey) credentials;
-            String passphrase = sshUserPrivateKey.getPassphrase() == null
+            Secret passphraseSecret = sshUserPrivateKey.getPassphrase();
+            String passphrase = passphraseSecret == null
                     ? null
-                    : sshUserPrivateKey.getPassphrase().getPlainText();
+                    : passphraseSecret.getPlainText();
             byte[] passphraseBytes = passphrase == null ? null : passphrase.getBytes(StandardCharsets.UTF_8);
 
             int seq = 0;

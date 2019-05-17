@@ -179,7 +179,11 @@ public class KubernetesCloud extends Cloud {
                         waitToOnline(slave, podId, stopwatch);
                     } else {
                         addHost(slave, client, podId);
-                        slave.toComputer().connect(false).get();
+                        Computer computer = slave.toComputer();
+                        if (computer == null) {
+                            throw new IllegalStateException(Messages.Kubernetes_Pod_Deleted());
+                        }
+                        computer.connect(false).get();
                     }
                 }
 
