@@ -1,5 +1,9 @@
 # Azure Container Agents Plugin Changelog
 
+## Version 1.0.0, 2019-05-23
+* Bump Jenkins baseline to 2.60.3
+* Add support for IMDS credential type
+
 ## Version 0.4.1, 2018-01-10
 * Fix AKS agents after AKS resource API change 
 
