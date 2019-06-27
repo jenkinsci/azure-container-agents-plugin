@@ -50,6 +50,12 @@ public final class Constants {
 
     public static final int SSH_PORT_MAX = 65535;
 
+    public static final int MILLIS_IN_SECOND = 1000;
+
+    public static final int MILLIS_IN_MINUTE = 60 * MILLIS_IN_SECOND;
+
+    public static final long AZURE_DEPLOYMENT_TIMEOUT = 2 * 60 * 60; //in seconds
+
     private Constants() {
 
     }

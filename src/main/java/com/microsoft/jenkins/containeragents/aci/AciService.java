@@ -90,6 +90,10 @@ public final class AciService {
                 addAzureFileVolumeNode(tmp, mapper, volume);
             }
 
+            // register the deployment for cleanup
+            AciCleanTask.DeploymentRegistrar deploymentRegistrar = AciCleanTask.DeploymentRegistrar.getInstance();
+            deploymentRegistrar.registerDeployment(cloud.getName(), cloud.getResourceGroup(), deployName);
+
             azureClient.deployments()
                     .define(deployName)
                     .withExistingResourceGroup(cloud.getResourceGroup())
