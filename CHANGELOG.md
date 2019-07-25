@@ -1,5 +1,8 @@
 # Azure Container Agents Plugin Changelog
 
+## Version 1.1.0, 2019-07-25
+* Clean up deployments after timeout
+
 ## Version 1.0.0, 2019-05-23
 * Bump Jenkins baseline to 2.60.3
 * Add support for IMDS credential type
