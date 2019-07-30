@@ -14,7 +14,7 @@
         <f:textbox clazz="required" default="jenkinsci/jnlp-slave"/>
     </f:entry>
 
-    <f:advanced>
+    <f:advanced title="${%Container_Details}" align="left">
         <f:entry field="timeout" title="${%Timeout}">
             <f:textbox default="10"/>
         </f:entry>

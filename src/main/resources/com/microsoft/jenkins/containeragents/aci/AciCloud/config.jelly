@@ -14,9 +14,11 @@
         <f:select/>
     </f:entry>
 
-    <f:advanced title="${%Images}" description="${%Image_Description}">
-        <f:repeatableHeteroProperty field="templates" hasHeader="true" addCaption="Add Container Template"
-                                    deleteCaption="Delete Container Template"/>
+    <f:advanced title="${%Images}" align="left">
+        <f:entry title="${%Images}" description="${%Image_Description}">
+            <f:repeatableHeteroProperty field="templates" hasHeader="true" addCaption="Add Container Template"
+                                        deleteCaption="Delete Container Template"/>
+        </f:entry>
     </f:advanced>
 
 </j:jelly>
