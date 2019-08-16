@@ -21,4 +21,29 @@
         </f:entry>
     </f:advanced>
 
+    <f:advanced title="${%Private_Registry_Credentials}" align="left">
+        <f:entry title="${%Private_Registry_Credentials}">
+            <f:repeatableHeteroProperty field="defaultPrivateRegistryCredentials" hasHeader="false" addCaption="${%Add_Private_Registry_Credential}"
+                                        deleteCaption="${%Delete_Private_Registry_Credential}"/>
+        </f:entry>
+    </f:advanced>
+
+    <f:advanced title="${%Environment_Variable}" align="left">
+        <f:entry title="${%Environment_Variable}">
+            <f:repeatableHeteroProperty field="defaultEnvVars" hasHeader="true" addCaption="${%Add_Environment_Variable}"
+                                        deleteCaption="${%Delete_Environment_Variable}"/>
+        </f:entry>
+    </f:advanced>
+
+    <f:advanced title="${%Volumes}" align="left">
+        <f:entry title="${%Volumes}">
+            <f:repeatableHeteroProperty field="defaultVolumes" hasHeader="true" addCaption="${%Add_Volume}"
+                                        deleteCaption="${%Delete_Volume}"/>
+        </f:entry>
+    </f:advanced>
+
+
+
+
+
 </j:jelly>

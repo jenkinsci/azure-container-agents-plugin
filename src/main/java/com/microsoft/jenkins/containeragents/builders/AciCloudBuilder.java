@@ -2,7 +2,6 @@ package com.microsoft.jenkins.containeragents.builders;
 
 import com.microsoft.jenkins.containeragents.aci.AciCloud;
 import com.microsoft.jenkins.containeragents.aci.AciContainerTemplate;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -23,7 +22,7 @@ public class AciCloudBuilder {
 
     //CHECKSTYLE:OFF
     public AciCloudBuilder withCloudName(String cloudName) {
-        this.cloudName =  cloudName;
+        this.cloudName = cloudName;
         return this;
     }
 
@@ -52,10 +51,12 @@ public class AciCloudBuilder {
     //CHECKSTYLE:ON
 
     public AciCloud build() {
-        return new AciCloud(cloudName, credentialsId, resourceGroup, templates);
+        return new AciCloud(cloudName, credentialsId, resourceGroup, templates,
+            new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
     }
 
-    public class AciContainerTemplateNested extends AciContainerTemplateFluent<AciContainerTemplateNested> {
+    public class AciContainerTemplateNested extends
+        AciContainerTemplateFluent<AciContainerTemplateNested> {
 
         private final AciContainerTemplateBuilder builder;
 

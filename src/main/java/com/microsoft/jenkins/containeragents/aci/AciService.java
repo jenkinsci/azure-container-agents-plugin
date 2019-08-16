@@ -8,25 +8,21 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.microsoft.azure.management.containerinstance.ContainerGroup;
-import com.microsoft.jenkins.containeragents.ContainerPlugin;
-import com.microsoft.jenkins.containeragents.PodEnvVar;
-import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
-import com.microsoft.jenkins.containeragents.util.Constants;
-import com.microsoft.jenkins.containeragents.aci.volumes.AzureFileVolume;
 import com.microsoft.azure.management.Azure;
+import com.microsoft.azure.management.containerinstance.ContainerGroup;
 import com.microsoft.azure.management.resources.Deployment;
 import com.microsoft.azure.management.resources.DeploymentMode;
+import com.microsoft.jenkins.containeragents.ContainerPlugin;
+import com.microsoft.jenkins.containeragents.PodEnvVar;
+import com.microsoft.jenkins.containeragents.aci.volumes.AzureFileVolume;
+import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
+import com.microsoft.jenkins.containeragents.util.Constants;
 import com.microsoft.jenkins.containeragents.util.DockerRegistryUtils;
 import hudson.EnvVars;
 import hudson.security.ACL;
-import jenkins.model.Jenkins;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang3.time.StopWatch;
-import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
-
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -34,19 +30,23 @@ import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
+import jenkins.model.Jenkins;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
+import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
 
 
 public final class AciService {
+
     private static final Logger LOGGER = Logger.getLogger(AciService.class.getName());
 
     private static final String DEPLOY_TEMPLATE_FILENAME
-            = "/com/microsoft/jenkins/containeragents/aci/deployTemplate.json";
+        = "/com/microsoft/jenkins/containeragents/aci/deployTemplate.json";
 
     public static void createDeployment(final AciCloud cloud,
-                                        final AciContainerTemplate template,
-                                        final AciAgent agent,
-                                        final StopWatch stopWatch) throws Exception {
+        final AciContainerTemplate template,
+        final AciAgent agent,
+        final StopWatch stopWatch) throws Exception {
         String deployName = getDeploymentName(template);
 
         try (InputStream stream = AciService.class.getResourceAsStream(DEPLOY_TEMPLATE_FILENAME)) {
@@ -61,7 +61,7 @@ public final class AciService {
             ObjectNode.class.cast(tmp.get("variables")).put("cpu", template.getCpu());
             ObjectNode.class.cast(tmp.get("variables")).put("memory", template.getMemory());
             ObjectNode.class.cast(tmp.get("variables")).put("jenkinsInstance",
-                    Jenkins.getInstance().getLegacyInstanceId());
+                Jenkins.getInstance().getLegacyInstanceId());
 
             addCommandNode(tmp, mapper, template.getCommand(), agent);
 
@@ -75,28 +75,48 @@ public final class AciService {
                 addPortNode(tmp, mapper, String.valueOf(template.getSshPort()));
             }
 
-            addEnvNode(tmp, mapper, template.getEnvVars());
+            List<PodEnvVar> envVars = new ArrayList<>();
 
-            for (DockerRegistryEndpoint registryEndpoint : template.getPrivateRegistryCredentials()) {
+            envVars.addAll(cloud.getDefaultEnvVars());
+            envVars.addAll(template.getEnvVars());
+
+            addEnvNode(tmp, mapper, envVars);
+
+            for (DockerRegistryEndpoint registryEndpoint : cloud
+                .getDefaultPrivateRegistryCredentials()) {
                 addImageRegistryCredentialNode(tmp, mapper, registryEndpoint);
+            }
+
+            for (DockerRegistryEndpoint registryEndpoint : template
+                .getPrivateRegistryCredentials()) {
+                addImageRegistryCredentialNode(tmp, mapper, registryEndpoint);
+            }
+
+            for (AzureFileVolume volume : cloud.getDefaultVolumes()) {
+                if (StringUtils.isBlank(volume.getMountPath())
+                    || StringUtils.isBlank(volume.getShareName())
+                    || StringUtils.isBlank(volume.getCredentialsId())) {
+                    continue;
+                }
+                addAzureFileVolumeNode(tmp, mapper, volume);
             }
 
             for (AzureFileVolume volume : template.getVolumes()) {
                 if (StringUtils.isBlank(volume.getMountPath())
-                        || StringUtils.isBlank(volume.getShareName())
-                        || StringUtils.isBlank(volume.getCredentialsId())) {
+                    || StringUtils.isBlank(volume.getShareName())
+                    || StringUtils.isBlank(volume.getCredentialsId())) {
                     continue;
                 }
                 addAzureFileVolumeNode(tmp, mapper, volume);
             }
 
             azureClient.deployments()
-                    .define(deployName)
-                    .withExistingResourceGroup(cloud.getResourceGroup())
-                    .withTemplate(tmp.toString())
-                    .withParameters("{}")
-                    .withMode(DeploymentMode.INCREMENTAL)
-                    .beginCreate();
+                .define(deployName)
+                .withExistingResourceGroup(cloud.getResourceGroup())
+                .withTemplate(tmp.toString())
+                .withParameters("{}")
+                .withMode(DeploymentMode.INCREMENTAL)
+                .beginCreate();
 
             //register deployName
             agent.setDeployName(deployName);
@@ -111,7 +131,8 @@ public final class AciService {
                     throw new TimeoutException("Deployment timeout");
                 }
                 Deployment deployment
-                        = azureClient.deployments().getByResourceGroup(cloud.getResourceGroup(), deployName);
+                    = azureClient.deployments()
+                    .getByResourceGroup(cloud.getResourceGroup(), deployName);
 
                 if (deployment.provisioningState().equalsIgnoreCase("succeeded")) {
                     LOGGER.log(Level.INFO, "Deployment {0} succeed", deployName);
@@ -120,14 +141,15 @@ public final class AciService {
                     throw new Exception(String.format("Deployment %s status: Failed", deployName));
                 } else {
                     // If half of time passed, we need to inspect what happened from logs
-                    if (AzureContainerUtils.isHalfTimePassed(template.getTimeout(), stopWatch.getTime())) {
+                    if (AzureContainerUtils
+                        .isHalfTimePassed(template.getTimeout(), stopWatch.getTime())) {
                         ContainerGroup containerGroup
-                                = azureClient.containerGroups()
-                                .getByResourceGroup(cloud.getResourceGroup(), agent.getNodeName());
+                            = azureClient.containerGroups()
+                            .getByResourceGroup(cloud.getResourceGroup(), agent.getNodeName());
                         if (containerGroup != null) {
                             LOGGER.log(Level.INFO, "Logs from container {0}: {1}",
-                                    new Object[]{agent.getNodeName(),
-                                            containerGroup.getLogContent(agent.getNodeName())});
+                                new Object[]{agent.getNodeName(),
+                                    containerGroup.getLogContent(agent.getNodeName())});
                         }
                     }
                     Thread.sleep(retryInterval);
@@ -141,7 +163,7 @@ public final class AciService {
     private static void addPortNode(JsonNode tmp, ObjectMapper mapper, String port) {
         JsonNode propertiesNode = tmp.get("resources").get(0).get("properties");
         ArrayNode containerPortsNodes = ArrayNode.class.cast(propertiesNode.get("containers")
-                .get(0).get("properties").get("ports"));
+            .get(0).get("properties").get("ports"));
         ArrayNode ipPortsNodes = ArrayNode.class.cast(propertiesNode.get("ipAddress").get("ports"));
 
         ObjectNode newContainerPortNode = mapper.createObjectNode();
@@ -156,15 +178,16 @@ public final class AciService {
 
     private static void addCommandNode(JsonNode tmp, ObjectMapper mapper, String[] commands) {
         ArrayNode commandNode = ArrayNode.class.cast(tmp.get("resources").get(0)
-                .get("properties").get("containers").get(0)
-                .get("properties").get("command"));
+            .get("properties").get("containers").get(0)
+            .get("properties").get("command"));
 
         for (String command : commands) {
             commandNode.add(command);
         }
     }
 
-    private static void addCommandNode(JsonNode tmp, ObjectMapper mapper, String command, AciAgent agent) {
+    private static void addCommandNode(JsonNode tmp, ObjectMapper mapper, String command,
+        AciAgent agent) {
         if (StringUtils.isBlank(command)) {
             return;
         }
@@ -173,27 +196,27 @@ public final class AciService {
     }
 
     private static void addImageRegistryCredentialNode(JsonNode tmp,
-                                                       ObjectMapper mapper,
-                                                       DockerRegistryEndpoint endpoint) throws IOException {
+        ObjectMapper mapper,
+        DockerRegistryEndpoint endpoint) throws IOException {
         if (StringUtils.isBlank(endpoint.getCredentialsId())) {
             return;
         }
         StandardUsernamePasswordCredentials credentials = CredentialsMatchers.firstOrNull(
-                CredentialsProvider.lookupCredentials(
-                        StandardUsernamePasswordCredentials.class,
-                        Jenkins.getInstance(),
-                        ACL.SYSTEM,
-                        Collections.<DomainRequirement>emptyList()),
-                CredentialsMatchers.withId(endpoint.getCredentialsId()));
+            CredentialsProvider.lookupCredentials(
+                StandardUsernamePasswordCredentials.class,
+                Jenkins.getInstance(),
+                ACL.SYSTEM,
+                Collections.<DomainRequirement>emptyList()),
+            CredentialsMatchers.withId(endpoint.getCredentialsId()));
         if (credentials == null) {
             return;
         }
         ArrayNode credentialNode = ArrayNode.class.cast(tmp.get("resources").get(0)
-                .get("properties").get("imageRegistryCredentials"));
+            .get("properties").get("imageRegistryCredentials"));
         ObjectNode newCredentialNode = mapper.createObjectNode();
         newCredentialNode.put("server", StringUtils.isBlank(endpoint.getUrl())
-                ? "index.docker.io"
-                : DockerRegistryUtils.formatUrlToWithoutProtocol(endpoint.getUrl()));
+            ? "index.docker.io"
+            : DockerRegistryUtils.formatUrlToWithoutProtocol(endpoint.getUrl()));
         newCredentialNode.put("username", credentials.getUsername());
         newCredentialNode.put("password", credentials.getPassword().getPlainText());
 
@@ -202,7 +225,8 @@ public final class AciService {
 
     private static void addEnvNode(JsonNode tmp, ObjectMapper mapper, List<PodEnvVar> envVars) {
         ArrayNode envVarNode = ArrayNode.class.cast(tmp.get("resources").get(0)
-                .get("properties").get("containers").get(0).get("properties").get("environmentVariables"));
+            .get("properties").get("containers").get(0).get("properties")
+            .get("environmentVariables"));
 
         for (PodEnvVar envVar : envVars) {
             if (StringUtils.isBlank(envVar.getKey())) {
@@ -215,13 +239,16 @@ public final class AciService {
         }
     }
 
-    private static void addAzureFileVolumeNode(JsonNode tmp, ObjectMapper mapper, AzureFileVolume volume) {
+    private static void addAzureFileVolumeNode(JsonNode tmp, ObjectMapper mapper,
+        AzureFileVolume volume) {
         ArrayNode volumeMountsNode = ArrayNode.class.cast(tmp.get("resources").get(0)
-                .get("properties").get("containers").get(0).get("properties").get("volumeMounts"));
-        ArrayNode volumesNode = ArrayNode.class.cast(tmp.get("resources").get(0).get("properties").get("volumes"));
+            .get("properties").get("containers").get(0).get("properties").get("volumeMounts"));
+        ArrayNode volumesNode = ArrayNode.class
+            .cast(tmp.get("resources").get(0).get("properties").get("volumes"));
 
         ObjectNode newVolumeMountsNode = mapper.createObjectNode();
-        String volumeName = AzureContainerUtils.generateName("volume", Constants.ACI_VOLUME_NAME_LENGTH);
+        String volumeName = AzureContainerUtils
+            .generateName("volume", Constants.ACI_VOLUME_NAME_LENGTH);
         newVolumeMountsNode.put("name", volumeName);
         newVolumeMountsNode.put("mountPath", volume.getMountPath());
 
@@ -243,31 +270,34 @@ public final class AciService {
         String serverUrl = Jenkins.getInstance().getRootUrl();
         String nodeName = agent.getNodeName();
         String secret = agent.getComputer().getJnlpMac();
-        EnvVars arguments = new EnvVars("rootUrl", serverUrl, "nodeName", nodeName, "secret", secret);
+        EnvVars arguments = new EnvVars("rootUrl", serverUrl, "nodeName", nodeName, "secret",
+            secret);
         return arguments.expand(command);
     }
 
     private static String getDeploymentName(AciContainerTemplate template) {
-        return AzureContainerUtils.generateName(template.getName(), Constants.ACI_DEPLOYMENT_RANDOM_NAME_LENGTH);
+        return AzureContainerUtils
+            .generateName(template.getName(), Constants.ACI_DEPLOYMENT_RANDOM_NAME_LENGTH);
     }
 
     public static void deleteAciContainerGroup(String credentialsId,
-                                               String resourceGroup,
-                                               String containerGroupName,
-                                               String deployName) {
+        String resourceGroup,
+        String containerGroupName,
+        String deployName) {
         Azure azureClient = null;
         final Map<String, String> properties = new HashMap<>();
 
         try {
             azureClient = AzureContainerUtils.getAzureClient(credentialsId);
             azureClient.containerGroups().deleteByResourceGroup(resourceGroup, containerGroupName);
-            LOGGER.log(Level.INFO, "Delete ACI Container Group: {0} successfully", containerGroupName);
+            LOGGER.log(Level.INFO, "Delete ACI Container Group: {0} successfully",
+                containerGroupName);
 
             properties.put(Constants.AI_ACI_NAME, containerGroupName);
             ContainerPlugin.sendEvent(Constants.AI_ACI_AGENT, "Deleted", properties);
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Delete ACI Container Group: {0} failed: {1}",
-                    new Object[] {containerGroupName, e});
+                new Object[]{containerGroupName, e});
 
             properties.put("Message", e.getMessage());
             ContainerPlugin.sendEvent(Constants.AI_ACI_AGENT, "DeletedFailed", properties);
@@ -278,22 +308,25 @@ public final class AciService {
             properties.clear();
             if (deployName != null) {
                 // Only to delete succeeded deployments for future debugging.
-                if (azureClient.deployments().getByResourceGroup(resourceGroup, deployName).provisioningState()
-                        .equalsIgnoreCase("succeeded")) {
+                if (azureClient.deployments().getByResourceGroup(resourceGroup, deployName)
+                    .provisioningState()
+                    .equalsIgnoreCase("succeeded")) {
                     azureClient.deployments().deleteByResourceGroup(resourceGroup, deployName);
                     LOGGER.log(Level.INFO, "Delete ACI deployment: {0} successfully", deployName);
                     properties.put(Constants.AI_ACI_NAME, containerGroupName);
                     properties.put(Constants.AI_ACI_DEPLOYMENT_NAME, deployName);
-                    ContainerPlugin.sendEvent(Constants.AI_ACI_AGENT, "DeploymentDeleted", properties);
+                    ContainerPlugin
+                        .sendEvent(Constants.AI_ACI_AGENT, "DeploymentDeleted", properties);
                 }
             }
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Delete ACI deployment: {0} failed: {1}",
-                    new Object[] {deployName, e});
+                new Object[]{deployName, e});
             properties.put(Constants.AI_ACI_NAME, containerGroupName);
             properties.put(Constants.AI_ACI_DEPLOYMENT_NAME, deployName);
             properties.put("Message", e.getMessage());
-            ContainerPlugin.sendEvent(Constants.AI_ACI_AGENT, "DeploymentDeletedFailed", properties);
+            ContainerPlugin
+                .sendEvent(Constants.AI_ACI_AGENT, "DeploymentDeletedFailed", properties);
         }
     }
 
