@@ -3,7 +3,7 @@ package com.microsoft.jenkins.containeragents.aci.volumes;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
-import com.microsoftopentechnologies.windowsazurestorage.helper.AzureCredentials;
+import com.microsoftopentechnologies.windowsazurestorage.helper.AzureStorageAccount;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
@@ -23,7 +23,7 @@ public class AzureFileVolume extends AbstractDescribableImpl<AzureFileVolume> im
     private final String mountPath;
     private final String shareName;
     private final String credentialsId;
-    private final AzureCredentials.StorageAccountCredential credentials;
+    private final AzureStorageAccount.StorageAccountCredential credentials;
 
     @DataBoundConstructor
     public AzureFileVolume(final String mountPath,
@@ -32,7 +32,7 @@ public class AzureFileVolume extends AbstractDescribableImpl<AzureFileVolume> im
         this.mountPath = mountPath;
         this.shareName = shareName;
         this.credentialsId = credentialsId;
-        this.credentials = AzureCredentials.getStorageAccountCredential(credentialsId);
+        this.credentials = AzureStorageAccount.getStorageAccountCredential(credentialsId);
     }
 
     public String getMountPath() {
@@ -65,7 +65,7 @@ public class AzureFileVolume extends AbstractDescribableImpl<AzureFileVolume> im
 
         public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item owner) {
             StandardListBoxModel model = new StandardListBoxModel();
-            model.withAll(CredentialsProvider.lookupCredentials(AzureCredentials.class,
+            model.withAll(CredentialsProvider.lookupCredentials(AzureStorageAccount.class,
                     owner,
                     ACL.SYSTEM,
                     Collections.<DomainRequirement>emptyList()));
