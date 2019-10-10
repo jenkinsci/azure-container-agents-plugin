@@ -1,5 +1,8 @@
 # Azure Container Agents Plugin Changelog
 
+## Version 1.1.1, 2019-10-10
+* Upgrade Windows storage plugin version
+
 ## Version 1.1.0, 2019-07-25
 * Clean up deployments after timeout
 
