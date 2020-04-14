@@ -192,7 +192,7 @@ public class KubernetesCloud extends Cloud {
 
                 return slave;
             } catch (Exception ex) {
-                LOGGER.log(Level.WARNING, "Error in provisioning; slave={0}, template={1}: {2}",
+                LOGGER.log(Level.WARNING, "Error in provisioning; agent={0}, template={1}: {2}",
                         new Object[] {slave, template, ex});
 
                 properties.put("Message", ex.getMessage());
@@ -203,7 +203,7 @@ public class KubernetesCloud extends Cloud {
                     try {
                         slave.terminate();
                     } catch (IOException e) {
-                        LOGGER.log(Level.WARNING, "Error in cleaning up the slave node " + slave.getNodeName(), e);
+                        LOGGER.log(Level.WARNING, "Error in cleaning up the agent node " + slave.getNodeName(), e);
                     }
                 }
                 provisionRetryStrategy.failure(template.getName());
@@ -282,7 +282,7 @@ public class KubernetesCloud extends Cloud {
     }
 
     public void deletePod(String podName) {
-        LOGGER.log(Level.INFO, "Terminating container instance for slave {0}", podName);
+        LOGGER.log(Level.INFO, "Terminating container instance for agent {0}", podName);
         final Map<String, String> properties = new HashMap<>();
 
         try (KubernetesClient client = connect()) {
@@ -293,12 +293,12 @@ public class KubernetesCloud extends Cloud {
             ContainerPlugin.sendEvent(Constants.AI_CONTAINER_AGENT, "Deleted", properties);
 
             if (result) {
-                LOGGER.log(Level.INFO, "Terminated Kubernetes instance for slave {0}", podName);
+                LOGGER.log(Level.INFO, "Terminated Kubernetes instance for agent {0}", podName);
             } else {
-                LOGGER.log(Level.WARNING, "Failed to terminate pod for slave " + podName);
+                LOGGER.log(Level.WARNING, "Failed to terminate pod for agent " + podName);
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Failed to terminate pod for slave " + podName, e);
+            LOGGER.log(Level.WARNING, "Failed to terminate pod for agent " + podName, e);
 
             properties.put("Message", e.getMessage());
             ContainerPlugin.sendEvent(Constants.AI_CONTAINER_AGENT, "DeletedFailed", properties);

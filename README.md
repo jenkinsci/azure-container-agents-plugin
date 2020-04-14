@@ -53,7 +53,7 @@ Although Kubernetes supports multi-containers in a Pod, but we only support one 
 Please ensure JenkinsURL, secret and nodeName passed to container via arguments or environment variables.
 
 1. Specify `Name` and `Labels`
-2. Choose a `Docker image`. Please note that the slave will connect with master via JNLP, so make sure JNLP installed in image. Default image is `jenkins/jnlp-slave` and you can also use it as base image.
+2. Choose a `Docker image`. Please note that the agent will connect with master via JNLP, so make sure JNLP installed in image. Default image is `jenkins/inbound-agent` and you can also use it as base image.
 3. If you use a private registry, you need to specify a credential and you have two choices:
     * Use a Private Registry Secret. You need to [create a Secret](https://kubernetes.io/docs/concepts/configuration/secret/) in your Kubernetes cluster in advance and then fill in the Secret name.
     * Use a Private Registry Credential. You just need to fill in the credential and we will create a Secret for you.
@@ -137,7 +137,7 @@ Jenkins.getInstance().clouds.add(myCloud)
 1. Specify `Name` and `Labels`
 2. Set `Startup Timeout`.
 3. Select `Image OS Type`, Windows or Linux.
-4. Fill in `Docker Image`. Please note that the slave will connect with master via JNLP, so make sure JNLP installed in image. Default image is `jenkins/jnlp-slave` and you can also use it as base image.
+4. Fill in `Docker Image`. Please note that the agent will connect with master via JNLP, so make sure JNLP installed in image. Default image is `jenkins/inbound-agent` and you can also use it as base image.
 5. If you use a private registry, you need to specify a credential.
 6. Specify a `Command`. Now the `Command` will override the ENTRYPOINT. `Arguments`. `${rootUrl}`, `${secret}` and `${nodeName}` will be replace with JenkinsUrl, Secret and ComputerNodeName automatically.
 7. Specify the `Working Dir`. You must ensure login user have the write permission to this directory.
