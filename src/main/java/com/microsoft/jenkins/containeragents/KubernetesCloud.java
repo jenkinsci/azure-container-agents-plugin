@@ -29,6 +29,7 @@ import hudson.model.Node;
 import hudson.security.ACL;
 import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner;
+import hudson.slaves.SlaveComputer;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import io.fabric8.kubernetes.api.model.Pod;
@@ -221,10 +222,11 @@ public class KubernetesCloud extends Cloud {
                     throw new IllegalStateException(Messages.Kubernetes_Pod_Start_Failed(podId,
                             podTemp.getStatus().getPhase()));
                 }
-                if (slave.getComputer() == null) {
+                SlaveComputer computer = slave.getComputer();
+                if (computer == null) {
                     throw new IllegalStateException(Messages.Kubernetes_Pod_Deleted());
                 }
-                if (slave.getComputer().isOnline()) {
+                if (computer.isOnline()) {
                     break;
                 }
                 Thread.sleep(RETRY_INTERVAL);

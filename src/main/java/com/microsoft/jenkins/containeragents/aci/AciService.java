@@ -20,6 +20,7 @@ import com.microsoft.azure.management.resources.DeploymentMode;
 import com.microsoft.jenkins.containeragents.util.DockerRegistryUtils;
 import hudson.EnvVars;
 import hudson.security.ACL;
+import hudson.slaves.SlaveComputer;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -34,8 +35,6 @@ import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-
 
 public final class AciService {
     private static final Logger LOGGER = Logger.getLogger(AciService.class.getName());
@@ -244,9 +243,15 @@ public final class AciService {
     }
 
     private static String commandReplace(String command, AciAgent agent) {
-        String serverUrl = Jenkins.getInstance().getRootUrl();
+        String serverUrl = Jenkins.get().getRootUrl();
         String nodeName = agent.getNodeName();
-        String secret = agent.getComputer().getJnlpMac();
+
+        SlaveComputer computer = agent.getComputer();
+        if (computer == null) {
+            throw new IllegalStateException("Agent must be online at this point");
+        }
+
+        String secret = computer.getJnlpMac();
         EnvVars arguments = new EnvVars("rootUrl", serverUrl, "nodeName", nodeName, "secret", secret);
         return arguments.expand(command);
     }

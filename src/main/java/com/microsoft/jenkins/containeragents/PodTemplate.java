@@ -28,6 +28,7 @@ import hudson.model.Label;
 import hudson.model.labels.LabelAtom;
 import hudson.security.ACL;
 import hudson.slaves.RetentionStrategy;
+import hudson.slaves.SlaveComputer;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import io.fabric8.kubernetes.api.model.Container;
@@ -64,8 +65,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-
 
 public class PodTemplate extends AbstractDescribableImpl<PodTemplate> {
     private static final Logger LOGGER = Logger.getLogger(PodTemplate.class.getName());
@@ -153,9 +152,15 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> {
             podImagePullSecrets.add(new LocalObjectReference(additionalSecret));
         }
 
-        String serverUrl = Jenkins.getInstance().getRootUrl();
+        String serverUrl = Jenkins.get().getRootUrl();
         String nodeName = agent.getNodeName();
-        String secret = agent.getComputer().getJnlpMac();
+
+        SlaveComputer computer = agent.getComputer();
+        if (computer == null) {
+            throw new IllegalStateException("Agent must be online at this point");
+        }
+
+        String secret = computer.getJnlpMac();
         EnvVars arguments = new EnvVars("rootUrl", serverUrl, "nodeName", nodeName, "secret", secret);
 
         // If using SSH, we need to open a SSH port
