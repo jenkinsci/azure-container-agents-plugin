@@ -53,7 +53,7 @@ public class AciContainerTemplateFluent<T extends AciContainerTemplateFluent<T>>
     AciContainerTemplateFluent() {
         timeout = 10;
         osType = "Linux";
-        image = "jenkinsci/jnlp-slave";
+        image = "jenkins/inbound-agent";
         command = "jenkins-slave -url ${rootUrl} ${secret} ${nodeName}";
         rootFs = "/home/jenkins";
         retentionStrategy = new ContainerOnceRetentionStrategy();
