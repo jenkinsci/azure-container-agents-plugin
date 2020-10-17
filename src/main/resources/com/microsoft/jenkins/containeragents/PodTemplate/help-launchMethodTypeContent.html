@@ -7,10 +7,10 @@
     SSH<br/>
     Make sure container initialize with a SSH server and Jenkins can access to container<br/>
     You should install Jenkins master in the same ACS cluster.<br/>
-    Take image jenkinsci/ssh-slave as a reference<br/><br/>
+    Take image jenkins/ssh-agent as a reference<br/><br/>
 
     If using SSH, here is a sample of arguments:<br/>
-    &ensp;Docker image: jenkinsci/ssh-slave<br/>
+    &ensp;Docker image: jenkins/ssh-agent<br/>
     &ensp;Command: <br/>
     &ensp;Arguments: <br/>
     &ensp;Environment Variable: Key: JENKINS_SLAVE_SSH_PUBKEY, Value: Your public key<br/>
