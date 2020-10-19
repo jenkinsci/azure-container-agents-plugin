@@ -1,6 +1,6 @@
 # Azure Container Agents Plugin Changelog
 
-## Version 1.2.1, 2020-10-19
+## Version 1.2.0, 2020-10-19
 * Add Symbol to prevent breaking kubernetes plugin with jcasc 
 * Rename docker images jnlp-slave and ssh-slave to inbound-agent and ssh-agent
 * Dependency update 
