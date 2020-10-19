@@ -9,7 +9,7 @@
     </parent>
 
     <artifactId>azure-container-agents</artifactId>
-    <version>1.1.2-SNAPSHOT</version>
+    <version>1.2.0</version>
     <packaging>hpi</packaging>
 
     <name>Azure Container Agents Plugin</name>
@@ -35,7 +35,7 @@
         <connection>scm:git:ssh://git@github.com/jenkinsci/azure-container-agents-plugin.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/jenkinsci/azure-container-agents-plugin.git</developerConnection>
         <url>https://github.com/jenkinsci/azure-container-agents-plugin</url>
-        <tag>HEAD</tag>
+        <tag>azure-container-agents-1.2.0</tag>
     </scm>
 
     <properties>
