@@ -11,7 +11,7 @@
     </f:entry>
 
     <f:entry field="image" title="${%Docker_Image}">
-        <f:textbox clazz="required" default="jenkinsci/jnlp-slave"/>
+        <f:textbox clazz="required" default="jenkins/inbound-agent"/>
     </f:entry>
 
     <f:entry title="${%Private_Registry_Secrets}">

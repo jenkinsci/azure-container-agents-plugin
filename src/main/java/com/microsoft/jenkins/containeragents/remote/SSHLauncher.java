@@ -70,12 +70,12 @@ public class SSHLauncher extends ComputerLauncher {
                 }
             }, new SSHRetryStrategy(RETRY_LIMIT, RETRY_INTERVAL)).call();
 
-            InputStream inputStream = new ByteArrayInputStream(Jenkins.getInstance().getJnlpJars("slave.jar")
+            InputStream inputStream = new ByteArrayInputStream(Jenkins.getInstance().getJnlpJars("agent.jar")
                     .readFully());
-            sshClient.copyTo(inputStream, "slave.jar");
-            LOGGER.log(Level.INFO, "SSHLauncher: Copy slave.jar to remote host successfully");
+            sshClient.copyTo(inputStream, "agent.jar");
+            LOGGER.log(Level.INFO, "SSHLauncher: Copy agent.jar to remote host successfully");
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "SSHLauncher: Copy slave.jar to remote host failed");
+            LOGGER.log(Level.WARNING, "SSHLauncher: Copy agent.jar to remote host failed");
             computer.setAcceptingTasks(false);
             throw new InterruptedException(e.toString());
         }
@@ -96,7 +96,7 @@ public class SSHLauncher extends ComputerLauncher {
             }, new SSHRetryStrategy(RETRY_LIMIT, RETRY_INTERVAL)).call();
 
             final ChannelExec channelExec = (ChannelExec) session.openChannel("exec");
-            final String execCommand = "java -jar slave.jar";
+            final String execCommand = "java -jar agent.jar";
             channelExec.setCommand(execCommand);
             channelExec.connect();
 

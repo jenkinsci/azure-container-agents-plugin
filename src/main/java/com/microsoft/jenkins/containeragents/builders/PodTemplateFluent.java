@@ -64,7 +64,7 @@ public class PodTemplateFluent<T extends PodTemplateFluent<T>> {
     private String sshPort;
 
     public PodTemplateFluent() {
-        this.image = "jenkinsci/jnlp-slave";
+        this.image = "jenkins/inbound-agent";
         this.args = "-url ${rootUrl} ${secret} ${nodeName}";
         this.rootFs = "/jenkins";
         this.retentionStrategy = new ContainerOnceRetentionStrategy();
