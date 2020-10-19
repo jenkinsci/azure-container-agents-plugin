@@ -264,7 +264,7 @@ public final class AciService {
                                                String resourceGroup,
                                                String containerGroupName,
                                                String deployName) {
-        Azure azureClient = null;
+        Azure azureClient;
         final Map<String, String> properties = new HashMap<>();
 
         try {
@@ -275,11 +275,11 @@ public final class AciService {
             properties.put(Constants.AI_ACI_NAME, containerGroupName);
             ContainerPlugin.sendEvent(Constants.AI_ACI_AGENT, "Deleted", properties);
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Delete ACI Container Group: {0} failed: {1}",
-                    new Object[] {containerGroupName, e});
+            LOGGER.log(Level.WARNING, String.format("Delete ACI Container Group: %s failed", containerGroupName), e);
 
             properties.put("Message", e.getMessage());
             ContainerPlugin.sendEvent(Constants.AI_ACI_AGENT, "DeletedFailed", properties);
+            return;
         }
 
         try {
@@ -297,8 +297,7 @@ public final class AciService {
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Delete ACI deployment: {0} failed: {1}",
-                    new Object[] {deployName, e});
+            LOGGER.log(Level.WARNING, String.format("Delete ACI deployment: %s failed", deployName), e);
             properties.put(Constants.AI_ACI_NAME, containerGroupName);
             properties.put(Constants.AI_ACI_DEPLOYMENT_NAME, deployName);
             properties.put("Message", e.getMessage());
