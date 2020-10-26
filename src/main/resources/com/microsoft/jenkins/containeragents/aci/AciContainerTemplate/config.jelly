@@ -50,6 +50,12 @@
                                     deleteCaption="${%Delete_Volume}"/>
     </f:entry>
 
+    <ui:dropdownList selectedName="ipType" title="${%IP_Type}" name="ipType">
+        <f:dropdownListBlock title="Private" value="Private" selected="${instance == null || instance.ipType()}"/>
+
+        <f:dropdownListBlock title="Public" value="Public" selected="${instance != null &amp;&amp; instance.ipType() == false}">
+    </ui:dropdownList>    
+
     <ui:dropdownList selectedName="launchMethodType" title="${%Launch_Method}" name="launchMethodTypeContent">
         <f:dropdownListBlock title="JNLP" value="jnlp" selected="${instance == null || instance.isJnlp()}"/>
 
