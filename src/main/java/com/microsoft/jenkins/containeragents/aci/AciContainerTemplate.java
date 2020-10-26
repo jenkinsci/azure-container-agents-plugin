@@ -52,6 +52,8 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
 
     private String rootFs;
 
+    private String ipType;
+    
     private int timeout;
 
     private List<AciPort> ports;
@@ -84,6 +86,7 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
                                 String image,
                                 String command,
                                 String rootFs,
+                                String ipType,
                                 List<AciPort> ports,
                                 List<DockerRegistryEndpoint> privateRegistryCredentials,
                                 List<PodEnvVar> envVars,
@@ -96,6 +99,7 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
         this.image = image;
         this.osType = osType;
         this.command = command;
+        this.ipType = ipType;
         this.rootFs = rootFs;
         if (ports == null) {
             this.ports = new ArrayList<>();
@@ -162,6 +166,10 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
 
     public String getRootFs() {
         return rootFs;
+    }
+
+    public String getIpType() {
+        return ipType;
     }
 
     public List<AciPort> getPorts() {
