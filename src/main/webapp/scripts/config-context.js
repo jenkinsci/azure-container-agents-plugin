@@ -24,9 +24,9 @@ Behaviour.specify("select[name$=serviceName]", 'hide-optional-based-on-orchestra
             }
 
             if (show) {
-                $(c).up('tr').show();
+               closestTR(c).show();
             } else {
-                $(c).up('tr').hide();
+                closestTR(c).hide();
             }
         }
     }
@@ -35,3 +35,7 @@ Behaviour.specify("select[name$=serviceName]", 'hide-optional-based-on-orchestra
     $(select).on('change', handleChange);
     $(select).on('click', handleChange);
 });
+
+function closestTR(node) {
+    return node.closest('tr, .tr');
+}
