@@ -9,7 +9,7 @@
     </parent>
 
     <artifactId>azure-container-agents</artifactId>
-    <version>1.2.2</version>
+    <version>${revision}${changelist}</version>
     <packaging>hpi</packaging>
 
     <name>Azure Container Agents Plugin</name>
@@ -35,11 +35,11 @@
         <connection>scm:git:ssh://git@github.com/${gitHubRepo}.git</connection>
         <developerConnection>scm:git:ssh://git@github.com/${gitHubRepo}.git</developerConnection>
         <url>https://github.com/${gitHubRepo}</url>
-        <tag>azure-container-agents-1.2.2</tag>
+        <tag>${scmTag}</tag>
     </scm>
 
     <properties>
-        <revision>1.2.2</revision>
+        <revision>1.2.3</revision>
         <changelist>-SNAPSHOT</changelist>
         <gitHubRepo>jenkinsci/azure-container-agents-plugin</gitHubRepo>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
