@@ -1,5 +1,7 @@
 # Azure Container Agents Plugin
 
+> ***Important***: This plugin is being retired and will be out of support as of February 29, 2024. Azure CLI is the currently recommended way to integrate Jenkins with Azure services. Refer to [Tutorial: Use Azure Container Instances as a Jenkins build agent](https://docs.microsoft.com/en-us/azure/developer/jenkins/azure-container-instances-as-jenkins-build-agent?toc=https%3A%2F%2Fdocs.microsoft.com%2Fen-us%2Fazure%2Fdeveloper%2Fjenkins%2Ftoc.json&bc=https%3A%2F%2Fdocs.microsoft.com%2Fen-us%2Fazure%2Fdeveloper%2Fbreadcrumb%2Ftoc.json) for more details.
+
 Azure Container Agents Plugin can help you to run a container as an agent in Jenkins
 
 We have two different orchestrators:
@@ -43,8 +45,8 @@ If using Azure Container Service (Kubernetes), you need to [create Azure Contain
 5. Choose `Resource Group` and `Container Service Name`.
 6. Specify `Namespace`
 7. Choose an existing `ACS Credential` or create a new one. If you using Azure Container Service (AKS), then you don't need to choose `ACS Credential`. Or you can choose one of two different kinds of credentials:
-    * SSH Username with private key
-    * Microsoft Azure Container Service
+   * SSH Username with private key
+   * Microsoft Azure Container Service
 8. Press `Test Connection` to make sure the configurations above are correct.
 
 ## Configure the Pod Template
@@ -55,8 +57,8 @@ Please ensure JenkinsURL, secret and nodeName passed to container via arguments 
 1. Specify `Name` and `Labels`
 2. Choose a `Docker image`. Please note that the agent will connect with master via JNLP, so make sure JNLP installed in image. Default image is `jenkins/inbound-agent` and you can also use it as base image.
 3. If you use a private registry, you need to specify a credential and you have two choices:
-    * Use a Private Registry Secret. You need to [create a Secret](https://kubernetes.io/docs/concepts/configuration/secret/) in your Kubernetes cluster in advance and then fill in the Secret name.
-    * Use a Private Registry Credential. You just need to fill in the credential and we will create a Secret for you.
+   * Use a Private Registry Secret. You need to [create a Secret](https://kubernetes.io/docs/concepts/configuration/secret/) in your Kubernetes cluster in advance and then fill in the Secret name.
+   * Use a Private Registry Credential. You just need to fill in the credential and we will create a Secret for you.
 4. Specify a `Command` to override the ENTRYPOINT or leave it blank.
 5. Specify the `Arguments`. `${rootUrl}`, `${secret}` and `${nodeName}` will be replace with JenkinsUrl, Secret and ComputerNodeName automatically.
 6. Specify the `Working Dir`. It's the root dir of you job. You must ensure login user have the write permission to this directory.

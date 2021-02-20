@@ -1,5 +1,8 @@
 # Azure Container Agents Plugin Changelog
 
+## Version 1.2.2, 2021-02-20
+* Update document
+
 ## Version 1.2.1, 2020-12-24
 * Fix compatibility with Jenkins core > 2.271
 * Dependency update
