@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.microsoft.azure.management.containerinstance.ContainerGroup;
+import com.microsoft.azure.management.resources.Deployments;
 import com.microsoft.jenkins.containeragents.ContainerPlugin;
 import com.microsoft.jenkins.containeragents.PodEnvVar;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
@@ -287,13 +288,22 @@ public final class AciService {
             properties.clear();
             if (deployName != null) {
                 // Only to delete succeeded deployments for future debugging.
-                if (azureClient.deployments().getByResourceGroup(resourceGroup, deployName).provisioningState()
-                        .equalsIgnoreCase("succeeded")) {
-                    azureClient.deployments().deleteByResourceGroup(resourceGroup, deployName);
-                    LOGGER.log(Level.INFO, "Delete ACI deployment: {0} successfully", deployName);
-                    properties.put(Constants.AI_ACI_NAME, containerGroupName);
-                    properties.put(Constants.AI_ACI_DEPLOYMENT_NAME, deployName);
-                    ContainerPlugin.sendEvent(Constants.AI_ACI_AGENT, "DeploymentDeleted", properties);
+                Deployments deployments = azureClient.deployments();
+                Deployment deployment = deployments.getByResourceGroup(resourceGroup, deployName);
+                if (deployment != null) {
+                    String provisioningState = deployment.provisioningState();
+                    LOGGER.fine(() -> String.format("Checking deployment: %s, provisioning state: %s",
+                            deployName, provisioningState));
+                    if (provisioningState
+                            .equalsIgnoreCase("succeeded")) {
+                        deployments.deleteByResourceGroup(resourceGroup, deployName);
+                        LOGGER.log(Level.INFO, "Delete ACI deployment: {0} successfully", deployName);
+                        properties.put(Constants.AI_ACI_NAME, containerGroupName);
+                        properties.put(Constants.AI_ACI_DEPLOYMENT_NAME, deployName);
+                        ContainerPlugin.sendEvent(Constants.AI_ACI_AGENT, "DeploymentDeleted", properties);
+                    }
+                } else {
+                    LOGGER.fine(() -> String.format("Skipped deployment: %s as we couldn't find it", deployName));
                 }
             }
         } catch (Exception e) {
