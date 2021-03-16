@@ -1,6 +1,6 @@
 # Azure Container Agents Plugin
 
-> ***Important***: This plugin is being retired and will be out of support as of February 29, 2024. Azure CLI is the currently recommended way to integrate Jenkins with Azure services. Refer to [Tutorial: Use Azure Container Instances as a Jenkins build agent](https://docs.microsoft.com/en-us/azure/developer/jenkins/azure-container-instances-as-jenkins-build-agent?toc=https%3A%2F%2Fdocs.microsoft.com%2Fen-us%2Fazure%2Fdeveloper%2Fjenkins%2Ftoc.json&bc=https%3A%2F%2Fdocs.microsoft.com%2Fen-us%2Fazure%2Fdeveloper%2Fbreadcrumb%2Ftoc.json) for more details.
+> ***Important***: This plug-in is maintained by the Jenkins community and won’t be supported by Microsoft as of February 29, 2024.
 
 Azure Container Agents Plugin can help you to run a container as an agent in Jenkins
 
