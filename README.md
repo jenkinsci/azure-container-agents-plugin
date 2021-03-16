@@ -1,5 +1,7 @@
 # Azure Container Agents Plugin
 
+> ***Important***: This plugin is being retired and will be out of support as of February 29, 2024. Azure CLI is the currently recommended way to integrate Jenkins with Azure services. Refer to [Tutorial: Use Azure Container Instances as a Jenkins build agent](https://docs.microsoft.com/en-us/azure/developer/jenkins/azure-container-instances-as-jenkins-build-agent?toc=https%3A%2F%2Fdocs.microsoft.com%2Fen-us%2Fazure%2Fdeveloper%2Fjenkins%2Ftoc.json&bc=https%3A%2F%2Fdocs.microsoft.com%2Fen-us%2Fazure%2Fdeveloper%2Fbreadcrumb%2Ftoc.json) for more details.
+
 Azure Container Agents Plugin can help you to run a container as an agent in Jenkins
 
 We have two different orchestrators:
@@ -43,8 +45,8 @@ If using Azure Container Service (Kubernetes), you need to [create Azure Contain
 5. Choose `Resource Group` and `Container Service Name`.
 6. Specify `Namespace`
 7. Choose an existing `ACS Credential` or create a new one. If you using Azure Container Service (AKS), then you don't need to choose `ACS Credential`. Or you can choose one of two different kinds of credentials:
-    * SSH Username with private key
-    * Microsoft Azure Container Service
+   * SSH Username with private key
+   * Microsoft Azure Container Service
 8. Press `Test Connection` to make sure the configurations above are correct.
 
 ## Configure the Pod Template
@@ -53,13 +55,13 @@ Although Kubernetes supports multi-containers in a Pod, but we only support one 
 Please ensure JenkinsURL, secret and nodeName passed to container via arguments or environment variables.
 
 1. Specify `Name` and `Labels`
-2. Choose a `Docker image`. Please note that the slave will connect with master via JNLP, so make sure JNLP installed in image. Default image is `jenkins/jnlp-slave` and you can also use it as base image.
+2. Choose a `Docker image`. Please note that the agent will connect with master via JNLP, so make sure JNLP installed in image. Default image is `jenkins/inbound-agent` and you can also use it as base image.
 3. If you use a private registry, you need to specify a credential and you have two choices:
-    * Use a Private Registry Secret. You need to [create a Secret](https://kubernetes.io/docs/concepts/configuration/secret/) in your Kubernetes cluster in advance and then fill in the Secret name.
-    * Use a Private Registry Credential. You just need to fill in the credential and we will create a Secret for you.
+   * Use a Private Registry Secret. You need to [create a Secret](https://kubernetes.io/docs/concepts/configuration/secret/) in your Kubernetes cluster in advance and then fill in the Secret name.
+   * Use a Private Registry Credential. You just need to fill in the credential and we will create a Secret for you.
 4. Specify a `Command` to override the ENTRYPOINT or leave it blank.
 5. Specify the `Arguments`. `${rootUrl}`, `${secret}` and `${nodeName}` will be replace with JenkinsUrl, Secret and ComputerNodeName automatically.
-6. Specify the `Working Dir`. It's the root dir of you job. We will mount an EmptyDir to `Working Dir`, so you'll have permission to access this directory (mod 777).
+6. Specify the `Working Dir`. It's the root dir of you job. You must ensure login user have the write permission to this directory.
 7. Add Environment Variables and Volumes. Please find details in help and you may need some manual operation to use specific Volumes.
 8. Choose a retention strategy. You can get details in help.
 9. Specify node where the container create on. If using Azure Disk or using aci-connector-k8s, you need to specify a node.
@@ -90,9 +92,9 @@ def myCloud = new KubernetesCloudBuilder()
     .withName("mytemplate")
     .withLabel("k8s")
 .endTemplate()
-.build();
+.build()
 
-Jenkins.getInstance().clouds.add(myCloud);
+Jenkins.getInstance().clouds.add(myCloud)
 ```
 ```groovy
 //inherit template from existing template
@@ -102,7 +104,7 @@ def baseTemplate = new PodTemplateBuilder()
 .withImage("privateImage")
 .addNewImagePullSecret("yourSecret")
 .addNewEnvVar("key", "value")
-.build();
+.build()
 
 def myCloud = new KubernetesCloudBuilder()
 .withCloudName("mycloud")
@@ -114,9 +116,9 @@ def myCloud = new KubernetesCloudBuilder()
     .withName("mytemplate")
     .withLabel("k8s")
 .endTemplate()
-.build();
+.build()
 
-Jenkins.getInstance().clouds.add(myCloud);
+Jenkins.getInstance().clouds.add(myCloud)
 ```
 
 ## Azure Container Instance
@@ -124,7 +126,7 @@ Jenkins.getInstance().clouds.add(myCloud);
 [Azure Container Instances](https://docs.microsoft.com/en-us/azure/container-instances/) offers the fastest and simplest way to run a container in Azure, without having to provision any virtual machines and without having to adopt a higher-level service.
 
 ## Pre-requirements
-* Resource Group in West US, East US or West Europe. Get [region availability details](https://azure.microsoft.com/en-us/regions/services/).
+* Resource Group in available regions. Get [region availability details](https://azure.microsoft.com/en-us/global-infrastructure/services/?products=container-instances).
 
 ## Configure the plugin
 1. Jenkins -> Manage Jenkins -> Configure System
@@ -137,10 +139,10 @@ Jenkins.getInstance().clouds.add(myCloud);
 1. Specify `Name` and `Labels`
 2. Set `Startup Timeout`.
 3. Select `Image OS Type`, Windows or Linux.
-4. Fill in `Docker Image`. Please note that the slave will connect with master via JNLP, so make sure JNLP installed in image. Default image is `jenkins/jnlp-slave` and you can also use it as base image.
+4. Fill in `Docker Image`. Please note that the agent will connect with master via JNLP, so make sure JNLP installed in image. Default image is `jenkins/inbound-agent` and you can also use it as base image.
 5. If you use a private registry, you need to specify a credential.
 6. Specify a `Command`. Now the `Command` will override the ENTRYPOINT. `Arguments`. `${rootUrl}`, `${secret}` and `${nodeName}` will be replace with JenkinsUrl, Secret and ComputerNodeName automatically.
-7. Specify the `Working Dir`. Different from Azure Container Service (Kubernetes), you must ensure login user have the write permission to this directory.
+7. Specify the `Working Dir`. You must ensure login user have the write permission to this directory.
 8. Add `Ports`, `Environment Variables` and `Volumes`
 9. Choose a retention strategy. You can get details in help.
 10. Specify `Cpu Requirement` and `Memory Requirement`, ACI containers costs per second. Find more detail in [Price Details](https://azure.microsoft.com/en-us/pricing/details/container-instances/).
@@ -161,9 +163,9 @@ def myCloud = new AciCloudBuilder()
     .addNewPort("80")
     .addNewEnvVar("key","value")
 .endTemplate()
-.build();
+.build()
 
-Jenkins.getInstance().clouds.add(myCloud);
+Jenkins.getInstance().clouds.add(myCloud)
 ```
 ```groovy
 //inherit template from existing template
@@ -173,7 +175,7 @@ def baseTemplate = new AciContainerTemplateBuilder()
 .withImage("privateImage")
 .addNewPort("80")
 .addNewEnvVar("key", "value")
-.build();
+.build()
 
 def myCloud = new AciCloudBuilder()
 .withCloudName("mycloud")
@@ -183,9 +185,9 @@ def myCloud = new AciCloudBuilder()
     .withName("mytemplate")
     .withLabel("aci")
 .endTemplate()
-.build();
+.build()
 
-Jenkins.getInstance().clouds.add(myCloud);
+Jenkins.getInstance().clouds.add(myCloud)
 ```
 
 ## Data/Telemetry

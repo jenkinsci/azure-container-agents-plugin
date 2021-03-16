@@ -5,6 +5,7 @@ import com.microsoft.jenkins.containeragents.aci.AciPort;
 import com.microsoft.jenkins.containeragents.aci.volumes.AzureFileVolume;
 import com.microsoft.jenkins.containeragents.strategy.ContainerIdleRetentionStrategy;
 import com.microsoft.jenkins.containeragents.strategy.ContainerOnceRetentionStrategy;
+import com.microsoft.jenkins.containeragents.util.Constants;
 import hudson.slaves.RetentionStrategy;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
 
@@ -42,16 +43,23 @@ public class AciContainerTemplateFluent<T extends AciContainerTemplateFluent<T>>
 
     private List<AzureFileVolume> volumes = new ArrayList<>();
 
+    private String launchMethodType;
+
+    private String sshCredentialsId;
+
+    private String sshPort;
+
     //CHECKSTYLE:OFF
     AciContainerTemplateFluent() {
         timeout = 10;
         osType = "Linux";
-        image = "jenkinsci/jnlp-slave";
-        command = "jenkins-slave -url ${rootUrl} ${secret} ${nodeName}";
+        image = "jenkins/inbound-agent";
+        command = "jenkins-agent -url ${rootUrl} ${secret} ${nodeName}";
         rootFs = "/home/jenkins";
         retentionStrategy = new ContainerOnceRetentionStrategy();
         cpu = "1";
         memory = "1.5";
+        launchMethodType = Constants.LAUNCH_METHOD_JNLP;
     }
 
     public T withName(String name) {
@@ -172,6 +180,18 @@ public class AciContainerTemplateFluent<T extends AciContainerTemplateFluent<T>>
         this.volumes.add(new AzureFileVolume(mountPath, shareName, credentialsId));
         return (T) this;
     }
+
+    public T withJNLPLaunchMethod() {
+        this.launchMethodType = Constants.LAUNCH_METHOD_JNLP;
+        return (T) this;
+    }
+
+    public T withSSHLaunchMethod(String sshCredentialsId, String sshPort) {
+        this.launchMethodType = Constants.LAUNCH_METHOD_SSH;
+        this.sshCredentialsId = sshCredentialsId;
+        this.sshPort = sshPort;
+        return (T) this;
+    }
     //CHECKSTYLE:ON
 
     public String getName() {
@@ -228,5 +248,17 @@ public class AciContainerTemplateFluent<T extends AciContainerTemplateFluent<T>>
 
     public List<AzureFileVolume> getVolumes() {
         return volumes;
+    }
+
+    public String getLaunchMethodType() {
+        return launchMethodType;
+    }
+
+    public String getSshCredentialsId() {
+        return sshCredentialsId;
+    }
+
+    public String getSshPort() {
+        return sshPort;
     }
 }

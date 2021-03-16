@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.microsoft.azure.management.containerinstance.ContainerGroup;
 import com.microsoft.jenkins.containeragents.ContainerPlugin;
 import com.microsoft.jenkins.containeragents.PodEnvVar;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
@@ -19,6 +20,7 @@ import com.microsoft.azure.management.resources.DeploymentMode;
 import com.microsoft.jenkins.containeragents.util.DockerRegistryUtils;
 import hudson.EnvVars;
 import hudson.security.ACL;
+import hudson.slaves.SlaveComputer;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
@@ -33,8 +35,6 @@ import java.util.Map;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-
 
 public final class AciService {
     private static final Logger LOGGER = Logger.getLogger(AciService.class.getName());
@@ -70,6 +70,9 @@ public final class AciService {
                 }
                 addPortNode(tmp, mapper, port.getPort());
             }
+            if (template.getLaunchMethodType().equals(Constants.LAUNCH_METHOD_SSH)) {
+                addPortNode(tmp, mapper, String.valueOf(template.getSshPort()));
+            }
 
             addEnvNode(tmp, mapper, template.getEnvVars());
 
@@ -85,6 +88,10 @@ public final class AciService {
                 }
                 addAzureFileVolumeNode(tmp, mapper, volume);
             }
+
+            // register the deployment for cleanup
+            AciCleanTask.DeploymentRegistrar deploymentRegistrar = AciCleanTask.DeploymentRegistrar.getInstance();
+            deploymentRegistrar.registerDeployment(cloud.getName(), cloud.getResourceGroup(), deployName);
 
             azureClient.deployments()
                     .define(deployName)
@@ -115,6 +122,17 @@ public final class AciService {
                 } else if (deployment.provisioningState().equalsIgnoreCase("Failed")) {
                     throw new Exception(String.format("Deployment %s status: Failed", deployName));
                 } else {
+                    // If half of time passed, we need to inspect what happened from logs
+                    if (AzureContainerUtils.isHalfTimePassed(template.getTimeout(), stopWatch.getTime())) {
+                        ContainerGroup containerGroup
+                                = azureClient.containerGroups()
+                                .getByResourceGroup(cloud.getResourceGroup(), agent.getNodeName());
+                        if (containerGroup != null) {
+                            LOGGER.log(Level.INFO, "Logs from container {0}: {1}",
+                                    new Object[]{agent.getNodeName(),
+                                            containerGroup.getLogContent(agent.getNodeName())});
+                        }
+                    }
                     Thread.sleep(retryInterval);
                 }
             }
@@ -144,8 +162,8 @@ public final class AciService {
                 .get("properties").get("containers").get(0)
                 .get("properties").get("command"));
 
-        for (int i = 0; i < commands.length; i++) {
-            commandNode.add(commands[i]);
+        for (String command : commands) {
+            commandNode.add(command);
         }
     }
 
@@ -170,6 +188,9 @@ public final class AciService {
                         ACL.SYSTEM,
                         Collections.<DomainRequirement>emptyList()),
                 CredentialsMatchers.withId(endpoint.getCredentialsId()));
+        if (credentials == null) {
+            return;
+        }
         ArrayNode credentialNode = ArrayNode.class.cast(tmp.get("resources").get(0)
                 .get("properties").get("imageRegistryCredentials"));
         ObjectNode newCredentialNode = mapper.createObjectNode();
@@ -222,9 +243,15 @@ public final class AciService {
     }
 
     private static String commandReplace(String command, AciAgent agent) {
-        String serverUrl = Jenkins.getInstance().getRootUrl();
+        String serverUrl = Jenkins.get().getRootUrl();
         String nodeName = agent.getNodeName();
-        String secret = agent.getComputer().getJnlpMac();
+
+        SlaveComputer computer = agent.getComputer();
+        if (computer == null) {
+            throw new IllegalStateException("Agent must be online at this point");
+        }
+
+        String secret = computer.getJnlpMac();
         EnvVars arguments = new EnvVars("rootUrl", serverUrl, "nodeName", nodeName, "secret", secret);
         return arguments.expand(command);
     }
@@ -237,7 +264,7 @@ public final class AciService {
                                                String resourceGroup,
                                                String containerGroupName,
                                                String deployName) {
-        Azure azureClient = null;
+        Azure azureClient;
         final Map<String, String> properties = new HashMap<>();
 
         try {
@@ -248,11 +275,11 @@ public final class AciService {
             properties.put(Constants.AI_ACI_NAME, containerGroupName);
             ContainerPlugin.sendEvent(Constants.AI_ACI_AGENT, "Deleted", properties);
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Delete ACI Container Group: {0} failed: {1}",
-                    new Object[] {containerGroupName, e});
+            LOGGER.log(Level.WARNING, String.format("Delete ACI Container Group: %s failed", containerGroupName), e);
 
             properties.put("Message", e.getMessage());
             ContainerPlugin.sendEvent(Constants.AI_ACI_AGENT, "DeletedFailed", properties);
+            return;
         }
 
         try {
@@ -270,8 +297,7 @@ public final class AciService {
                 }
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Delete ACI deployment: {0} failed: {1}",
-                    new Object[] {deployName, e});
+            LOGGER.log(Level.WARNING, String.format("Delete ACI deployment: %s failed", deployName), e);
             properties.put(Constants.AI_ACI_NAME, containerGroupName);
             properties.put(Constants.AI_ACI_DEPLOYMENT_NAME, deployName);
             properties.put("Message", e.getMessage());

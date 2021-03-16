@@ -6,9 +6,13 @@
 
 package com.microsoft.jenkins.containeragents;
 
+import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
+import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
+import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.microsoft.jenkins.containeragents.remote.LaunchMethodTypeContent;
 import com.microsoft.jenkins.containeragents.strategy.ContainerIdleRetentionStrategy;
 import com.microsoft.jenkins.containeragents.strategy.ContainerOnceRetentionStrategy;
 import com.microsoft.jenkins.containeragents.util.Constants;
@@ -19,13 +23,18 @@ import hudson.Extension;
 import hudson.RelativePath;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
+import hudson.model.Item;
 import hudson.model.Label;
 import hudson.model.labels.LabelAtom;
+import hudson.security.ACL;
 import hudson.slaves.RetentionStrategy;
+import hudson.slaves.SlaveComputer;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import io.fabric8.kubernetes.api.model.Container;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
+import io.fabric8.kubernetes.api.model.ContainerPort;
+import io.fabric8.kubernetes.api.model.ContainerPortBuilder;
 import io.fabric8.kubernetes.api.model.EnvVar;
 import io.fabric8.kubernetes.api.model.LocalObjectReference;
 import io.fabric8.kubernetes.api.model.Node;
@@ -35,19 +44,20 @@ import io.fabric8.kubernetes.api.model.Quantity;
 import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
 import io.fabric8.kubernetes.api.model.Volume;
-import io.fabric8.kubernetes.api.model.VolumeBuilder;
 import io.fabric8.kubernetes.api.model.VolumeMount;
 import io.fabric8.kubernetes.api.model.VolumeMountBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
+import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,8 +65,6 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-
 
 public class PodTemplate extends AbstractDescribableImpl<PodTemplate> {
     private static final Logger LOGGER = Logger.getLogger(PodTemplate.class.getName());
@@ -75,6 +83,12 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> {
     private String label;
 
     private String rootFs;
+
+    private String launchMethodType;
+
+    private String sshCredentialsId;
+
+    private String sshPort;
 
     private RetentionStrategy<?> retentionStrategy;
 
@@ -111,22 +125,7 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> {
         LOGGER.log(Level.INFO, "Start building pod for agent: " + agent.getNodeName());
         // Build volumes and volume mounts.
         List<Volume> tempVolumes = new ArrayList<>();
-        Volume emptyDir = new VolumeBuilder()
-                .withName("rootfs")
-                .withNewEmptyDir()
-                .endEmptyDir()
-                .build();
-
-        tempVolumes.add(emptyDir);
-
         List<VolumeMount> volumeMounts = new ArrayList<>();
-
-        VolumeMount mount = new VolumeMountBuilder()
-                .withName("rootfs")
-                .withMountPath(rootFs)
-                .build();
-
-        volumeMounts.add(mount);
 
         for (int index = 0; index < volumes.size(); index++) {
             PodVolume podVolume = volumes.get(index);
@@ -139,6 +138,7 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> {
                                 .build());
         }
 
+        // Add Environment
         List<EnvVar> containerEnvVars = new ArrayList<>();
         for (PodEnvVar envVar : getEnvVars()) {
             containerEnvVars.add(new EnvVar(envVar.getKey(), envVar.getValue(), null));
@@ -152,15 +152,30 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> {
             podImagePullSecrets.add(new LocalObjectReference(additionalSecret));
         }
 
-        String serverUrl = Jenkins.getInstance().getRootUrl();
+        String serverUrl = Jenkins.get().getRootUrl();
         String nodeName = agent.getNodeName();
-        String secret = agent.getComputer().getJnlpMac();
+
+        SlaveComputer computer = agent.getComputer();
+        if (computer == null) {
+            throw new IllegalStateException("Agent must be online at this point");
+        }
+
+        String secret = computer.getJnlpMac();
         EnvVars arguments = new EnvVars("rootUrl", serverUrl, "nodeName", nodeName, "secret", secret);
+
+        // If using SSH, we need to open a SSH port
+
+        List<ContainerPort> containerPort = new ArrayList<>();
+        if (getLaunchMethodType().equals(Constants.LAUNCH_METHOD_SSH)) {
+            Integer port = Integer.valueOf(getSshPort());
+            containerPort.add(new ContainerPortBuilder().withContainerPort(port).build());
+        }
+
         Container container = new ContainerBuilder()
                 .withName(agent.getNodeName())
                 .withImage(image)
                 .withCommand(StringUtils.isBlank(command) ? null : Lists.newArrayList(command))
-                .withArgs(arguments.expand(args).split(" "))
+                .withArgs(StringUtils.isBlank(args) ? null : arguments.expand(args).split(" "))
                 .withVolumeMounts(volumeMounts)
                 .withNewResources()
                     .withLimits(getResourcesMap(limitMemory, limitCpu))
@@ -169,6 +184,7 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> {
                 .withNewSecurityContext()
                     .withPrivileged(privileged)
                 .endSecurityContext()
+                .withPorts(containerPort)
                 .withEnv(containerEnvVars)
                 .build();
 
@@ -206,6 +222,10 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> {
                 .withData(data)
                 .withType("kubernetes.io/dockercfg")
                 .build();
+    }
+
+    public boolean isJnlp() {
+        return StringUtils.isBlank(launchMethodType) || launchMethodType.equals(Constants.LAUNCH_METHOD_JNLP);
     }
 
     public String getName() {
@@ -349,14 +369,33 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> {
 
     @DataBoundSetter
     public void setPrivateRegistryCredentials(List<DockerRegistryEndpoint> privateRegistryCredentials) {
-        if (privateRegistryCredentials == null) {
-            this.privateRegistryCredentials = new ArrayList<DockerRegistryEndpoint>();
-            return;
-        }
-        for (DockerRegistryEndpoint endpoint : privateRegistryCredentials) {
-            if (StringUtils.isNotBlank(endpoint.getCredentialsId())) {
-                this.privateRegistryCredentials.add(endpoint);
-            }
+        this.privateRegistryCredentials = privateRegistryCredentials == null
+                ? new ArrayList<DockerRegistryEndpoint>()
+                : privateRegistryCredentials;
+    }
+
+    public String getLaunchMethodType() {
+        return StringUtils.defaultString(launchMethodType, Constants.LAUNCH_METHOD_JNLP);
+    }
+
+    @DataBoundSetter
+    public void setLaunchMethodType(String launchMethodType) {
+        this.launchMethodType = StringUtils.defaultString(launchMethodType, Constants.LAUNCH_METHOD_JNLP);
+    }
+
+    public String getSshCredentialsId() {
+        return StringUtils.defaultString(sshCredentialsId);
+    }
+
+    public String getSshPort() {
+        return StringUtils.defaultString(sshPort);
+    }
+
+    @DataBoundSetter
+    public void setLaunchMethodTypeContent(LaunchMethodTypeContent launchMethodTypeContent) {
+        if (launchMethodTypeContent != null) {
+            this.sshCredentialsId = StringUtils.defaultString(launchMethodTypeContent.getSshCredentialsId());
+            this.sshPort = StringUtils.defaultString(launchMethodTypeContent.getSshPort(), "22");
         }
     }
 
@@ -443,6 +482,30 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> {
             return FormValidation.error(Messages.Pod_Template_Not_Number_Error());
         }
 
+        public FormValidation doCheckSshPort(@QueryParameter String value) {
+            if (StringUtils.isBlank(value) || value.matches("^[0-9]*$")
+                    && Integer.parseInt(value) >= Constants.SSH_PORT_MIN
+                    && Integer.parseInt(value) <= Constants.SSH_PORT_MAX) {
+                return FormValidation.ok();
+            }
+            return FormValidation.error(Messages.Pod_Template_Not_Number_Error());
+        }
+
+        // Return null because it's a static dropDownList.
+        public ListBoxModel doFillLaunchMethodTypeItems() {
+            return null;
+        }
+
+        public ListBoxModel doFillSshCredentialsIdItems(@AncestorInPath Item owner) {
+            StandardListBoxModel listBoxModel = new StandardListBoxModel();
+            listBoxModel.add("--- Select Azure Container Service Credentials ---", "");
+            listBoxModel.withAll(CredentialsProvider.lookupCredentials(StandardUsernameCredentials.class,
+                    owner,
+                    ACL.SYSTEM,
+                    Collections.<DomainRequirement>emptyList()));
+            return listBoxModel;
+        }
+
         public ListBoxModel doFillSpecifyNodeItems(@RelativePath("..") @QueryParameter String azureCredentialsId,
                                                    @RelativePath("..") @QueryParameter String resourceGroup,
                                                    @RelativePath("..") @QueryParameter String serviceName,
@@ -459,7 +522,7 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> {
 
             try (KubernetesClient client = KubernetesService.getKubernetesClient(azureCredentialsId,
                     resourceGroup,
-                    serviceName,
+                    KubernetesCloud.getServiceNameWithoutOrchestra(serviceName),
                     namespace,
                     acsCredentialsId)) {
                 List<Node> nodeList = client.nodes().list().getItems();
@@ -474,9 +537,9 @@ public class PodTemplate extends AbstractDescribableImpl<PodTemplate> {
                     }
                 }
             } catch (NullPointerException e) {
-                LOGGER.log(Level.INFO, "Specify Node: Cannot list nodes", e);
+                // ignore.
             } catch (Exception e) {
-
+                LOGGER.log(Level.INFO, "Specify Node: Cannot list nodes", e);
             }
             return listBoxModel;
         }

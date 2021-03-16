@@ -1,0 +1,15 @@
+<div>
+    Choose JNLP or SSH to launch your agent.<br/><br/>
+
+    JNLP<br/>
+    Make sure container can access Jenkins master. Take image jenkins/inbound-agent as a reference<br/><br/>
+
+    SSH<br/>
+    Make sure container initialize with a SSH server. Take image jenkins/ssh-agent as a reference<br/><br/>
+
+    If using SSH, here is a sample of arguments:<br/>
+    &ensp;Docker image: jenkins/ssh-agent<br/>
+    &ensp;Command: setup-sshd<br/>
+    &ensp;Environment Variable: Key: JENKINS_AGENT_SSH_PUBKEY, Value: Your public key<br/>
+    &ensp;Launch Method: SSH
+</div>

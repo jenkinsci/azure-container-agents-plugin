@@ -2,7 +2,9 @@ package com.microsoft.jenkins.containeragents.builders;
 
 
 import com.microsoft.jenkins.containeragents.PodTemplate;
+import com.microsoft.jenkins.containeragents.remote.LaunchMethodTypeContent;
 import com.microsoft.jenkins.containeragents.strategy.ContainerIdleRetentionStrategy;
+import com.microsoft.jenkins.containeragents.util.Constants;
 
 public class PodTemplateBuilder extends PodTemplateFluent<PodTemplateBuilder> {
 
@@ -37,6 +39,11 @@ public class PodTemplateBuilder extends PodTemplateFluent<PodTemplateBuilder> {
         this.fluent.withVolumes(template.getVolumes());
         this.fluent.withImagePullSecrets(template.getImagePullSecrets());
         this.fluent.withPrivateRegistryCredentials(template.getPrivateRegistryCredentials());
+        if (template.getLaunchMethodType().equals(Constants.LAUNCH_METHOD_JNLP)) {
+            this.fluent.withJNLPLaunchMethod();
+        } else {
+            this.fluent.withSSHLaunchMethod(template.getSshCredentialsId(), template.getSshPort());
+        }
     }
 
     public PodTemplateBuilder(PodTemplateFluent<?> fluent) {
@@ -68,6 +75,11 @@ public class PodTemplateBuilder extends PodTemplateFluent<PodTemplateBuilder> {
         this.fluent.withVolumes(template.getVolumes());
         this.fluent.withImagePullSecrets(template.getImagePullSecrets());
         this.fluent.withPrivateRegistryCredentials(template.getPrivateRegistryCredentials());
+        if (template.getLaunchMethodType().equals(Constants.LAUNCH_METHOD_JNLP)) {
+            this.fluent.withJNLPLaunchMethod();
+        } else {
+            this.fluent.withSSHLaunchMethod(template.getSshCredentialsId(), template.getSshPort());
+        }
     }
 
     public PodTemplate build() {
@@ -89,6 +101,9 @@ public class PodTemplateBuilder extends PodTemplateFluent<PodTemplateBuilder> {
         podTemplate.setRequestMemory(fluent.getRequestMemory());
         podTemplate.setLimitCpu(fluent.getLimitCpu());
         podTemplate.setLimitMemory(fluent.getLimitMemory());
+        podTemplate.setLaunchMethodType(fluent.getLaunchMethodType());
+        podTemplate.setLaunchMethodTypeContent(new LaunchMethodTypeContent(fluent.getSshCredentialsId(),
+                fluent.getSshPort()));
         return podTemplate;
     }
 }

@@ -6,19 +6,20 @@
 
 package com.microsoft.jenkins.containeragents;
 
+import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
-import com.microsoft.azure.management.compute.ContainerServiceOrchestratorTypes;
+import com.microsoft.azure.management.Azure;
+import com.microsoft.azure.management.containerservice.ContainerService;
+import com.microsoft.azure.management.containerservice.ContainerServiceOrchestratorTypes;
 import com.microsoft.azure.management.resources.GenericResource;
+import com.microsoft.azure.util.AzureCredentials;
+import com.microsoft.jenkins.azurecommons.telemetry.AppInsightsConstants;
 import com.microsoft.jenkins.containeragents.helper.AzureContainerServiceCredentials;
 import com.microsoft.jenkins.containeragents.strategy.ProvisionRetryStrategy;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
 import com.microsoft.jenkins.containeragents.util.Constants;
-import com.microsoft.azure.management.Azure;
-import com.microsoft.azure.management.compute.ContainerService;
-import com.microsoft.azure.util.AzureCredentials;
-import com.microsoft.jenkins.azurecommons.telemetry.AppInsightsConstants;
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
@@ -28,6 +29,7 @@ import hudson.model.Node;
 import hudson.security.ACL;
 import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner;
+import hudson.slaves.SlaveComputer;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
 import io.fabric8.kubernetes.api.model.Pod;
@@ -35,8 +37,9 @@ import io.fabric8.kubernetes.api.model.Secret;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import jenkins.model.Jenkins;
-import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
+import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -57,8 +60,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey;
 
 
 public class KubernetesCloud extends Cloud {
@@ -100,7 +101,7 @@ public class KubernetesCloud extends Cloud {
                 if (client == null) {
                     client = KubernetesService.getKubernetesClient(azureCredentialsId,
                             resourceGroup,
-                            serviceName,
+                            getServiceNameWithoutOrchestra(serviceName),
                             namespace,
                             acsCredentialsId);
                 }
@@ -113,6 +114,8 @@ public class KubernetesCloud extends Cloud {
 
         private final PodTemplate template;
 
+        private static final int RETRY_INTERVAL = 1000;
+
         ProvisionCallback(PodTemplate template) {
             this.template = template;
         }
@@ -123,7 +126,6 @@ public class KubernetesCloud extends Cloud {
             final Map<String, String> properties = new HashMap<>();
 
             try {
-                final int retryInterval = 1000;
                 slave = new KubernetesAgent(KubernetesCloud.this, template);
 
                 LOGGER.log(Level.INFO, "Adding Jenkins node: {0}", slave.getNodeName());
@@ -169,29 +171,22 @@ public class KubernetesCloud extends Cloud {
                             podId,
                             namespace,
                             stopwatch,
-                            retryInterval,
+                            RETRY_INTERVAL,
                             startupTimeout);
                     LOGGER.log(Level.INFO, "KubernetesCloud: Pod {0} is running successfully,"
                             + "waiting to be online", podId);
-                }
 
-                // wait the slave to be online
-                while (true) {
-                    if (isTimeout(stopwatch.getTime())) {
-                        throw new TimeoutException(Messages.Kubernetes_pod_Start_Time_Exceed(podId, startupTimeout));
+                    if (template.getLaunchMethodType().equals(Constants.LAUNCH_METHOD_JNLP)) {
+                        //wait JNLP to online
+                        waitToOnline(slave, podId, stopwatch);
+                    } else {
+                        addHost(slave, client, podId);
+                        Computer computer = slave.toComputer();
+                        if (computer == null) {
+                            throw new IllegalStateException(Messages.Kubernetes_Pod_Deleted());
+                        }
+                        computer.connect(false).get();
                     }
-                    Pod podTemp = client.pods().inNamespace(namespace).withName(podId).get();
-                    if (!podTemp.getStatus().getPhase().equals("Running")) {
-                        throw new IllegalStateException(Messages.Kubernetes_Pod_Start_Failed(podId,
-                                podTemp.getStatus().getPhase()));
-                    }
-                    if (slave.getComputer() == null) {
-                        throw new IllegalStateException(Messages.Kubernetes_Pod_Deleted());
-                    }
-                    if (slave.getComputer().isOnline()) {
-                        break;
-                    }
-                    Thread.sleep(retryInterval);
                 }
 
                 provisionRetryStrategy.success(template.getName());
@@ -199,7 +194,7 @@ public class KubernetesCloud extends Cloud {
 
                 return slave;
             } catch (Exception ex) {
-                LOGGER.log(Level.WARNING, "Error in provisioning; slave={0}, template={1}: {2}",
+                LOGGER.log(Level.WARNING, "Error in provisioning; agent={0}, template={1}: {2}",
                         new Object[] {slave, template, ex});
 
                 properties.put("Message", ex.getMessage());
@@ -210,12 +205,40 @@ public class KubernetesCloud extends Cloud {
                     try {
                         slave.terminate();
                     } catch (IOException e) {
-                        LOGGER.log(Level.WARNING, "Error in cleaning up the slave node " + slave.getNodeName(), e);
+                        LOGGER.log(Level.WARNING, "Error in cleaning up the agent node " + slave.getNodeName(), e);
                     }
                 }
                 provisionRetryStrategy.failure(template.getName());
                 throw ex;
             }
+        }
+
+        private void waitToOnline(KubernetesAgent slave, String podId, StopWatch stopwatch) throws Exception {
+            while (true) {
+                if (isTimeout(stopwatch.getTime())) {
+                    throw new TimeoutException(Messages.Kubernetes_pod_Start_Time_Exceed(podId, startupTimeout));
+                }
+                Pod podTemp = client.pods().inNamespace(namespace).withName(podId).get();
+                if (!podTemp.getStatus().getPhase().equals("Running")) {
+                    throw new IllegalStateException(Messages.Kubernetes_Pod_Start_Failed(podId,
+                            podTemp.getStatus().getPhase()));
+                }
+                SlaveComputer computer = slave.getComputer();
+                if (computer == null) {
+                    throw new IllegalStateException(Messages.Kubernetes_Pod_Deleted());
+                }
+                if (computer.isOnline()) {
+                    break;
+                }
+                Thread.sleep(RETRY_INTERVAL);
+            }
+        }
+
+        private void addHost(KubernetesAgent slave,
+                             KubernetesClient kubernetesClient,
+                             String podId) throws IOException {
+            slave.setHost(kubernetesClient.pods().inNamespace(namespace).withName(podId).get().getStatus().getPodIP());
+            slave.save();
         }
     }
 
@@ -262,7 +285,7 @@ public class KubernetesCloud extends Cloud {
     }
 
     public void deletePod(String podName) {
-        LOGGER.log(Level.INFO, "Terminating container instance for slave {0}", podName);
+        LOGGER.log(Level.INFO, "Terminating container instance for agent {0}", podName);
         final Map<String, String> properties = new HashMap<>();
 
         try (KubernetesClient client = connect()) {
@@ -273,20 +296,20 @@ public class KubernetesCloud extends Cloud {
             ContainerPlugin.sendEvent(Constants.AI_CONTAINER_AGENT, "Deleted", properties);
 
             if (result) {
-                LOGGER.log(Level.INFO, "Terminated Kubernetes instance for slave {0}", podName);
+                LOGGER.log(Level.INFO, "Terminated Kubernetes instance for agent {0}", podName);
             } else {
-                LOGGER.log(Level.WARNING, "Failed to terminate pod for slave " + podName);
+                LOGGER.log(Level.WARNING, "Failed to terminate pod for agent " + podName);
             }
         } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Failed to terminate pod for slave " + podName, e);
+            LOGGER.log(Level.WARNING, "Failed to terminate pod for agent " + podName, e);
 
             properties.put("Message", e.getMessage());
             ContainerPlugin.sendEvent(Constants.AI_CONTAINER_AGENT, "DeletedFailed", properties);
         }
     }
 
-    private boolean isTimeout(long elaspedTime) {
-        return AzureContainerUtils.isTimeout(startupTimeout, elaspedTime);
+    private boolean isTimeout(long elapsedTime) {
+        return AzureContainerUtils.isTimeout(startupTimeout, elapsedTime);
     }
 
     public static synchronized ExecutorService getThreadPool() {
@@ -373,11 +396,19 @@ public class KubernetesCloud extends Cloud {
         return this;
     }
 
+    public static String getServiceNameWithoutOrchestra(String serviceName) {
+        if (StringUtils.isBlank(serviceName)) {
+            return serviceName;
+        }
+        return StringUtils.substringBeforeLast(serviceName, "|").trim();
+    }
+
     @Extension
+    @Symbol("azureKubernetes")
     public static class DescriptorImpl extends Descriptor<Cloud> {
         @Override
         public String getDisplayName() {
-            return "Azure Container Service(Kubernetes)";
+            return "Azure Container Service / Kubernetes Service";
         }
 
         public ListBoxModel doFillAzureCredentialsIdItems(@AncestorInPath Item owner) {
@@ -426,7 +457,7 @@ public class KubernetesCloud extends Cloud {
                 for (GenericResource genericResource: genericResourceList) {
                     if (genericResource.resourceProviderNamespace().equals(Constants.AKS_NAMESPACE)
                             && genericResource.resourceType().equals(Constants.AKS_RESOURCE_TYPE)) {
-                        model.add(genericResource.name());
+                        model.add(genericResource.name() + " | AKS");
                     }
                 }
             } catch (Exception e) {
@@ -450,7 +481,7 @@ public class KubernetesCloud extends Cloud {
             String masterFqdn = null;
             try (KubernetesClient client = KubernetesService.getKubernetesClient(azureCredentialsId,
                         resourceGroup,
-                        serviceName,
+                        getServiceNameWithoutOrchestra(serviceName),
                         namespace,
                         acsCredentialsId)) {
                 masterFqdn = client.getMasterUrl().toString();

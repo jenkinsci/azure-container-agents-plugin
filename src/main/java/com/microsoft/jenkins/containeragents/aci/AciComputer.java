@@ -9,6 +9,6 @@ public class AciComputer extends AbstractCloudComputer<AciAgent> {
 
     @Override
     public String toString() {
-        return String.format("AciComputer name: %s slave: %s", getName(), getNode());
+        return String.format("AciComputer name: %s agent: %s", getName(), getNode());
     }
 }

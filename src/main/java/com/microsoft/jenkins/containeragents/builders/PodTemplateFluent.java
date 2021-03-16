@@ -4,6 +4,7 @@ import com.microsoft.jenkins.containeragents.PodEnvVar;
 import com.microsoft.jenkins.containeragents.PodImagePullSecrets;
 import com.microsoft.jenkins.containeragents.strategy.ContainerIdleRetentionStrategy;
 import com.microsoft.jenkins.containeragents.strategy.ContainerOnceRetentionStrategy;
+import com.microsoft.jenkins.containeragents.util.Constants;
 import com.microsoft.jenkins.containeragents.volumes.AzureDiskVolume;
 import com.microsoft.jenkins.containeragents.volumes.AzureFileVolume;
 import com.microsoft.jenkins.containeragents.volumes.EmptyDirVolume;
@@ -56,12 +57,19 @@ public class PodTemplateFluent<T extends PodTemplateFluent<T>> {
 
     private List<DockerRegistryEndpoint> privateRegistryCredentials = new ArrayList<>();
 
+    private String launchMethodType;
+
+    private String sshCredentialsId;
+
+    private String sshPort;
+
     public PodTemplateFluent() {
-        this.image = "jenkinsci/jnlp-slave";
+        this.image = "jenkins/inbound-agent";
         this.args = "-url ${rootUrl} ${secret} ${nodeName}";
         this.rootFs = "/jenkins";
         this.retentionStrategy = new ContainerOnceRetentionStrategy();
         this.specifyNode = "";
+        this.launchMethodType = Constants.LAUNCH_METHOD_JNLP;
     }
 
     //CHECKSTYLE:OFF
@@ -228,6 +236,18 @@ public class PodTemplateFluent<T extends PodTemplateFluent<T>> {
         this.privateRegistryCredentials.add(new DockerRegistryEndpoint(registryUrl, credentialsId));
         return (T) this;
     }
+
+    public T withJNLPLaunchMethod() {
+        this.launchMethodType = Constants.LAUNCH_METHOD_JNLP;
+        return (T) this;
+    }
+
+    public T withSSHLaunchMethod(String sshCredentialsId, String sshPort) {
+        this.launchMethodType = Constants.LAUNCH_METHOD_SSH;
+        this.sshCredentialsId = sshCredentialsId;
+        this.sshPort = sshPort;
+        return (T) this;
+    }
     //CHECKSTYLE:ON
 
     public String getName() {
@@ -300,5 +320,17 @@ public class PodTemplateFluent<T extends PodTemplateFluent<T>> {
 
     public List<DockerRegistryEndpoint> getPrivateRegistryCredentials() {
         return privateRegistryCredentials;
+    }
+
+    public String getLaunchMethodType() {
+        return launchMethodType;
+    }
+
+    public String getSshCredentialsId() {
+        return sshCredentialsId;
+    }
+
+    public String getSshPort() {
+        return sshPort;
     }
 }

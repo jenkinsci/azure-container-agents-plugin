@@ -1,7 +1,9 @@
 package com.microsoft.jenkins.containeragents.builders;
 
 import com.microsoft.jenkins.containeragents.aci.AciContainerTemplate;
+import com.microsoft.jenkins.containeragents.remote.LaunchMethodTypeContent;
 import com.microsoft.jenkins.containeragents.strategy.ContainerIdleRetentionStrategy;
+import com.microsoft.jenkins.containeragents.util.Constants;
 
 public class AciContainerTemplateBuilder extends AciContainerTemplateFluent<AciContainerTemplateBuilder> {
 
@@ -32,6 +34,11 @@ public class AciContainerTemplateBuilder extends AciContainerTemplateFluent<AciC
         this.fluent.withEnvVars(template.getEnvVars());
         this.fluent.withPrivateRegistryCredentials(template.getPrivateRegistryCredentials());
         this.fluent.withVolume(template.getVolumes());
+        if (template.getLaunchMethodType().equals(Constants.LAUNCH_METHOD_JNLP)) {
+            this.fluent.withJNLPLaunchMethod();
+        } else {
+            this.fluent.withSSHLaunchMethod(template.getSshCredentialsId(), template.getSshPort());
+        }
     }
 
     public AciContainerTemplateBuilder(AciContainerTemplateFluent<?> fluent) {
@@ -59,10 +66,15 @@ public class AciContainerTemplateBuilder extends AciContainerTemplateFluent<AciC
         this.fluent.withEnvVars(template.getEnvVars());
         this.fluent.withPrivateRegistryCredentials(template.getPrivateRegistryCredentials());
         this.fluent.withVolume(template.getVolumes());
+        if (template.getLaunchMethodType().equals(Constants.LAUNCH_METHOD_JNLP)) {
+            this.fluent.withJNLPLaunchMethod();
+        } else {
+            this.fluent.withSSHLaunchMethod(template.getSshCredentialsId(), template.getSshPort());
+        }
     }
 
     public AciContainerTemplate build() {
-        return new AciContainerTemplate(fluent.getName(),
+        AciContainerTemplate template = new AciContainerTemplate(fluent.getName(),
                 fluent.getLabel(),
                 fluent.getTimeout(),
                 fluent.getOsType(),
@@ -76,5 +88,9 @@ public class AciContainerTemplateBuilder extends AciContainerTemplateFluent<AciC
                 fluent.getRetentionStrategy(),
                 fluent.getCpu(),
                 fluent.getMemory());
+        template.setLaunchMethodType(fluent.getLaunchMethodType());
+        template.setLaunchMethodTypeContent(new LaunchMethodTypeContent(fluent.getSshCredentialsId(),
+                fluent.getSshPort()));
+        return template;
     }
 }

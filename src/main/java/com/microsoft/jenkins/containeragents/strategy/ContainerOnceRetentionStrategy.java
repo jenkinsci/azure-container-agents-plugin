@@ -6,7 +6,6 @@
 
 package com.microsoft.jenkins.containeragents.strategy;
 
-
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
@@ -18,13 +17,13 @@ import hudson.slaves.AbstractCloudSlave;
 import hudson.slaves.CloudRetentionStrategy;
 import hudson.slaves.EphemeralNode;
 import hudson.slaves.RetentionStrategy;
-import hudson.util.TimeUnit2;
+import jenkins.model.Jenkins;
 import org.kohsuke.accmod.Restricted;
 import org.kohsuke.accmod.restrictions.NoExternalUse;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -49,10 +48,21 @@ public class ContainerOnceRetentionStrategy extends CloudRetentionStrategy imple
         // terminate. If it's not already trying to terminate then lets terminate manually.
         if (c.isIdle() && !disabled) {
             final long milliBetweenCreationAndIdle = c.getIdleStartMilliseconds() - c.getConnectTime();
-            boolean neverConnected = milliBetweenCreationAndIdle < TimeUnit2.SECONDS.toMillis(LAPSE);
+            boolean neverConnected = milliBetweenCreationAndIdle < TimeUnit.SECONDS.toMillis(LAPSE);
+
+            // neverConnected will always be true if jenkins restart so that slave will not be deleted
+            // So overwrite neverConnected if slave exists after restart
+            Computer computer = Jenkins.getInstance().toComputer();
+            if (computer == null) {
+                return 1;
+            }
+            if (c.getIdleStartMilliseconds() - computer.getConnectTime()
+                    < TimeUnit.SECONDS.toMillis(LAPSE)) {
+                neverConnected = false;
+            }
 
             final long idleMilliseconds = System.currentTimeMillis() - c.getIdleStartMilliseconds();
-            if (!neverConnected && idleMilliseconds > TimeUnit2.MINUTES.toMillis(IDLE_MINUTES)) {
+            if (!neverConnected && idleMilliseconds > TimeUnit.MINUTES.toMillis(IDLE_MINUTES)) {
                 LOGGER.log(Level.INFO, "Disconnecting {0}", c.getName());
                 done(c);
             }
