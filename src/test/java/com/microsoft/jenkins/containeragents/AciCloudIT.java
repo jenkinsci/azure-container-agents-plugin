@@ -25,7 +25,7 @@ public class AciCloudIT extends IntegrationTest {
     public AciRule aciRule = new AciRule();
 
     @Test
-    public void testProvisionAgent() throws Exception {
+    public void testProvisionInboundAgent() throws Exception {
         //Test provisioning node
         List<NodeProvisioner.PlannedNode> r = (List<NodeProvisioner.PlannedNode>) aciRule.cloud.provision(new LabelAtom(aciRule.label), 1);
         Node node = r.get(0).future.get();

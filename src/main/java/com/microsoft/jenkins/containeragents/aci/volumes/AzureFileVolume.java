@@ -32,7 +32,7 @@ public class AzureFileVolume extends AbstractDescribableImpl<AzureFileVolume> im
         this.mountPath = mountPath;
         this.shareName = shareName;
         this.credentialsId = credentialsId;
-        this.credentials = AzureStorageAccount.getStorageAccountCredential(credentialsId);
+        this.credentials = AzureStorageAccount.getStorageAccountCredential(null, credentialsId);
     }
 
     public String getMountPath() {

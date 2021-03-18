@@ -6,6 +6,8 @@ import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredenti
 import com.cloudbees.plugins.credentials.domains.Domain;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.microsoft.azure.management.Azure;
+import com.microsoft.azure.util.AzureBaseCredentials;
+import com.microsoft.azure.util.AzureCredentialUtil;
 import com.microsoft.azure.util.AzureCredentials;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
 import org.apache.commons.lang.StringUtils;
@@ -19,7 +21,12 @@ import org.junit.runners.model.Statement;
 import java.util.UUID;
 
 import static com.microsoft.jenkins.containeragents.TestUtils.loadProperty;
+import static org.junit.Assert.assertNotNull;
 
+/**
+ * A template file with the required values to run this test is at the root of this repo
+ * in a file called '.env-integration.txt'.
+ */
 public abstract class AzureContainerRule implements TestRule, MethodRule {
 
     protected Description testDescription;
@@ -27,11 +34,6 @@ public abstract class AzureContainerRule implements TestRule, MethodRule {
     public final String subscriptionId;
     public final String clientId;
     public final String clientSecret;
-    public final String oauth2TokenEndpoint;
-    public final String serviceManagementURL;
-    public final String authenticationEndpoint;
-    public final String resourceManagerEndpoint;
-    public final String graphEndpoint;
 
     public final String cloudName;
     public String location;
@@ -44,18 +46,13 @@ public abstract class AzureContainerRule implements TestRule, MethodRule {
     public String privateRegistryUrl;
     public String privateRegistryCredentialsId;
 
-    public AzureCredentials.ServicePrincipal servicePrincipal = null;
+    public AzureBaseCredentials servicePrincipal = null;
     public Azure azureClient = null;
 
     public AzureContainerRule() {
         subscriptionId = loadProperty("ACS_AGENT_TEST_SUBSCRIPTION_ID");
         clientId = loadProperty("ACS_AGENT_TEST_CLIENT_ID");
         clientSecret = loadProperty("ACS_AGENT_TEST_CLIENT_SECRET");
-        oauth2TokenEndpoint = "https://login.windows.net/" + loadProperty("ACS_AGENT_TEST_TENANT");
-        serviceManagementURL = loadProperty("ACS_AGENT_TEST_AZURE_MANAGEMENT_URL", "https://management.core.windows.net/");
-        authenticationEndpoint = loadProperty("ACS_AGENT_TEST_AZURE_AUTH_URL", "https://login.microsoftonline.com/");
-        resourceManagerEndpoint = loadProperty("ACS_AGENT_TEST_AZURE_RESOURCE_URL", "https://management.azure.com/");
-        graphEndpoint = loadProperty("ACS_AGENT_TEST_AZURE_GRAPH_URL", "https://graph.windows.net/");
 
         cloudName = AzureContainerUtils.generateName("AzureContainerTest", 5);
 
@@ -70,7 +67,7 @@ public abstract class AzureContainerRule implements TestRule, MethodRule {
     }
 
     public void prepareImage(String imageEnv, String privateRegistryUrlEnv, String privateRegistryNameEnv, String privateRegistryKeyEnv) {
-        image = TestUtils.loadProperty(imageEnv, "jenkinsci/jnlp-slave");
+        image = TestUtils.loadProperty(imageEnv, "jenkins/inbound-agent");
         privateRegistryUrl = TestUtils.loadProperty(privateRegistryUrlEnv);
 
         final String privateRegistryName = TestUtils.loadProperty(privateRegistryNameEnv);
@@ -98,21 +95,18 @@ public abstract class AzureContainerRule implements TestRule, MethodRule {
                 "Azure Credentials for Azure Container Agent Test",
                 subscriptionId,
                 clientId,
-                clientSecret,
-                oauth2TokenEndpoint,
-                serviceManagementURL,
-                authenticationEndpoint,
-                resourceManagerEndpoint,
-                graphEndpoint
+                clientSecret
         );
+        azureCredentials.setTenant(loadProperty("ACS_AGENT_TEST_TENANT_ID"));
+
         SystemCredentialsProvider.getInstance().getDomainCredentialsMap().get(Domain.global()).add(azureCredentials);
     }
 
     protected void prepareServicePrincipal() throws Exception {
-        servicePrincipal = AzureCredentials.getServicePrincipal(credentialsId);
-        Assert.assertNotNull(servicePrincipal);
+        servicePrincipal = AzureCredentialUtil.getCredential(null, credentialsId);
+        assertNotNull(servicePrincipal);
         azureClient = AzureContainerUtils.getAzureClient(credentialsId);
-        Assert.assertNotNull(azureClient);
+        assertNotNull(azureClient);
     }
 
     public void after() throws Exception {

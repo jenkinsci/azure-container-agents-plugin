@@ -27,3 +27,4 @@ target/*
 work/*
 
 aci-deployment.out
+.env
