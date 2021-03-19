@@ -2,8 +2,6 @@ package com.microsoft.jenkins.containeragents.aci;
 
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
-import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
-import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -26,12 +24,10 @@ import hudson.slaves.SlaveComputer;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
-import org.jenkinsci.main.modules.instance_identity.InstanceIdentity;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -51,11 +47,6 @@ public final class AciService {
                                         final AciAgent agent,
                                         final StopWatch stopWatch) throws Exception {
         String deployName = getDeploymentName(template);
-
-        ClassLoader cl = com.microsoft.rest.Validator.class.getClassLoader();
-        System.err.println(cl);
-        System.err.println(com.microsoft.rest.Validator.class.getProtectionDomain().getCodeSource().getLocation());
-        System.err.println(cl.loadClass("com.google.common.reflect.TypeToken"));
 
         try (InputStream stream = AciService.class.getResourceAsStream(DEPLOY_TEMPLATE_FILENAME)) {
             final Azure azureClient = cloud.getAzureClient();
@@ -244,12 +235,6 @@ public final class AciService {
         newAzureFileNode.put("storageAccountName", volume.getStorageAccountName());
         newAzureFileNode.put("storageAccountKey", volume.getStorageAccountKey());
 
-        if (StringUtils.isBlank(volume.getStorageAccountKey())) {
-            LOGGER.info("Credential Id: " + volume.getCredentialsId() + " name " + volume.getStorageAccountName() + " key " + volume.getStorageAccountKey());
-            SystemCredentialsProvider.getInstance().getCredentials().forEach(credential -> LOGGER.info(((IdCredentials) credential).getId()));
-            throw new IllegalStateException("Volumes not valid");
-        }
-
         ObjectNode newVolumesNode = mapper.createObjectNode();
         newVolumesNode.put("name", volumeName);
         newVolumesNode.set("azureFile", newAzureFileNode);
@@ -267,34 +252,8 @@ public final class AciService {
         }
 
         String secret = computer.getJnlpMac();
-
-        Map<String, String> argumentsToExpand = buildCommand(command, serverUrl, nodeName, secret);
-        EnvVars arguments = new EnvVars(argumentsToExpand);
+        EnvVars arguments = new EnvVars("rootUrl", serverUrl, "nodeName", nodeName, "secret", secret);
         return arguments.expand(command);
-    }
-
-    private static Map<String, String> buildCommand(String command, String serverUrl, String nodeName, String secret) {
-        Map<String, String> arguments = new HashMap<>();
-
-        if (command.contains("${rootUrl}")) {
-            arguments.put("rootUrl", serverUrl);
-        }
-
-        if (command.contains("${nodeName}")) {
-            arguments.put("nodeName", nodeName);
-        }
-
-        if (command.contains("${secret}")) {
-            arguments.put("secret", secret);
-        }
-
-        if (command.contains("${instanceIdentity}")) {
-            String instanceIdentity = Base64.getEncoder()
-                    .encodeToString(InstanceIdentity.get().getPublic().getEncoded());
-            arguments.put("instanceIdentity", instanceIdentity);
-        }
-
-        return arguments;
     }
 
     private static String getDeploymentName(AciContainerTemplate template) {
