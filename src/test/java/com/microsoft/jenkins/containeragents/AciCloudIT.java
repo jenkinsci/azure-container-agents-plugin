@@ -5,8 +5,10 @@ import com.cloudbees.plugins.credentials.Credentials;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
 import com.cloudbees.plugins.credentials.domains.Domain;
+import com.microsoft.azure.AzureEnvironment;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.util.AzureCredentials;
+import com.microsoft.jenkins.azurecommons.core.AzureClientFactory;
 import com.microsoft.jenkins.azurecommons.core.credentials.TokenCredentialData;
 import com.microsoft.jenkins.containeragents.aci.AciAgent;
 import com.microsoft.jenkins.containeragents.aci.AciCloud;
@@ -77,7 +79,7 @@ public class AciCloudIT {
             project.setAssignedLabel(new LabelAtom(aciRuleData.label));
             project.getBuildersList().add(new Shell("cd /afs"));
             Future<FreeStyleBuild> build = project.scheduleBuild2(0);
-            r.assertBuildStatus(Result.SUCCESS, build.get(60, TimeUnit.SECONDS));
+            r.assertBuildStatus(Result.SUCCESS, build.get(120, TimeUnit.SECONDS));
 
             //Test deleting remote agent and deployment
             AciService.deleteAciContainerGroup(containerData.credentialsId, containerData.resourceGroup, agent.getNodeName(), agent.getDeployName());
@@ -89,10 +91,6 @@ public class AciCloudIT {
         }
 
         private AzureCredentials setup(JenkinsRule r) throws Exception {
-            AciContainerTemplate aciContainerTemplate = prepareTemplate();
-            LOGGER.info("Template: " + aciContainerTemplate.toString());
-            prepareCloud(r, aciContainerTemplate);
-
             List<Credentials> credentials = SystemCredentialsProvider.getInstance().getDomainCredentialsMap().get(Domain.global());
             azureCredentials = new AzureCredentials(
                     CredentialsScope.GLOBAL,
@@ -104,19 +102,28 @@ public class AciCloudIT {
             );
             azureCredentials.setTenant(containerData.tenantId);
             credentials.add(azureCredentials);
+            LOGGER.info("AccountName: " + aciRuleData.storageAccountCredential.getStorageAccountName() + " Key: " + aciRuleData.storageAccountCredential.getStorageAccountKey());
             credentials.add(new AzureStorageAccount(CredentialsScope.GLOBAL,
-                    aciRuleData.storageAccountCredential.getId(),
+                    aciRuleData.storageAccountCredentialsId,
                     "Storage Credential for Test",
                     aciRuleData.storageAccountCredential.getStorageAccountName(),
                     aciRuleData.storageAccountCredential.getStorageAccountKey(),
                     ""));
             r.jenkins.setSlaveAgentPort(Integer.parseInt(TestUtils.loadProperty("ACI_INBOUND_AGENT_PORT")));
+
+            AciContainerTemplate aciContainerTemplate = prepareTemplate();
+            prepareCloud(r, aciContainerTemplate);
             return azureCredentials;
         }
 
         private Azure getAzureClient(AzureCredentials azureCredentials) {
-            TokenCredentialData tokenCredentialData = TokenCredentialData.deserialize(azureCredentials.serializeToTokenData());
-            return AzureContainerUtils.getClient(tokenCredentialData);
+            return AzureClientFactory.getClient(
+                    azureCredentials.getClientId(),
+                    azureCredentials.getPlainClientSecret(),
+                    azureCredentials.getTenant(),
+                    azureCredentials.getSubscriptionId(),
+                    AzureEnvironment.AZURE
+            );
         }
 
         public AciContainerTemplate prepareTemplate() throws Exception {

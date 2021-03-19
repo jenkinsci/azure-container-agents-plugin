@@ -2,6 +2,8 @@ package com.microsoft.jenkins.containeragents.aci;
 
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
+import com.cloudbees.plugins.credentials.common.IdCredentials;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -49,6 +51,11 @@ public final class AciService {
                                         final AciAgent agent,
                                         final StopWatch stopWatch) throws Exception {
         String deployName = getDeploymentName(template);
+
+        ClassLoader cl = com.microsoft.rest.Validator.class.getClassLoader();
+        System.err.println(cl);
+        System.err.println(com.microsoft.rest.Validator.class.getProtectionDomain().getCodeSource().getLocation());
+        System.err.println(cl.loadClass("com.google.common.reflect.TypeToken"));
 
         try (InputStream stream = AciService.class.getResourceAsStream(DEPLOY_TEMPLATE_FILENAME)) {
             final Azure azureClient = cloud.getAzureClient();
@@ -236,6 +243,12 @@ public final class AciService {
         newAzureFileNode.put("shareName", volume.getShareName());
         newAzureFileNode.put("storageAccountName", volume.getStorageAccountName());
         newAzureFileNode.put("storageAccountKey", volume.getStorageAccountKey());
+
+        if (StringUtils.isBlank(volume.getStorageAccountKey())) {
+            LOGGER.info("Credential Id: " + volume.getCredentialsId() + " name " + volume.getStorageAccountName() + " key " + volume.getStorageAccountKey());
+            SystemCredentialsProvider.getInstance().getCredentials().forEach(credential -> LOGGER.info(((IdCredentials) credential).getId()));
+            throw new IllegalStateException("Volumes not valid");
+        }
 
         ObjectNode newVolumesNode = mapper.createObjectNode();
         newVolumesNode.put("name", volumeName);

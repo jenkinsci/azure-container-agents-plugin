@@ -1,35 +1,21 @@
 package com.microsoft.jenkins.containeragents;
 
-import com.cloudbees.plugins.credentials.Credentials;
 import com.cloudbees.plugins.credentials.CredentialsScope;
-import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
-import com.cloudbees.plugins.credentials.domains.Domain;
-import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.management.resources.ResourceGroup;
 import com.microsoft.azure.management.storage.StorageAccount;
 import com.microsoft.azure.management.storage.StorageAccountKey;
 import com.microsoft.azure.storage.CloudStorageAccount;
 import com.microsoft.azure.storage.file.CloudFileClient;
 import com.microsoft.azure.storage.file.CloudFileShare;
-import com.microsoft.azure.util.AzureCredentials;
-import com.microsoft.jenkins.azurecommons.core.credentials.TokenCredentialData;
-import com.microsoft.jenkins.containeragents.aci.AciCloud;
-import com.microsoft.jenkins.containeragents.aci.AciContainerTemplate;
-import com.microsoft.jenkins.containeragents.builders.AciCloudBuilder;
-import com.microsoft.jenkins.containeragents.builders.AciContainerTemplateBuilder;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
 import com.microsoftopentechnologies.windowsazurestorage.helper.AzureStorageAccount;
-import jenkins.model.Jenkins;
 import org.apache.commons.lang.RandomStringUtils;
-import org.jenkinsci.main.modules.instance_identity.InstanceIdentity;
 import org.junit.Assert;
 
 import java.io.Serializable;
-import java.util.Base64;
 import java.util.UUID;
 import java.util.logging.Logger;
 
-import static com.microsoft.jenkins.containeragents.TestUtils.loadProperty;
 import static org.junit.Assert.assertNull;
 
 
