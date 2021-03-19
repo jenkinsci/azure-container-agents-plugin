@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.ImmutableMap;
 import com.microsoft.azure.management.containerinstance.ContainerGroup;
 import com.microsoft.jenkins.containeragents.ContainerPlugin;
 import com.microsoft.jenkins.containeragents.PodEnvVar;
@@ -24,10 +25,12 @@ import hudson.slaves.SlaveComputer;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
+import org.jenkinsci.main.modules.instance_identity.InstanceIdentity;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -252,8 +255,40 @@ public final class AciService {
         }
 
         String secret = computer.getJnlpMac();
-        EnvVars arguments = new EnvVars("rootUrl", serverUrl, "nodeName", nodeName, "secret", secret);
+
+        Map<String, String> argumentsToExpand = buildCommand(command, serverUrl, nodeName, secret);
+        EnvVars arguments = new EnvVars(argumentsToExpand);
         return arguments.expand(command);
+    }
+
+    private static Map<String, String> buildCommand(String command, String serverUrl, String nodeName, String secret) {
+        Map<String, String> arguments = new HashMap<>();
+
+        if (command.contains("${rootUrl}")) {
+            arguments.put("rootUrl", serverUrl);
+        }
+
+        if (command.contains("${nodeName}")) {
+            arguments.put("nodeName", nodeName);
+        }
+
+        if (command.contains("${secret}")) {
+            arguments.put("secret", secret);
+        }
+
+        if (command.contains("${instanceIdentity}")) {
+            String instanceIdentity = Base64.getEncoder().encodeToString(InstanceIdentity.get().getPublic().getEncoded());
+            arguments.put("instanceIdentity", instanceIdentity);
+        }
+
+        return arguments;
+    }
+
+    private static ImmutableMap.Builder<String, String> putIfInCommand(ImmutableMap.Builder<String, String> map, String command, String key, String value) {
+        if (command.contains(key)) {
+            map.put(key, value);
+        }
+        return map;
     }
 
     private static String getDeploymentName(AciContainerTemplate template) {

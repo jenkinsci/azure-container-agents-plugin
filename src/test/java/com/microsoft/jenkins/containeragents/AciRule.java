@@ -129,7 +129,6 @@ public class AciRule extends AzureContainerRule {
     public void prepareTemplate() throws Exception {
         String inboundUrl = loadProperty("ACI_JENKINS_AGENT_INBOUND_HOST");
 
-        String instanceIdentity = Base64.getEncoder().encodeToString(InstanceIdentity.get().getPublic().getEncoded());
         template =  new AciContainerTemplateBuilder()
                 .withName(AzureContainerUtils.generateName("AciTemplate", 5))
                 .withLabel(label = AzureContainerUtils.generateName("AciTemplateTest",3))
@@ -139,7 +138,7 @@ public class AciRule extends AzureContainerRule {
                 .withImage(image)
                 .addNewPrivateRegistryCredential(privateRegistryUrl, privateRegistryCredentialsId)
                 .withIdleRetentionStrategy(60)
-                .withCommand(String.format("jenkins-agent -direct %s -instanceIdentity %s ${secret} ${nodeName}", inboundUrl, instanceIdentity))
+                .withCommand(String.format("jenkins-agent -direct %s -instanceIdentity ${instanceIdentity} ${secret} ${nodeName}", inboundUrl))
                 .build();
 
         Assert.assertNotNull(template);
