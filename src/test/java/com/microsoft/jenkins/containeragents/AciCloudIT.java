@@ -19,6 +19,9 @@ import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * See '.env-integration.txt' file for required parameters and instructions
+ */
 public class AciCloudIT extends IntegrationTest {
 
     @Rule
