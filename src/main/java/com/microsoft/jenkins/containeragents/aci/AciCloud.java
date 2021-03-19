@@ -146,8 +146,7 @@ public class AciCloud extends Cloud {
 
             return r;
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, e.toString());
-
+            LOGGER.log(Level.SEVERE, e.getMessage(), e);
         }
         return Collections.emptyList();
     }
@@ -167,6 +166,8 @@ public class AciCloud extends Cloud {
     }
 
     public AciContainerTemplate getFirstTemplate(Label label) {
+        LOGGER.info("There are: " + templates.size() + " templates");
+
         for (AciContainerTemplate template : templates) {
             if (label == null || label.matches(template.getLabelSet())) {
                 return template;

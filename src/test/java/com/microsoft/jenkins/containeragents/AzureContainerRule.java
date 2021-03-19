@@ -6,18 +6,17 @@ import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredenti
 import com.cloudbees.plugins.credentials.domains.Domain;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.microsoft.azure.management.Azure;
-import com.microsoft.azure.util.AzureBaseCredentials;
-import com.microsoft.azure.util.AzureCredentialUtil;
 import com.microsoft.azure.util.AzureCredentials;
+import com.microsoft.jenkins.azurecommons.core.credentials.TokenCredentialData;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
 import org.apache.commons.lang.StringUtils;
-import org.junit.Assert;
 import org.junit.rules.MethodRule;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.Statement;
 
+import java.io.Serializable;
 import java.util.UUID;
 
 import static com.microsoft.jenkins.containeragents.TestUtils.loadProperty;
@@ -31,44 +30,36 @@ public abstract class AzureContainerRule implements TestRule, MethodRule {
 
     protected Description testDescription;
 
-    public final String subscriptionId;
-    public final String clientId;
-    public final String clientSecret;
-
-    public final String cloudName;
-    public String location;
-    public String resourceGroup;
-    public final String credentialsId;
-    public final String jenkinsUrl;
-    public final String jnlpPort;
-
-    public String image;
-    public String privateRegistryUrl;
-    public String privateRegistryCredentialsId;
-
-    public AzureBaseCredentials servicePrincipal = null;
     public Azure azureClient = null;
 
-    public AzureContainerRule() {
-        subscriptionId = loadProperty("ACS_AGENT_TEST_SUBSCRIPTION_ID");
-        clientId = loadProperty("ACS_AGENT_TEST_CLIENT_ID");
-        clientSecret = loadProperty("ACS_AGENT_TEST_CLIENT_SECRET");
+    public AzureContainerData containerData = new AzureContainerData();
 
-        cloudName = AzureContainerUtils.generateName("AzureContainerTest", 5);
+    public static class AzureContainerData implements Serializable {
+        public final String credentialsId = UUID.randomUUID().toString();
+        public final String subscriptionId = System.getenv("ACS_AGENT_TEST_SUBSCRIPTION_ID");
+        public final String clientId = System.getenv("ACS_AGENT_TEST_CLIENT_ID");
+        public final String clientSecret = System.getenv("ACS_AGENT_TEST_CLIENT_SECRET");;
+        public final String tenantId = loadProperty("ACS_AGENT_TEST_TENANT_ID");
 
-        credentialsId = UUID.randomUUID().toString();
-        jenkinsUrl = loadProperty("ACS_AGENT_TEST_JENKINS_URL", "localhost");
-        jnlpPort = loadProperty("ACS_AGENT_TEST_JNLP_PORT", "60000");
+        public final String cloudName = AzureContainerUtils.generateName("AzureContainerTest", 5);
+        public String location = loadProperty("ACI_AGENT_TEST_AZURE_LOCATION", "East US");
+        public String resourceGroup = AzureContainerUtils.generateName(loadProperty("ACI_AGENT_TEST_RESOURCE_GROUP", "AzureContainerTest"), 3);
+        public final String jenkinsUrl = loadProperty("ACS_AGENT_TEST_JENKINS_URL", "localhost");
+        public final String jnlpPort = loadProperty("ACS_AGENT_TEST_JNLP_PORT", "60000");
+
+        public String image;
+        public String privateRegistryUrl;
+        public String privateRegistryCredentialsId;
+
     }
 
     public void before() throws Exception {
-        prepareCredentials();
         prepareServicePrincipal();
     }
 
     public void prepareImage(String imageEnv, String privateRegistryUrlEnv, String privateRegistryNameEnv, String privateRegistryKeyEnv) {
-        image = TestUtils.loadProperty(imageEnv, "jenkins/inbound-agent");
-        privateRegistryUrl = TestUtils.loadProperty(privateRegistryUrlEnv);
+        containerData.image = TestUtils.loadProperty(imageEnv, "jenkins/inbound-agent");
+        containerData.privateRegistryUrl = TestUtils.loadProperty(privateRegistryUrlEnv);
 
         final String privateRegistryName = TestUtils.loadProperty(privateRegistryNameEnv);
         final String privateRegistryKey = TestUtils.loadProperty(privateRegistryKeyEnv);
@@ -79,7 +70,7 @@ public abstract class AzureContainerRule implements TestRule, MethodRule {
 
         StandardUsernamePasswordCredentials privateRegistryCredential = new UsernamePasswordCredentialsImpl(
                 CredentialsScope.GLOBAL,
-                privateRegistryCredentialsId = UUID.randomUUID().toString(),
+                containerData.privateRegistryCredentialsId = UUID.randomUUID().toString(),
                 "Private Registry for Test",
                 privateRegistryName,
                 privateRegistryKey
@@ -88,25 +79,22 @@ public abstract class AzureContainerRule implements TestRule, MethodRule {
     }
 
 
-    protected void prepareCredentials() throws Exception {
+    private AzureCredentials getServicePrincipalCredentials() throws Exception {
         AzureCredentials azureCredentials = new AzureCredentials(
                 CredentialsScope.GLOBAL,
-                credentialsId,
+                containerData.credentialsId,
                 "Azure Credentials for Azure Container Agent Test",
-                subscriptionId,
-                clientId,
-                clientSecret
+                containerData.subscriptionId,
+                containerData.clientId,
+                containerData.clientSecret
         );
-        azureCredentials.setTenant(loadProperty("ACS_AGENT_TEST_TENANT_ID"));
-
-        SystemCredentialsProvider.getInstance().getDomainCredentialsMap().get(Domain.global()).add(azureCredentials);
+        azureCredentials.setTenant(containerData.tenantId);
+        return azureCredentials;
     }
 
     protected void prepareServicePrincipal() throws Exception {
-        servicePrincipal = AzureCredentialUtil.getCredential(null, credentialsId);
-        assertNotNull(servicePrincipal);
-        azureClient = AzureContainerUtils.getAzureClient(credentialsId);
-        assertNotNull(azureClient);
+        TokenCredentialData tokenCredentialData = TokenCredentialData.deserialize(getServicePrincipalCredentials().serializeToTokenData());
+        this.azureClient = AzureContainerUtils.getClient(tokenCredentialData);
     }
 
     public void after() throws Exception {
