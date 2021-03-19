@@ -10,9 +10,8 @@ import org.mockito.Mockito;
 
 import java.io.IOException;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.StringStartsWith.startsWith;
-import static org.junit.Assert.*;
-
 
 public class KubernetesAgentTest {
 
