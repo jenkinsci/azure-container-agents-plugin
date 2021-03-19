@@ -51,7 +51,7 @@
     </f:entry>
 
     <ui:dropdownList selectedName="launchMethodType" title="${%Launch_Method}" name="launchMethodTypeContent">
-        <f:dropdownListBlock title="JNLP" value="jnlp" selected="${instance == null || instance.isJnlp()}"/>
+        <f:dropdownListBlock title="${%Inbound agent}" value="jnlp" selected="${instance == null || instance.isJnlp()}"/>
 
         <f:dropdownListBlock title="SSH" value="ssh" selected="${instance != null &amp;&amp; instance.isJnlp() == false}">
             <f:entry title="${%SSH_Credentials}" field="sshCredentialsId">

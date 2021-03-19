@@ -1,7 +1,7 @@
 <div>
     <b>Container Once Retention Strategy</b><br/>
-    For each job in the queue, an own docker container is started. Once the job has finished, the container is shut down.<br/><br/>
+    For each job in the queue, a new agent is started. Once the job has finished, the agent is shut down.<br/><br/>
     <b>Container Idle Retention Strategy</b><br/>
-    Based on the workload provided by the queue (load average), new docker containers are started on demand. After the job(s) have finished, the container is not shut down immediately. <br/>
-    If no new job was executed on this agent/container during the period of the Idle delay, the container is shut down. Retention time 0 means never being deleted automatically.
+    Based on the workload provided by the queue (load average), new agents are started on demand. After the job(s) have finished, the agent is not shut down immediately. <br/>
+    If no new job was executed on this agent during the period of the Idle delay, the agent is shut down. Retention time 0 means never being deleted automatically.
 </div>

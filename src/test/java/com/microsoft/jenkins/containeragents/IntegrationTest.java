@@ -27,8 +27,6 @@ import java.util.logging.Logger;
 
 public class IntegrationTest {
 
-    static Logger LOGGER = Logger.getLogger(IntegrationTest.class.getName());
-
     @ClassRule
     public static JenkinsRule jenkinsRule = new JenkinsRule() {
         {

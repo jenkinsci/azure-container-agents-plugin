@@ -14,11 +14,11 @@
 
     <name>Azure Container Agents Plugin</name>
     <description>A Jenkins plugin to provisions agents on Azure Container Service and Azure Container Instances</description>
-    <url>https://wiki.jenkins-ci.org/display/JENKINS/Azure+Container+Agents+Plugin</url>
+    <url>https://github.com/jenkinsci/azure-container-agents-plugin</url>
     <licenses>
         <license>
             <name>MIT License</name>
-            <url>http://www.opensource.org/licenses/mit-license.php</url>
+            <url>https://www.opensource.org/licenses/MIT</url>
             <distribution>repo</distribution>
         </license>
     </licenses>
@@ -144,6 +144,13 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
+        <dependency>
+            <groupId>com.nimbusds</groupId>
+            <artifactId>oauth2-oidc-sdk</artifactId>
+            <version>7.4</version>
+        </dependency>
+
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>windows-azure-storage</artifactId>
@@ -286,12 +293,13 @@
                     <minimumJavaVersion>1.8</minimumJavaVersion>
                     <pluginFirstClassLoader>true</pluginFirstClassLoader>
                     <maskClasses>
-                        org.slf4j.
                         com.microsoft.jenkins.azurecommons.core.
                         com.microsoft.azure.management.
                         com.microsoft.azure.AzureClient
                         com.microsoft.azure.AzureEnvironment
                         com.microsoft.azure.credentials.
+                        com.microsoft.aad.
+                        com.nimbusds.oauth2.
                         com.google.common.
                     </maskClasses>
                 </configuration>
