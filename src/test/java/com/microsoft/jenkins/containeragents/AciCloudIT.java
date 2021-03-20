@@ -9,7 +9,6 @@ import com.microsoft.azure.AzureEnvironment;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.util.AzureCredentials;
 import com.microsoft.jenkins.azurecommons.core.AzureClientFactory;
-import com.microsoft.jenkins.azurecommons.core.credentials.TokenCredentialData;
 import com.microsoft.jenkins.containeragents.aci.AciAgent;
 import com.microsoft.jenkins.containeragents.aci.AciCloud;
 import com.microsoft.jenkins.containeragents.aci.AciContainerTemplate;

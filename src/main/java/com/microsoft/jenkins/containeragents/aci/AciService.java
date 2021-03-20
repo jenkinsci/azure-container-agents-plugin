@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.collect.ImmutableMap;
 import com.microsoft.azure.management.containerinstance.ContainerGroup;
 import com.microsoft.jenkins.containeragents.ContainerPlugin;
 import com.microsoft.jenkins.containeragents.PodEnvVar;
@@ -277,18 +276,12 @@ public final class AciService {
         }
 
         if (command.contains("${instanceIdentity}")) {
-            String instanceIdentity = Base64.getEncoder().encodeToString(InstanceIdentity.get().getPublic().getEncoded());
+            String instanceIdentity = Base64.getEncoder()
+                    .encodeToString(InstanceIdentity.get().getPublic().getEncoded());
             arguments.put("instanceIdentity", instanceIdentity);
         }
 
         return arguments;
-    }
-
-    private static ImmutableMap.Builder<String, String> putIfInCommand(ImmutableMap.Builder<String, String> map, String command, String key, String value) {
-        if (command.contains(key)) {
-            map.put(key, value);
-        }
-        return map;
     }
 
     private static String getDeploymentName(AciContainerTemplate template) {
