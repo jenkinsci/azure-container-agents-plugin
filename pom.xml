@@ -73,10 +73,6 @@
                 </exclusion>
                 <exclusion>
                     <groupId>com.squareup.okhttp3</groupId>
-                    <artifactId>okhttp</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.squareup.okhttp3</groupId>
                     <artifactId>logging-interceptor</artifactId>
                 </exclusion>
             </exclusions>
@@ -85,11 +81,6 @@
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>30.1-jre</version>
-        </dependency>
-        <dependency>
-            <groupId>io.jenkins.plugins</groupId>
-            <artifactId>okhttp-api</artifactId>
-            <version>3.14.9</version>
         </dependency>
         <dependency>
             <groupId>commons-lang</groupId>
@@ -297,16 +288,6 @@
                 <configuration>
                     <minimumJavaVersion>1.8</minimumJavaVersion>
                     <pluginFirstClassLoader>true</pluginFirstClassLoader>
-                    <maskClasses>
-                        com.microsoft.jenkins.azurecommons.core.
-                        com.microsoft.azure.management.
-                        com.microsoft.azure.AzureClient
-                        com.microsoft.azure.AzureEnvironment
-                        com.microsoft.azure.credentials.
-                        com.microsoft.aad.
-                        com.nimbusds.oauth2.
-                        com.google.common.
-                    </maskClasses>
                 </configuration>
             </plugin>
             <plugin>

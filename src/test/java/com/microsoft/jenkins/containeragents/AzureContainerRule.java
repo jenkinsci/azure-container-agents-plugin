@@ -36,9 +36,9 @@ public abstract class AzureContainerRule implements TestRule, MethodRule {
 
     public static class AzureContainerData implements Serializable {
         public final String credentialsId = UUID.randomUUID().toString();
-        public final String subscriptionId = System.getenv("ACS_AGENT_TEST_SUBSCRIPTION_ID");
-        public final String clientId = System.getenv("ACS_AGENT_TEST_CLIENT_ID");
-        public final String clientSecret = System.getenv("ACS_AGENT_TEST_CLIENT_SECRET");;
+        public final String subscriptionId = loadProperty("ACS_AGENT_TEST_SUBSCRIPTION_ID");
+        public final String clientId = loadProperty("ACS_AGENT_TEST_CLIENT_ID");
+        public final String clientSecret = loadProperty("ACS_AGENT_TEST_CLIENT_SECRET");;
         public final String tenantId = loadProperty("ACS_AGENT_TEST_TENANT_ID");
 
         public final String cloudName = AzureContainerUtils.generateName("AzureContainerTest", 5);
