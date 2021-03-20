@@ -166,8 +166,6 @@ public class AciCloud extends Cloud {
     }
 
     public AciContainerTemplate getFirstTemplate(Label label) {
-        LOGGER.info("There are: " + templates.size() + " templates");
-
         for (AciContainerTemplate template : templates) {
             if (label == null || label.matches(template.getLabelSet())) {
                 return template;

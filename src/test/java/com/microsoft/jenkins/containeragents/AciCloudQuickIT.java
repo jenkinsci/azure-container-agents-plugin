@@ -13,9 +13,7 @@ import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.RealJenkinsRule;
 
-import java.io.Serializable;
 import java.util.List;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.microsoft.jenkins.containeragents.TestUtils.loadProperty;
@@ -36,23 +34,10 @@ public class AciCloudQuickIT {
 
     @Test
     public void testFetchResourceGroups() throws Throwable {
-        SimpleServicePrincipal servicePrincipal = new SimpleServicePrincipal();
-
         String expectedResourceGroup = loadProperty("ACI_EXPECTED_RESOURCE_GROUP");
         assertThat(expectedResourceGroup, is(not(emptyString())));
 
-        rr.then(new FetchResourceGroupsOK(servicePrincipal, expectedResourceGroup));
-    }
-
-    private static class SimpleServicePrincipal implements Serializable {
-        public final String credentialsId = UUID.randomUUID().toString();
-
-        public final String subscriptionId = loadProperty("ACS_AGENT_TEST_SUBSCRIPTION_ID");
-        public final String clientId = loadProperty("ACS_AGENT_TEST_CLIENT_ID");
-        public final String clientSecret = loadProperty("ACS_AGENT_TEST_CLIENT_SECRET");
-
-        public final String tenantId = loadProperty("ACS_AGENT_TEST_TENANT_ID");
-
+        rr.then(new FetchResourceGroupsOK(new SimpleServicePrincipal(), expectedResourceGroup));
     }
 
     private static class FetchResourceGroupsOK implements RealJenkinsRule.Step {
@@ -67,7 +52,7 @@ public class AciCloudQuickIT {
 
         @Override
         public void run(JenkinsRule r) throws Throwable {
-            setup(r);
+            setup();
 
             AciCloud.DescriptorImpl aciCloud = ExtensionList.lookupSingleton(AciCloud.DescriptorImpl.class);
             ListBoxModel resourceGroupItems = aciCloud.doFillResourceGroupItems(servicePrincipal.credentialsId);
@@ -80,7 +65,7 @@ public class AciCloudQuickIT {
             assertThat(resourceGroups, hasItem(expectedResourceGroup));
         }
 
-        private void setup(JenkinsRule r) {
+        private void setup() {
             List<Credentials> credentials = SystemCredentialsProvider.getInstance().getDomainCredentialsMap().get(Domain.global());
             AzureCredentials azureCredentials = new AzureCredentials(
                     CredentialsScope.GLOBAL,

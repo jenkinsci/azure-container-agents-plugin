@@ -49,19 +49,17 @@ public class AciCloudIT {
 
     @Test
     public void testProvisionInboundAgent() throws Throwable {
-        rr.then(new InboundAgentOK(aciRule.data, aciRule.containerData));
+        rr.then(new InboundAgentOK(aciRule.data));
     }
 
     private static class InboundAgentOK implements RealJenkinsRule.Step {
 
         private final AciRule.AciData aciRuleData;
-        private final AzureContainerRule.AzureContainerData containerData;
         private static final Logger LOGGER = Logger.getLogger(InboundAgentOK.class.getName());
         private AzureCredentials azureCredentials;
 
-        public InboundAgentOK(AciRule.AciData aciRuleData, AzureContainerRule.AzureContainerData containerData) {
+        public InboundAgentOK(AciRule.AciData aciRuleData) {
             this.aciRuleData = aciRuleData;
-            this.containerData = containerData;
         }
 
         @Override
@@ -81,25 +79,25 @@ public class AciCloudIT {
             r.assertBuildStatus(Result.SUCCESS, build.get(120, TimeUnit.SECONDS));
 
             //Test deleting remote agent and deployment
-            AciService.deleteAciContainerGroup(containerData.credentialsId, containerData.resourceGroup, agent.getNodeName(), agent.getDeployName());
-            assertNull(getAzureClient(azureCredentials).containerGroups().getByResourceGroup(containerData.resourceGroup, agent.getNodeName()));
+            AciService.deleteAciContainerGroup(aciRuleData.servicePrincipal.credentialsId, aciRuleData.resourceGroup, agent.getNodeName(), agent.getDeployName());
+            assertNull(getAzureClient(azureCredentials).containerGroups().getByResourceGroup(aciRuleData.resourceGroup, agent.getNodeName()));
 
             //Test deleting Jenkins node
             agent.terminate();
             assertNull(r.jenkins.getNode(agent.getNodeName()));
         }
 
-        private AzureCredentials setup(JenkinsRule r) throws Exception {
+        private void setup(JenkinsRule r) throws Exception {
             List<Credentials> credentials = SystemCredentialsProvider.getInstance().getDomainCredentialsMap().get(Domain.global());
             azureCredentials = new AzureCredentials(
                     CredentialsScope.GLOBAL,
-                    containerData.credentialsId,
+                    aciRuleData.servicePrincipal.credentialsId,
                     "Azure Credentials for Azure Container Agent Test",
-                    containerData.subscriptionId,
-                    containerData.clientId,
-                    containerData.clientSecret
+                    aciRuleData.servicePrincipal.subscriptionId,
+                    aciRuleData.servicePrincipal.clientId,
+                    aciRuleData.servicePrincipal.clientSecret
             );
-            azureCredentials.setTenant(containerData.tenantId);
+            azureCredentials.setTenant(aciRuleData.servicePrincipal.tenantId);
             credentials.add(azureCredentials);
             LOGGER.info("AccountName: " + aciRuleData.storageAccountCredential.getStorageAccountName() + " Key: " + aciRuleData.storageAccountCredential.getStorageAccountKey());
             credentials.add(new AzureStorageAccount(CredentialsScope.GLOBAL,
@@ -112,7 +110,6 @@ public class AciCloudIT {
 
             AciContainerTemplate aciContainerTemplate = prepareTemplate();
             prepareCloud(r, aciContainerTemplate);
-            return azureCredentials;
         }
 
         private Azure getAzureClient(AzureCredentials azureCredentials) {
@@ -125,7 +122,7 @@ public class AciCloudIT {
             );
         }
 
-        public AciContainerTemplate prepareTemplate() throws Exception {
+        public AciContainerTemplate prepareTemplate() {
             String inboundUrl = loadProperty("ACI_JENKINS_AGENT_INBOUND_HOST");
 
             return new AciContainerTemplateBuilder()
@@ -134,17 +131,17 @@ public class AciCloudIT {
                     .addNewEnvVar("ENV", "echo pass")
                     .addNewPort("8080")
                     .addNewAzureFileVolume("/afs", aciRuleData.fileShareName, aciRuleData.storageAccountCredentialsId)
-                    .withImage(containerData.image)
-                    .addNewPrivateRegistryCredential(containerData.privateRegistryUrl, containerData.privateRegistryCredentialsId)
+                    .withImage(aciRuleData.image)
+                    .addNewPrivateRegistryCredential(aciRuleData.privateRegistryUrl, aciRuleData.privateRegistryCredentialsId)
                     .withIdleRetentionStrategy(60)
                     .withCommand(String.format("jenkins-agent -direct %s -instanceIdentity ${instanceIdentity} ${secret} ${nodeName}", inboundUrl))
                     .build();
         }
 
         public void prepareCloud(JenkinsRule r, AciContainerTemplate template) {
-            AciCloud aciCloud = new AciCloudBuilder().withCloudName(containerData.cloudName)
-                    .withAzureCredentialsId(containerData.credentialsId)
-                    .withResourceGroup(containerData.resourceGroup)
+            AciCloud aciCloud = new AciCloudBuilder().withCloudName(aciRuleData.cloudName)
+                    .withAzureCredentialsId(aciRuleData.servicePrincipal.credentialsId)
+                    .withResourceGroup(aciRuleData.resourceGroup)
                     .addToTemplates(template)
                     .build();
 
