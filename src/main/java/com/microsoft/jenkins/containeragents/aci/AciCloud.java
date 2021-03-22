@@ -146,8 +146,7 @@ public class AciCloud extends Cloud {
 
             return r;
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, e.toString());
-
+            LOGGER.log(Level.SEVERE, e.getMessage(), e);
         }
         return Collections.emptyList();
     }
