@@ -3,25 +3,25 @@ package com.microsoft.jenkins.containeragents.aci;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
-import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.microsoft.jenkins.containeragents.remote.ISSHLaunchable;
 import com.microsoft.jenkins.containeragents.remote.SSHLauncher;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
 import com.microsoft.jenkins.containeragents.util.Constants;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
 import hudson.model.Node;
 import hudson.model.TaskListener;
 import hudson.security.ACL;
-import hudson.slaves.AbstractCloudComputer;
 import hudson.slaves.AbstractCloudSlave;
 import hudson.slaves.Cloud;
 import hudson.slaves.JNLPLauncher;
-import hudson.slaves.NodeProperty;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
+import org.jenkinsci.plugins.cloudstats.ProvisioningActivity;
+import org.jenkinsci.plugins.cloudstats.TrackedItem;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.StaplerRequest;
@@ -32,7 +32,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
-public class AciAgent extends AbstractCloudSlave implements ISSHLaunchable {
+public class AciAgent extends AbstractCloudSlave implements ISSHLaunchable, TrackedItem {
     private static final Logger LOGGER = Logger.getLogger(AciAgent.class.getName());
 
     private final String credentialsId;
@@ -51,29 +51,30 @@ public class AciAgent extends AbstractCloudSlave implements ISSHLaunchable {
 
     private String host;
 
+    private final ProvisioningActivity.Id provisioningId;
+
     @DataBoundConstructor
     public AciAgent(AciCloud cloud, AciContainerTemplate template) throws Descriptor.FormException, IOException {
-        super(generateAgentName(template),
-                "",
-                template.getRootFs(),
-                1,
-                Mode.NORMAL,
-                template.getLabel(),
+        super(generateAgentName(template), template.getRootFs(),
                 template.getLaunchMethodType().equals(Constants.LAUNCH_METHOD_JNLP)
-                        ? new JNLPLauncher()
-                        : new SSHLauncher(),
-                template.getRetentionStrategy(),
-                Collections.<NodeProperty<Node>>emptyList());
+                ? new JNLPLauncher(true)
+                : new SSHLauncher());
+
+        setLabelString(template.getLabel());
+        setRetentionStrategy(template.getRetentionStrategy());
+
         this.credentialsId = cloud.getCredentialsId();
         this.cloudName = cloud.getName();
         this.resourceGroup = cloud.getResourceGroup();
         this.sshCredentialsId = template.getSshCredentialsId();
         this.sshPort = template.getSshPort();
         this.launchType = template.getLaunchMethodType();
+
+        this.provisioningId = new ProvisioningActivity.Id(cloud.name, template.getName(), getNodeName());
     }
 
     @Override
-    public AbstractCloudComputer createComputer() {
+    public AciComputer createComputer() {
         return new AciComputer(this);
     }
 
@@ -83,7 +84,7 @@ public class AciAgent extends AbstractCloudSlave implements ISSHLaunchable {
         if (computer == null || StringUtils.isEmpty(cloudName)) {
             return;
         }
-        final Cloud cloud = Jenkins.getInstance().getCloud(cloudName);
+        final Cloud cloud = Jenkins.get().getCloud(cloudName);
         if (cloud == null) {
             return;
         }
@@ -94,15 +95,10 @@ public class AciAgent extends AbstractCloudSlave implements ISSHLaunchable {
             return;
         }
 
-        Computer.threadPoolForRemoting.execute(new Runnable() {
-            @Override
-            public void run() {
-                AciService.deleteAciContainerGroup(credentialsId,
-                        resourceGroup,
-                        AciAgent.this.getNodeName(),
-                        deployName);
-            }
-        });
+        Computer.threadPoolForRemoting.execute(() -> AciService.deleteAciContainerGroup(credentialsId,
+                resourceGroup,
+                AciAgent.this.getNodeName(),
+                deployName));
     }
 
     static String generateAgentName(AciContainerTemplate template) {
@@ -128,9 +124,9 @@ public class AciAgent extends AbstractCloudSlave implements ISSHLaunchable {
         StandardUsernameCredentials credentials = CredentialsMatchers.firstOrNull(
                 CredentialsProvider.lookupCredentials(
                         StandardUsernameCredentials.class,
-                        Jenkins.getInstance(),
+                        Jenkins.get(),
                         ACL.SYSTEM,
-                        Collections.<DomainRequirement>emptyList()),
+                        Collections.emptyList()),
                 CredentialsMatchers.withId(sshCredentialsId));
         if (credentials == null) {
             throw new IllegalArgumentException("Could not find credentials with id: " + sshCredentialsId);
@@ -156,6 +152,12 @@ public class AciAgent extends AbstractCloudSlave implements ISSHLaunchable {
 
     public void setHost(String host) {
         this.host = host;
+    }
+
+    @NonNull
+    @Override
+    public ProvisioningActivity.Id getId() {
+        return provisioningId;
     }
 
     @Extension
