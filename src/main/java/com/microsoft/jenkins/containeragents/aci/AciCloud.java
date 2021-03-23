@@ -13,13 +13,13 @@ import hudson.model.Computer;
 import hudson.model.Descriptor;
 import hudson.model.Item;
 import hudson.model.Label;
-import hudson.model.Node;
 import hudson.slaves.Cloud;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.slaves.NodeProvisioner;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang3.time.StopWatch;
+import org.jenkinsci.plugins.cloudstats.TrackedPlannedNode;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -31,7 +31,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
@@ -76,72 +75,65 @@ public class AciCloud extends Cloud {
             final AciContainerTemplate template = getFirstTemplate(label);
             LOGGER.log(Level.INFO, "Using ACI Container template: {0}", template.getName());
             for (int i = 1; i <= excessWorkload; i++) {
-                r.add(new NodeProvisioner.PlannedNode(template.getName(), Computer.threadPoolForRemoting.submit(
-                        new Callable<Node>() {
 
-                            @Override
-                            public Node call() throws Exception {
-                                AciAgent agent = null;
-                                final Map<String, String> properties = new HashMap<>();
+                AciAgent agent = new AciAgent(AciCloud.this, template);
 
-                                try {
-                                    agent = new AciAgent(AciCloud.this, template);
+                r.add(new TrackedPlannedNode(agent.getId(), 1, Computer.threadPoolForRemoting.submit(
+                        () -> {
+                            final Map<String, String> properties = new HashMap<>();
 
-                                    LOGGER.log(Level.INFO, "Add ACI node: {0}", agent.getNodeName());
-                                    Jenkins.getInstance().addNode(agent);
+                            try {
+                                LOGGER.log(Level.INFO, "Add ACI node: {0}", agent.getNodeName());
+                                Jenkins.get().addNode(agent);
 
-                                    //start a timeWatcher
-                                    StopWatch stopWatch = new StopWatch();
-                                    stopWatch.start();
+                                //start a timeWatcher
+                                StopWatch stopWatch = new StopWatch();
+                                stopWatch.start();
 
-                                    //BI properties
-                                    properties.put(AppInsightsConstants.AZURE_SUBSCRIPTION_ID,
-                                            AzureCredentials.getServicePrincipal(credentialsId).getSubscriptionId());
-                                    properties.put(Constants.AI_ACI_NAME, agent.getNodeName());
-                                    properties.put(Constants.AI_ACI_CPU_CORE, template.getCpu());
+                                //BI properties
+                                properties.put(AppInsightsConstants.AZURE_SUBSCRIPTION_ID,
+                                        AzureCredentials.getServicePrincipal(credentialsId).getSubscriptionId());
+                                properties.put(Constants.AI_ACI_NAME, agent.getNodeName());
+                                properties.put(Constants.AI_ACI_CPU_CORE, template.getCpu());
 
-                                    //Deploy ACI and wait
-                                    template.provisionAgents(AciCloud.this, agent, stopWatch);
+                                //Deploy ACI and wait
+                                template.provisionAgents(AciCloud.this, agent, stopWatch);
 
-                                    if (template.getLaunchMethodType().equals(Constants.LAUNCH_METHOD_JNLP)) {
-                                        //wait JNLP to online
-                                        waitToOnline(agent, template.getTimeout(), stopWatch);
-                                    } else {
-                                        addHost(agent);
-                                        Computer computer = agent.toComputer();
-                                        if (computer == null) {
-                                            throw new IllegalStateException("Agent node has been deleted");
-                                        }
-                                        computer.connect(false).get();
+                                if (template.getLaunchMethodType().equals(Constants.LAUNCH_METHOD_JNLP)) {
+                                    //wait JNLP to online
+                                    waitToOnline(agent, template.getTimeout(), stopWatch);
+                                } else {
+                                    addHost(agent);
+                                    Computer computer = agent.toComputer();
+                                    if (computer == null) {
+                                        throw new IllegalStateException("Agent node has been deleted");
                                     }
-
-                                    addIpEnv(agent);
-
-                                    provisionRetryStrategy.success(template.getName());
-
-                                    //Send BI
-                                    ContainerPlugin.sendEvent(Constants.AI_ACI_AGENT, "Provision", properties);
-
-                                    return agent;
-                                } catch (Exception e) {
-                                    LOGGER.log(Level.WARNING, "AciCloud: Provision agent {0} failed: {1}",
-                                            new Object[] {agent == null ? "Known agent node" : agent.getNodeName(),
-                                                    e.getMessage()});
-
-                                    properties.put("Message", e.getMessage());
-                                    ContainerPlugin.sendEvent(Constants.AI_ACI_AGENT, "ProvisionFailed", properties);
-
-                                    if (agent != null) {
-                                        agent.terminate();
-                                    }
-
-                                    provisionRetryStrategy.failure(template.getName());
-
-                                    throw new Exception(e);
+                                    computer.connect(false).get();
                                 }
+
+                                addIpEnv(agent);
+
+                                provisionRetryStrategy.success(template.getName());
+
+                                //Send BI
+                                ContainerPlugin.sendEvent(Constants.AI_ACI_AGENT, "Provision", properties);
+
+                                return agent;
+                            } catch (Exception e) {
+                                LOGGER.log(Level.WARNING, "AciCloud: Provision agent {0} failed: {1}",
+                                        new Object[] {agent.getNodeName(), e.getMessage()});
+
+                                properties.put("Message", e.getMessage());
+                                ContainerPlugin.sendEvent(Constants.AI_ACI_AGENT, "ProvisionFailed", properties);
+
+                                agent.terminate();
+
+                                provisionRetryStrategy.failure(template.getName());
+
+                                throw new Exception(e);
                             }
                         }
-                ), 1));
+                )));
             }
 
             return r;
@@ -203,7 +195,10 @@ public class AciCloud extends Cloud {
 
         while (true) {
             if (AzureContainerUtils.isTimeout(startupTimeout, stopWatch.getTime())) {
-                throw new TimeoutException("ACI container connection timeout");
+                throw new TimeoutException(String.format(
+                        "ACI container connection timeout after %dminutes, see the Azure portal "
+                               + "/ CLI for more information",
+                        startupTimeout));
             }
 
             Computer computer = agent.toComputer();
@@ -216,10 +211,13 @@ public class AciCloud extends Cloud {
             if (containerGroup.containers().containsKey(agent.getNodeName())
                     && containerGroup.containers().get(agent.getNodeName()).instanceView().currentState().state()
                     .equals("Terminated")) {
-                LOGGER.log(Level.WARNING, "Logs from container {0}: {1}",
-                        new Object[]{agent.getNodeName(),
-                                containerGroup.getLogContent(agent.getNodeName())});
-                throw new IllegalStateException("ACI container terminated");
+
+                // there doesn't seem to be anyway to get debug information with the current API version in the SDK
+                // logs and events just return nothing
+                // while debugging with the CLI the best way I could find was 'attaching' to the container
+                // see https://github.com/Azure/azure-libraries-for-java/issues/1379
+                throw new IllegalStateException("ACI container terminated, see the Azure portal / "
+                        + "CLI for more information");
             }
 
             if (computer.isOnline()) {

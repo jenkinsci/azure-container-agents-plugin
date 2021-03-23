@@ -11,7 +11,7 @@
     </f:entry>
 
     <f:entry field="timeout" title="${%Timeout}">
-        <f:textbox default="10"/>
+        <f:number default="10"/>
     </f:entry>
 
     <f:entry field="osType" title="${%Image_OsType}">
