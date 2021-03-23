@@ -4,12 +4,10 @@ package com.microsoft.jenkins.containeragents.util;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
-import com.microsoft.azure.AzureEnvironment;
 import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.management.resources.ResourceGroup;
 import com.microsoft.azure.util.AzureBaseCredentials;
 import com.microsoft.azure.util.AzureCredentialUtil;
-import com.microsoft.azure.util.AzureCredentials;
 import com.microsoft.jenkins.azurecommons.core.AzureClientFactory;
 import com.microsoft.jenkins.azurecommons.core.credentials.TokenCredentialData;
 import com.microsoft.jenkins.containeragents.ContainerPlugin;
@@ -113,27 +111,13 @@ public final class AzureContainerUtils {
             }
         });
     }
-    private static AzureEnvironment getAzureEnvironment(AzureCredentials.ServicePrincipal servicePrincipal) {
-        String managementEndpoint = servicePrincipal.getManagementEndpoint();
-        if (managementEndpoint.equals(AzureEnvironment.AZURE.managementEndpoint())) {
-            return AzureEnvironment.AZURE;
-        } else if (managementEndpoint.equals(AzureEnvironment.AZURE_CHINA.managementEndpoint())) {
-            return AzureEnvironment.AZURE_CHINA;
-        } else if (managementEndpoint.equals(AzureEnvironment.AZURE_GERMANY.managementEndpoint())) {
-            return AzureEnvironment.AZURE_GERMANY;
-        } else if (managementEndpoint.equals(AzureEnvironment.AZURE_US_GOVERNMENT.managementEndpoint())) {
-            return AzureEnvironment.AZURE_US_GOVERNMENT;
-        } else {
-            return AzureEnvironment.AZURE;
-        }
-    }
 
     private static String getUserAgent() {
         String version = null;
         String instanceId = null;
         try {
             version = AzureContainerUtils.class.getPackage().getImplementationVersion();
-            instanceId = Jenkins.getInstance().getLegacyInstanceId();
+            instanceId = Jenkins.get().getLegacyInstanceId();
         } catch (Exception e) {
         }
 
