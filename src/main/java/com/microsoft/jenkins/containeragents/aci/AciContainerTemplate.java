@@ -268,7 +268,7 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
                     && Integer.parseInt(value) <= Constants.SSH_PORT_MAX) {
                 return FormValidation.ok();
             }
-            return FormValidation.error(Messages.Pod_Template_Not_Number_Error());
+            return FormValidation.error(Messages.Not_Number_Error());
         }
     }
 }
