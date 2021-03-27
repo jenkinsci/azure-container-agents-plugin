@@ -9,7 +9,7 @@
     </parent>
 
     <artifactId>azure-container-agents</artifactId>
-    <version>${revision}${changelist}</version>
+    <version>${changelist}</version>
     <packaging>hpi</packaging>
 
     <name>Azure Container Agents Plugin</name>
@@ -43,8 +43,7 @@
     </scm>
 
     <properties>
-        <revision>1.2.3</revision>
-        <changelist>-SNAPSHOT</changelist>
+        <changelist>9999-SNAPSHOT</changelist>
         <gitHubRepo>jenkinsci/azure-container-agents-plugin</gitHubRepo>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
