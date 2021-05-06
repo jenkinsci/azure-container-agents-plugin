@@ -45,13 +45,20 @@ public final class AciService {
     private static final String DEPLOY_TEMPLATE_FILENAME
             = "/com/microsoft/jenkins/containeragents/aci/deployTemplate.json";
 
+    private static final String DEPLOY_TEMPLATE_WITH_LOG_ANALYTICS_FILENAME
+            = "/com/microsoft/jenkins/containeragents/aci/deployTemplateWithLogAnalytics.json";
+
+
     public static void createDeployment(final AciCloud cloud,
                                         final AciContainerTemplate template,
                                         final AciAgent agent,
                                         final StopWatch stopWatch) throws Exception {
         String deployName = getDeploymentName(template);
+        StandardUsernamePasswordCredentials logAnalyticsCredentials = cloud.getLogAnalyticsCredentials();
+        String templateFileName = logAnalyticsCredentials == null
+                ? DEPLOY_TEMPLATE_FILENAME : DEPLOY_TEMPLATE_WITH_LOG_ANALYTICS_FILENAME;
 
-        try (InputStream stream = AciService.class.getResourceAsStream(DEPLOY_TEMPLATE_FILENAME)) {
+        try (InputStream stream = AciService.class.getResourceAsStream(templateFileName)) {
             final Azure azureClient = cloud.getAzureClient();
 
             final ObjectMapper mapper = new ObjectMapper();
@@ -64,6 +71,14 @@ public final class AciService {
             ObjectNode.class.cast(tmp.get("variables")).put("memory", template.getMemory());
             ObjectNode.class.cast(tmp.get("variables")).put("jenkinsInstance",
                     Jenkins.getInstance().getLegacyInstanceId());
+
+            if (logAnalyticsCredentials != null) {
+                ObjectNode.class.cast(tmp.get("variables")).put("workspaceId",
+                        logAnalyticsCredentials.getUsername());
+
+                ObjectNode.class.cast(tmp.get("variables")).put("workspaceKey",
+                        logAnalyticsCredentials.getPassword().getPlainText());
+            }
 
             addCommandNode(tmp, mapper, template.getCommand(), agent);
 

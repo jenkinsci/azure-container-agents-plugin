@@ -13,6 +13,8 @@ public class AciCloudBuilder {
 
     private String credentialsId;
 
+    private String logAnalyticsCredentialsId;
+
     private String resourceGroup;
 
     private List<AciContainerTemplate> templates;
@@ -29,6 +31,11 @@ public class AciCloudBuilder {
 
     public AciCloudBuilder withAzureCredentialsId(String credentialsId) {
         this.credentialsId = credentialsId;
+        return this;
+    }
+
+    public AciCloudBuilder withAzureLogAnalyticsCredentialsId(String credentialsId) {
+        this.logAnalyticsCredentialsId = credentialsId;
         return this;
     }
 
@@ -52,7 +59,7 @@ public class AciCloudBuilder {
     //CHECKSTYLE:ON
 
     public AciCloud build() {
-        return new AciCloud(cloudName, credentialsId, resourceGroup, templates);
+        return new AciCloud(cloudName, credentialsId, resourceGroup, templates, logAnalyticsCredentialsId);
     }
 
     public class AciContainerTemplateNested extends AciContainerTemplateFluent<AciContainerTemplateNested> {
