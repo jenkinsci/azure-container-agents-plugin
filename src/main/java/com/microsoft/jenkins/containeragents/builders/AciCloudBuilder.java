@@ -59,7 +59,9 @@ public class AciCloudBuilder {
     //CHECKSTYLE:ON
 
     public AciCloud build() {
-        return new AciCloud(cloudName, credentialsId, resourceGroup, templates, logAnalyticsCredentialsId);
+        AciCloud aciCloud = new AciCloud(cloudName, credentialsId, resourceGroup, templates);
+        aciCloud.setLogAnalyticsCredentialsId(this.logAnalyticsCredentialsId);
+        return aciCloud;
     }
 
     public class AciContainerTemplateNested extends AciContainerTemplateFluent<AciContainerTemplateNested> {

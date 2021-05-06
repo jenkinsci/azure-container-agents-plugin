@@ -1,6 +1,5 @@
 package com.microsoft.jenkins.containeragents.aci;
 
-import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
@@ -42,6 +41,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.kohsuke.stapler.DataBoundSetter;
 
 
 public class AciCloud extends Cloud {
@@ -63,13 +63,16 @@ public class AciCloud extends Cloud {
     public AciCloud(String name,
                     String credentialsId,
                     String resourceGroup,
-                    List<AciContainerTemplate> templates,
-                    String logAnalyticsCredentialsId) {
+                    List<AciContainerTemplate> templates) {
         super(name);
         this.credentialsId = credentialsId;
-        this.logAnalyticsCredentialsId = logAnalyticsCredentialsId;
         this.resourceGroup = resourceGroup;
         this.templates = templates;
+    }
+
+    @DataBoundSetter
+    public void setLogAnalyticsCredentialsId(String logAnalyticsCredentialsId) {
+        this.logAnalyticsCredentialsId = logAnalyticsCredentialsId;
     }
 
     public Azure getAzureClient() throws Exception {
@@ -248,18 +251,6 @@ public class AciCloud extends Cloud {
 
     public String getLogAnalyticsCredentialsId() {
         return logAnalyticsCredentialsId;
-      }
-
-    public StandardUsernamePasswordCredentials getLogAnalyticsCredentials() {
-         StandardUsernamePasswordCredentials credentials;
-        credentials = CredentialsMatchers.firstOrNull(
-                CredentialsProvider.lookupCredentials(
-                        StandardUsernamePasswordCredentials.class,
-                        (Item) null,
-                        ACL.SYSTEM,
-                        Collections.<DomainRequirement>emptyList()),
-                CredentialsMatchers.withId(logAnalyticsCredentialsId));
-         return credentials;
     }
 
     public String getResourceGroup() {
@@ -299,7 +290,19 @@ public class AciCloud extends Cloud {
 
         public ListBoxModel doFillLogAnalyticsCredentialsIdItems(@AncestorInPath Item owner) {
             StandardListBoxModel listBoxModel = new StandardListBoxModel();
-            listBoxModel.add("--- Select Azure Container Service Credentials ---", "");
+            listBoxModel.add("--- Select Azure Container Service Log Analytics Credentials ---", "");
+
+             if (owner == null) {
+                if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
+                    return listBoxModel;
+                }
+            } else {
+                if (!owner.hasPermission(Item.EXTENDED_READ)
+                        && !owner.hasPermission(CredentialsProvider.USE_ITEM)) {
+                    return listBoxModel;
+                }
+            }
+
             listBoxModel.withAll(CredentialsProvider.lookupCredentials(StandardUsernamePasswordCredentials.class,
                 owner,
                 ACL.SYSTEM,
