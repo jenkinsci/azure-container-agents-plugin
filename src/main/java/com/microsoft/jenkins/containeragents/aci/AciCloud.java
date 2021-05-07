@@ -6,7 +6,6 @@ import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
-import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.microsoft.azure.util.AzureBaseCredentials;
@@ -305,25 +304,28 @@ public class AciCloud extends Cloud {
         }
 
         public ListBoxModel doFillLogAnalyticsCredentialsIdItems(@AncestorInPath Item owner) {
-            StandardListBoxModel listBoxModel = new StandardListBoxModel();
-            listBoxModel.add("--- Select Azure Container Service Log Analytics Credentials ---", "");
+            StandardListBoxModel result = new StandardListBoxModel();
+            result.add("--- Select Azure Container Service Log Analytics Credentials ---", "");
 
-             if (owner == null) {
+            if (owner == null) {
                 if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
-                    return listBoxModel;
+                    return result;
                 }
             } else {
                 if (!owner.hasPermission(Item.EXTENDED_READ)
                         && !owner.hasPermission(CredentialsProvider.USE_ITEM)) {
-                    return listBoxModel;
+                    return result;
                 }
             }
-
-            listBoxModel.withAll(CredentialsProvider.lookupCredentials(StandardUsernamePasswordCredentials.class,
-                owner,
-                ACL.SYSTEM,
-                Collections.<DomainRequirement>emptyList()));
-            return listBoxModel;
+            return result
+                    .includeEmptyValue()
+                    .includeMatchingAs(
+                            ACL.SYSTEM,
+                            owner,
+                            StandardUsernamePasswordCredentials.class,
+                            Collections.emptyList(),
+                            CredentialsMatchers.instanceOf(
+                                    StandardUsernamePasswordCredentials.class));
         }
     }
 }
