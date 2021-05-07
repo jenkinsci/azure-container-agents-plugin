@@ -1,24 +1,26 @@
 package com.microsoft.jenkins.containeragents;
 
+import com.azure.core.credential.TokenCredential;
+import com.azure.core.management.exception.ManagementException;
+import com.azure.core.management.profile.AzureProfile;
+import com.azure.resourcemanager.AzureResourceManager;
+import com.azure.resourcemanager.storage.models.StorageAccount;
+import com.azure.resourcemanager.storage.models.StorageAccountKey;
+import com.azure.storage.file.share.ShareClient;
+import com.azure.storage.file.share.ShareServiceClient;
+import com.azure.storage.file.share.ShareServiceClientBuilder;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.Domain;
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
-import com.microsoft.azure.management.Azure;
-import com.microsoft.azure.management.resources.ResourceGroup;
-import com.microsoft.azure.management.storage.StorageAccount;
-import com.microsoft.azure.management.storage.StorageAccountKey;
-import com.microsoft.azure.storage.CloudStorageAccount;
-import com.microsoft.azure.storage.file.CloudFileClient;
-import com.microsoft.azure.storage.file.CloudFileShare;
 import com.microsoft.azure.util.AzureCredentials;
-import com.microsoft.jenkins.azurecommons.core.credentials.TokenCredentialData;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
 import com.microsoftopentechnologies.windowsazurestorage.helper.AzureStorageAccount;
+import hudson.util.Secret;
+import io.jenkins.plugins.azuresdk.HttpClientRetriever;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.Assert;
 import org.junit.rules.MethodRule;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
@@ -30,7 +32,9 @@ import java.util.UUID;
 import java.util.logging.Logger;
 
 import static com.microsoft.jenkins.containeragents.TestUtils.loadProperty;
-import static org.junit.Assert.assertNull;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertThrows;
 
 
 public class AciRule implements TestRule, MethodRule {
@@ -40,7 +44,19 @@ public class AciRule implements TestRule, MethodRule {
     public AciData data = new AciData();
     protected Description testDescription;
 
-    public Azure azureClient = null;
+    public AzureResourceManager azureClient = null;
+
+    public static AzureResourceManager getAzureClient(
+            AzureCredentials azureCredentials) {
+        AzureProfile profile = new AzureProfile(azureCredentials.getAzureEnvironment());
+        TokenCredential tokenCredential = AzureCredentials.getTokenCredential(azureCredentials);
+
+        return AzureResourceManager
+                .configure()
+                .withHttpClient(HttpClientRetriever.get())
+                .authenticate(tokenCredential, profile)
+                .withSubscription(azureCredentials.getSubscriptionId());
+    }
 
     public static class AciData implements Serializable {
         public String label = AzureContainerUtils.generateName("AciTemplateTest",3);
@@ -59,7 +75,7 @@ public class AciRule implements TestRule, MethodRule {
         public String privateRegistryCredentialsId;
     }
 
-    public void before() throws Exception {
+    public void before() {
         prepareServicePrincipal();
         prepareResourceGroup();
         prepareStorageAccount();
@@ -70,8 +86,8 @@ public class AciRule implements TestRule, MethodRule {
     }
 
     protected void prepareServicePrincipal() {
-        TokenCredentialData tokenCredentialData = TokenCredentialData.deserialize(getServicePrincipalCredentials().serializeToTokenData());
-        this.azureClient = AzureContainerUtils.getClient(tokenCredentialData);
+        AzureCredentials servicePrincipalCredentials = getServicePrincipalCredentials();
+        this.azureClient = getAzureClient(servicePrincipalCredentials);
     }
 
     public void prepareImage(String imageEnv, String privateRegistryUrlEnv, String privateRegistryNameEnv, String privateRegistryKeyEnv) {
@@ -102,7 +118,7 @@ public class AciRule implements TestRule, MethodRule {
                 "Azure Credentials for Azure Container Agent Test",
                 data.servicePrincipal.subscriptionId,
                 data.servicePrincipal.clientId,
-                data.servicePrincipal.clientSecret
+                Secret.fromString(data.servicePrincipal.clientSecret)
         );
         azureCredentials.setTenant(data.servicePrincipal.tenantId);
         return azureCredentials;
@@ -115,17 +131,18 @@ public class AciRule implements TestRule, MethodRule {
 
     public void prepareResourceGroup() {
         String resourceGroup = data.resourceGroup;
-        ResourceGroup rg = azureClient.resourceGroups().getByName(resourceGroup);
-        if (rg == null) {
-            LOGGER.info("Creating resource group: " + resourceGroup);
-            rg = azureClient.resourceGroups().define(resourceGroup).withRegion(data.location).create();
-            LOGGER.info("Created resource group: " + resourceGroup);
+        try {
+            azureClient.resourceGroups().getByName(resourceGroup);
+        } catch (ManagementException e) {
+            if (e.getResponse().getStatusCode() == 404) {
+                LOGGER.info("Creating resource group: " + resourceGroup);
+                azureClient.resourceGroups().define(resourceGroup).withRegion(data.location).create();
+                LOGGER.info("Created resource group: " + resourceGroup);
+            }
         }
-
-        Assert.assertNotNull(rg);
     }
 
-    public void prepareStorageAccount() throws Exception {
+    public void prepareStorageAccount() {
         String accountName;
         StorageAccountKey accountKey;
 
@@ -144,12 +161,16 @@ public class AciRule implements TestRule, MethodRule {
                 "AccountName=" + accountName + ";" +
                 "AccountKey=" + accountKey.value();
 
-        CloudStorageAccount cloudStorageAccount = CloudStorageAccount.parse(storageConnectionString);
-        CloudFileClient fileClient = cloudStorageAccount.createCloudFileClient();
+        ShareServiceClient shareServiceClient = new ShareServiceClientBuilder()
+                .connectionString(storageConnectionString)
+                .buildClient();
         String theFileShareName = RandomStringUtils.random(8, "abcdfghjklmnpqrstvwxz0123456789");
-        CloudFileShare share = fileClient.getShareReference(data.fileShareName = theFileShareName);
+        data.fileShareName = theFileShareName;
+        ShareClient fileShare = shareServiceClient.getShareClient((theFileShareName));
         LOGGER.info("Creating file share: " + theFileShareName);
-        Assert.assertTrue(share.createIfNotExists());
+        if (!fileShare.exists()) {
+            fileShare.create();
+        }
         LOGGER.info("Created file share: " + theFileShareName);
 
         createAzureStorageCredential(data.storageAccountCredentialsId = UUID.randomUUID().toString(),
@@ -172,7 +193,10 @@ public class AciRule implements TestRule, MethodRule {
         azureClient.resourceGroups().deleteByName(resourceGroup);
         LOGGER.info("Deleted resource group: " + resourceGroup);
 
-        assertNull(azureClient.resourceGroups().getByName(resourceGroup));
+        ManagementException managementException = assertThrows(ManagementException.class,
+                () -> azureClient.resourceGroups().getByName(resourceGroup));
+
+        assertThat(managementException.getResponse().getStatusCode(), is(404));
     }
 
     @Override
