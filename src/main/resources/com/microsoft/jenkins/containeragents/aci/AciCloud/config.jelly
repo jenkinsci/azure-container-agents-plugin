@@ -12,6 +12,10 @@
     <f:entry title="${%Resource_Group}" field="resourceGroup">
         <f:select/>
     </f:entry>
+    
+    <f:entry title="${%Azure_Log_Analytics_Credential}" field="logAnalyticsCredentialsId">
+        <c:select expressionAllowed="false"/>
+    </f:entry>
 
     <f:entry title="${%Images}" description="${%Image_Description}">
         <f:repeatableHeteroProperty field="templates" hasHeader="true" addCaption="Add Container Template"

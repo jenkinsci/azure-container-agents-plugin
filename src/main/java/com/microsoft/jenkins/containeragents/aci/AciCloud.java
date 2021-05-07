@@ -5,6 +5,7 @@ import com.azure.resourcemanager.containerinstance.models.ContainerGroup;
 import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
+import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.microsoft.azure.util.AzureBaseCredentials;
@@ -26,6 +27,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.jenkinsci.plugins.cloudstats.TrackedPlannedNode;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 import org.kohsuke.stapler.QueryParameter;
 
 import java.io.IOException;
@@ -44,6 +46,8 @@ public class AciCloud extends Cloud {
     private static final Logger LOGGER = Logger.getLogger(AciCloud.class.getName());
 
     private String credentialsId;
+
+    private String logAnalyticsCredentialsId;
 
     private String resourceGroup;
 
@@ -68,6 +72,11 @@ public class AciCloud extends Cloud {
         this.credentialsId = credentialsId;
         this.resourceGroup = resourceGroup;
         this.templates = templates;
+    }
+
+    @DataBoundSetter
+    public void setLogAnalyticsCredentialsId(String logAnalyticsCredentialsId) {
+        this.logAnalyticsCredentialsId = logAnalyticsCredentialsId;
     }
 
     public AzureResourceManager getAzureClient() {
@@ -233,6 +242,10 @@ public class AciCloud extends Cloud {
         return credentialsId;
     }
 
+    public String getLogAnalyticsCredentialsId() {
+        return logAnalyticsCredentialsId;
+    }
+
     public String getResourceGroup() {
         return resourceGroup;
     }
@@ -288,6 +301,31 @@ public class AciCloud extends Cloud {
 
         public ListBoxModel doFillResourceGroupItems(@QueryParameter String credentialsId) throws IOException {
             return AzureContainerUtils.listResourceGroupItems(credentialsId);
+        }
+
+        public ListBoxModel doFillLogAnalyticsCredentialsIdItems(@AncestorInPath Item owner) {
+            StandardListBoxModel result = new StandardListBoxModel();
+            result.add("--- Select Azure Container Service Log Analytics Credentials ---", "");
+
+            if (owner == null) {
+                if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
+                    return result;
+                }
+            } else {
+                if (!owner.hasPermission(Item.EXTENDED_READ)
+                        && !owner.hasPermission(CredentialsProvider.USE_ITEM)) {
+                    return result;
+                }
+            }
+            return result
+                    .includeEmptyValue()
+                    .includeMatchingAs(
+                            ACL.SYSTEM,
+                            owner,
+                            StandardUsernamePasswordCredentials.class,
+                            Collections.emptyList(),
+                            CredentialsMatchers.instanceOf(
+                                    StandardUsernamePasswordCredentials.class));
         }
     }
 }

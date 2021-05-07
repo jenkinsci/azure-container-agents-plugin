@@ -53,6 +53,7 @@ public final class AciService {
 
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode tmp = mapper.readTree(stream);
+            final ObjectNode parameters = mapper.createObjectNode();
 
             ObjectNode variables = (ObjectNode) tmp.get("variables");
             variables.put("containerName", agent.getNodeName());
@@ -63,6 +64,7 @@ public final class AciService {
             variables.put("jenkinsInstance",
                     Jenkins.get().getLegacyInstanceId());
 
+            addLogAnalytics(tmp, parameters, mapper, cloud);
             addCommandNode(tmp, template.getCommand(), agent);
 
             for (AciPort port : template.getPorts()) {
@@ -98,7 +100,7 @@ public final class AciService {
                     .define(deployName)
                     .withExistingResourceGroup(cloud.getResourceGroup())
                     .withTemplate(tmp.toString())
-                    .withParameters("{}")
+                    .withParameters(parameters.toString())
                     .withMode(DeploymentMode.INCREMENTAL)
                     .beginCreate();
 
@@ -174,6 +176,51 @@ public final class AciService {
         }
         String replaceCommand = commandReplace(command, agent);
         addCommandNode(tmp, StringUtils.split(replaceCommand, ' '));
+    }
+
+    private static void addLogAnalytics(JsonNode tmp, ObjectNode parameters,
+            ObjectMapper mapper, AciCloud aciCloud) {
+
+        if (StringUtils.isBlank(aciCloud.getLogAnalyticsCredentialsId())) {
+            return;
+        }
+
+        StandardUsernamePasswordCredentials credentials = CredentialsMatchers.firstOrNull(
+                CredentialsProvider.lookupCredentials(
+                        StandardUsernamePasswordCredentials.class,
+                        Jenkins.get(),
+                        ACL.SYSTEM,
+                        Collections.emptyList()),
+                CredentialsMatchers.withId(aciCloud.getLogAnalyticsCredentialsId()));
+        if (credentials == null) {
+            return;
+        }
+
+        defineParameter(tmp, "workspaceKey", "secureString", mapper);
+        putParameter(parameters, "workspaceKey", credentials.getPassword().getPlainText(), mapper);
+
+        ObjectNode diagnosticsNode = mapper.createObjectNode();
+        ObjectNode logAnalyticsNode = mapper.createObjectNode();
+        logAnalyticsNode.put("workspaceId", credentials.getUsername());
+        logAnalyticsNode.put("logType", "ContainerInsights");
+        logAnalyticsNode.put("workspaceKey", "[parameters('workspaceKey')]");
+        diagnosticsNode.set("logAnalytics", logAnalyticsNode);
+        ((ObjectNode) tmp.get("resources").get(0).get("properties"))
+                .set("diagnostics", diagnosticsNode);
+    }
+
+     private static void putParameter(ObjectNode template, String name, String value, ObjectMapper mapper) {
+        ObjectNode objectNode = mapper.createObjectNode();
+        objectNode.put("value", value);
+
+        template.set(name, objectNode);
+    }
+
+    private static void defineParameter(JsonNode template, String name, String value, ObjectMapper mapper) {
+        ObjectNode objectNode = mapper.createObjectNode();
+        objectNode.put("type", value);
+
+        ((ObjectNode) template.get("parameters")).set(name, objectNode);
     }
 
     private static void addImageRegistryCredentialNode(JsonNode tmp,

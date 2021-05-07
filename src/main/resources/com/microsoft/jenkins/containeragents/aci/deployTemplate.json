@@ -15,7 +15,7 @@
     {
       "name": "[variables('containerName')]",
       "type": "Microsoft.ContainerInstance/containerGroups",
-      "apiVersion": "2017-08-01-preview",
+      "apiVersion": "2019-12-01",
       "tags": {
         "JenkinsInstance": "[variables('jenkinsInstance')]"
       },
