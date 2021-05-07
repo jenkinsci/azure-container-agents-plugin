@@ -205,7 +205,7 @@ public final class AciService {
         logAnalyticsNode.put("logType", "ContainerInsights");
         logAnalyticsNode.put("workspaceKey", "[parameters('workspaceKey')]");
         diagnosticsNode.set("logAnalytics", logAnalyticsNode);
-        ObjectNode.class.cast(tmp.get("resources").get(0).get("properties"))
+        ((ObjectNode) tmp.get("resources").get(0).get("properties"))
                 .set("diagnostics", diagnosticsNode);
     }
 
