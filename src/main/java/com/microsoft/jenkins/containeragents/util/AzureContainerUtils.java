@@ -1,27 +1,21 @@
 package com.microsoft.jenkins.containeragents.util;
 
 
-import com.cloudbees.plugins.credentials.CredentialsProvider;
-import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
-import com.cloudbees.plugins.credentials.domains.DomainRequirement;
-import com.microsoft.azure.management.Azure;
-import com.microsoft.azure.management.resources.ResourceGroup;
+import com.azure.core.credential.TokenCredential;
+import com.azure.core.management.profile.AzureProfile;
+import com.azure.resourcemanager.AzureResourceManager;
+import com.azure.resourcemanager.resources.models.ResourceGroup;
 import com.microsoft.azure.util.AzureBaseCredentials;
 import com.microsoft.azure.util.AzureCredentialUtil;
-import com.microsoft.jenkins.azurecommons.core.AzureClientFactory;
-import com.microsoft.jenkins.azurecommons.core.credentials.TokenCredentialData;
-import com.microsoft.jenkins.containeragents.ContainerPlugin;
+import com.microsoft.azure.util.AzureCredentials;
 import com.microsoft.jenkins.containeragents.Messages;
-import hudson.model.Item;
-import hudson.security.ACL;
 import hudson.util.ListBoxModel;
+import io.jenkins.plugins.azuresdk.HttpClientRetriever;
 import jenkins.model.Jenkins;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -55,16 +49,6 @@ public final class AzureContainerUtils {
         return (startupTimeout > 0 && TimeUnit.MILLISECONDS.toMinutes(elaspedTime) >= startupTimeout / 2);
     }
 
-    public static ListBoxModel listCredentialsIdItems(Item owner) {
-        StandardListBoxModel listBoxModel = new StandardListBoxModel();
-        listBoxModel.add("--- Select Azure Credentials ---", "");
-        listBoxModel.withAll(CredentialsProvider.lookupCredentials(AzureBaseCredentials.class,
-                owner,
-                ACL.SYSTEM,
-                Collections.<DomainRequirement>emptyList()));
-        return listBoxModel;
-    }
-
     public static ListBoxModel listResourceGroupItems(String credentialsId) throws IOException {
         ListBoxModel model = new ListBoxModel();
         model.add("--- Select Resource Group ---", "");
@@ -73,10 +57,9 @@ public final class AzureContainerUtils {
         }
 
         try {
-            final Azure azureClient = getAzureClient(credentialsId);
+            final AzureResourceManager azureClient = getAzureClient(credentialsId);
 
-            List<ResourceGroup> list = azureClient.resourceGroups().list();
-            for (ResourceGroup resourceGroup : list) {
+            for (ResourceGroup resourceGroup : azureClient.resourceGroups().list()) {
                 model.add(resourceGroup.name());
             }
         } catch (Exception e) {
@@ -85,31 +68,25 @@ public final class AzureContainerUtils {
         return model;
     }
 
-    public static Azure getAzureClient(String credentialsId) {
+    public static AzureResourceManager getAzureClient(String credentialsId) {
         if (StringUtils.isBlank(credentialsId)) {
             throw new IllegalArgumentException("Invalid credential id: " + credentialsId);
         }
-        TokenCredentialData token = getToken(credentialsId);
-        return getClient(token);
+        AzureBaseCredentials credential = AzureCredentialUtil.getCredential(null, credentialsId);
+
+        return getAzureResourceManager(credential, credential.getSubscriptionId());
     }
 
-    public static TokenCredentialData getToken(String credentialId) {
-        AzureBaseCredentials credential = AzureCredentialUtil.getCredential2(credentialId);
-        if (credential == null) {
-            throw new NullPointerException("Can't find credential with id: " + credentialId);
-        }
-        return TokenCredentialData.deserialize(credential.serializeToTokenData());
-    }
+    private static AzureResourceManager getAzureResourceManager(
+            AzureBaseCredentials azureCredentials, String subscriptionId) {
+        AzureProfile profile = new AzureProfile(azureCredentials.getAzureEnvironment());
+        TokenCredential tokenCredential = AzureCredentials.getTokenCredential(azureCredentials);
 
-    public static Azure getClient(TokenCredentialData token) {
-        return AzureClientFactory.getClient(token, new AzureClientFactory.Configurer() {
-            @Override
-            public Azure.Configurable configure(Azure.Configurable configurable) {
-                return configurable
-                        .withInterceptor(new ContainerPlugin.AzureTelemetryInterceptor())
-                        .withUserAgent(getUserAgent());
-            }
-        });
+        return AzureResourceManager
+                .configure()
+                .withHttpClient(HttpClientRetriever.get())
+                .authenticate(tokenCredential, profile)
+                .withSubscription(subscriptionId);
     }
 
     private static String getUserAgent() {
