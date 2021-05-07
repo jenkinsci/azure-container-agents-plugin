@@ -1,15 +1,17 @@
 package com.microsoft.jenkins.containeragents.aci.volumes;
 
+import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
-import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.microsoftopentechnologies.windowsazurestorage.helper.AzureStorageAccount;
 import hudson.Extension;
+import hudson.ExtensionList;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.model.Item;
 import hudson.security.ACL;
 import hudson.util.ListBoxModel;
+import jenkins.model.Jenkins;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 
@@ -55,6 +57,10 @@ public class AzureFileVolume extends AbstractDescribableImpl<AzureFileVolume> im
         return credentials.getStorageAccountKey();
     }
 
+    public static AzureFileVolume get() {
+        return ExtensionList.lookupSingleton(AzureFileVolume.class);
+    }
+
     @Extension
     public static class DescriptorImpl extends Descriptor<AzureFileVolume> {
 
@@ -63,13 +69,29 @@ public class AzureFileVolume extends AbstractDescribableImpl<AzureFileVolume> im
             return "Azure File Volume";
         }
 
-        public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item owner) {
-            StandardListBoxModel model = new StandardListBoxModel();
-            model.withAll(CredentialsProvider.lookupCredentials(AzureStorageAccount.class,
-                    owner,
-                    ACL.SYSTEM,
-                    Collections.<DomainRequirement>emptyList()));
-            return model;
+        public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item item) {
+            StandardListBoxModel result = new StandardListBoxModel();
+            AzureFileVolume azureFileVolume = get();
+            if (item == null) {
+                if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
+                    return result.includeCurrentValue(get().getCredentialsId());
+                }
+            } else {
+                if (!item.hasPermission(Item.EXTENDED_READ)
+                        && !item.hasPermission(CredentialsProvider.USE_ITEM)) {
+                    return result.includeCurrentValue(azureFileVolume.getCredentialsId());
+                }
+            }
+            return result
+                    .includeEmptyValue()
+                    .includeMatchingAs(
+                            ACL.SYSTEM,
+                            item,
+                            AzureStorageAccount.class,
+                            Collections.emptyList(),
+                            CredentialsMatchers.instanceOf(
+                                    AzureStorageAccount.class))
+                    .includeCurrentValue(azureFileVolume.getCredentialsId());
         }
     }
 }

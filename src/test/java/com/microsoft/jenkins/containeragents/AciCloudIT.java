@@ -5,10 +5,7 @@ import com.cloudbees.plugins.credentials.Credentials;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider;
 import com.cloudbees.plugins.credentials.domains.Domain;
-import com.microsoft.azure.AzureEnvironment;
-import com.microsoft.azure.management.Azure;
 import com.microsoft.azure.util.AzureCredentials;
-import com.microsoft.jenkins.azurecommons.core.AzureClientFactory;
 import com.microsoft.jenkins.containeragents.aci.AciAgent;
 import com.microsoft.jenkins.containeragents.aci.AciCloud;
 import com.microsoft.jenkins.containeragents.aci.AciContainerTemplate;
@@ -25,6 +22,7 @@ import hudson.model.labels.LabelAtom;
 import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner;
 import hudson.tasks.Shell;
+import hudson.util.Secret;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
@@ -80,7 +78,7 @@ public class AciCloudIT {
 
             //Test deleting remote agent and deployment
             AciService.deleteAciContainerGroup(aciRuleData.servicePrincipal.credentialsId, aciRuleData.resourceGroup, agent.getNodeName(), agent.getDeployName());
-            assertNull(getAzureClient(azureCredentials).containerGroups().getByResourceGroup(aciRuleData.resourceGroup, agent.getNodeName()));
+            assertNull(AciRule.getAzureClient(azureCredentials).containerGroups().getByResourceGroup(aciRuleData.resourceGroup, agent.getNodeName()));
 
             //Test deleting Jenkins node
             agent.terminate();
@@ -95,7 +93,7 @@ public class AciCloudIT {
                     "Azure Credentials for Azure Container Agent Test",
                     aciRuleData.servicePrincipal.subscriptionId,
                     aciRuleData.servicePrincipal.clientId,
-                    aciRuleData.servicePrincipal.clientSecret
+                    Secret.fromString(aciRuleData.servicePrincipal.clientSecret)
             );
             azureCredentials.setTenant(aciRuleData.servicePrincipal.tenantId);
             credentials.add(azureCredentials);
@@ -110,16 +108,6 @@ public class AciCloudIT {
 
             AciContainerTemplate aciContainerTemplate = prepareTemplate();
             prepareCloud(r, aciContainerTemplate);
-        }
-
-        private Azure getAzureClient(AzureCredentials azureCredentials) {
-            return AzureClientFactory.getClient(
-                    azureCredentials.getClientId(),
-                    azureCredentials.getPlainClientSecret(),
-                    azureCredentials.getTenant(),
-                    azureCredentials.getSubscriptionId(),
-                    AzureEnvironment.AZURE
-            );
         }
 
         public AciContainerTemplate prepareTemplate() {

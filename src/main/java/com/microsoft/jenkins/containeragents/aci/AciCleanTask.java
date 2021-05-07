@@ -1,19 +1,16 @@
 package com.microsoft.jenkins.containeragents.aci;
 
 
-import com.microsoft.azure.management.Azure;
-import com.microsoft.azure.management.resources.Deployment;
-import com.microsoft.azure.management.resources.GenericResource;
+import com.azure.resourcemanager.AzureResourceManager;
+import com.azure.resourcemanager.resources.models.Deployment;
+import com.azure.resourcemanager.resources.models.GenericResource;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
-import com.microsoft.jenkins.containeragents.util.Constants;
 import hudson.Extension;
 import hudson.model.AsyncPeriodicWork;
 import hudson.model.Computer;
 import hudson.model.TaskListener;
 import jenkins.model.Jenkins;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
-import org.joda.time.DateTime;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -23,8 +20,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.nio.file.Paths;
-import java.util.Calendar;
-import java.util.List;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -84,9 +81,9 @@ public class AciCleanTask extends AsyncPeriodicWork {
             attemptsRemaining--;
         }
 
-        private String cloudName;
-        private String deploymentName;
-        private String resourceGroupName;
+        private final String cloudName;
+        private final String deploymentName;
+        private final String resourceGroupName;
         private int attemptsRemaining;
     }
 
@@ -94,7 +91,7 @@ public class AciCleanTask extends AsyncPeriodicWork {
         private static final String OUTPUT_FILE
                 = Paths.get(loadProperty("JENKINS_HOME"), "aci-deployment.out").toString();
 
-        private static DeploymentRegistrar deploymentRegistrar = new DeploymentRegistrar();
+        private static final DeploymentRegistrar DEPLOYMENT_REGISTRAR = new DeploymentRegistrar();
 
         private static final int MAX_DELETE_ATTEMPTS = 3;
 
@@ -102,10 +99,7 @@ public class AciCleanTask extends AsyncPeriodicWork {
                 new ConcurrentLinkedQueue<>();
 
         protected DeploymentRegistrar() {
-            ObjectInputStream ois = null;
-
-            try {
-                ois = new ObjectInputStream(new FileInputStream(OUTPUT_FILE));
+            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(OUTPUT_FILE))) {
                 deploymentsToClean = (ConcurrentLinkedQueue<DeploymentInfo>) ois.readObject();
             } catch (FileNotFoundException e) {
                 LOGGER.log(Level.WARNING,
@@ -113,13 +107,11 @@ public class AciCleanTask extends AsyncPeriodicWork {
             } catch (Exception e) {
                 LOGGER.log(Level.WARNING,
                         "AzureAciCleanUpTask: readResolve: Cannot deserialize deploymentsToClean", e);
-            } finally {
-                IOUtils.closeQuietly(ois);
             }
         }
 
         public static DeploymentRegistrar getInstance() {
-            return deploymentRegistrar;
+            return DEPLOYMENT_REGISTRAR;
         }
 
         public ConcurrentLinkedQueue<DeploymentInfo> getDeploymentsToClean() {
@@ -140,9 +132,7 @@ public class AciCleanTask extends AsyncPeriodicWork {
         }
 
         public synchronized void syncDeploymentsToClean() {
-            ObjectOutputStream oos = null;
-            try {
-                oos = new ObjectOutputStream(new FileOutputStream(OUTPUT_FILE));
+            try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(OUTPUT_FILE))) {
                 oos.writeObject(deploymentsToClean);
             } catch (FileNotFoundException e) {
                 LOGGER.log(Level.WARNING,
@@ -150,8 +140,6 @@ public class AciCleanTask extends AsyncPeriodicWork {
                                 + OUTPUT_FILE);
             } catch (IOException e) {
                 LOGGER.log(Level.WARNING, "AzureAciCleanUpTask: registerDeployment: Serialize failed", e);
-            } finally {
-                IOUtils.closeQuietly(oos);
             }
         }
     }
@@ -173,7 +161,7 @@ public class AciCleanTask extends AsyncPeriodicWork {
     }
 
     public AciCloud getCloud(String cloudName) {
-        return Jenkins.getInstanceOrNull() == null ? null : (AciCloud) Jenkins.getInstance().getCloud(cloudName);
+        return Jenkins.getInstanceOrNull() == null ? null : (AciCloud) Jenkins.get().getCloud(cloudName);
     }
 
     public void cleanDeployments() {
@@ -201,7 +189,7 @@ public class AciCleanTask extends AsyncPeriodicWork {
 
             try {
 
-                Azure azureClient = AzureContainerUtils.getAzureClient(cloud.getCredentialsId());
+                AzureResourceManager azureClient = AzureContainerUtils.getAzureClient(cloud.getCredentialsId());
 
                 // This will throw if the deployment can't be found.  This could happen in a couple instances
                 // 1) The deployment has already been deleted
@@ -224,19 +212,13 @@ public class AciCleanTask extends AsyncPeriodicWork {
                     continue;
                 }
 
-                DateTime deploymentTime = deployment.timestamp();
-
+                OffsetDateTime deploymentTime = deployment.timestamp();
                 LOGGER.log(getNormalLoggingLevel(),
                         "AzureAciCleanUpTask: cleanDeployments: Deployment created on {0}",
-                        deploymentTime.toDate());
-                long deploymentTimeInMillis = deploymentTime.getMillis();
+                        deploymentTime.toString());
 
-                // Compare to now
-                Calendar nowTime = Calendar.getInstance(deploymentTime.getZone().toTimeZone());
-                long nowTimeInMillis = nowTime.getTimeInMillis();
-
-                long diffTime = nowTimeInMillis - deploymentTimeInMillis;
-                long diffTimeInMinutes = diffTime / Constants.MILLIS_IN_MINUTE;
+                long diffTimeInMinutes = ChronoUnit.MINUTES
+                        .between(deploymentTime, OffsetDateTime.now());
 
                 String state = deployment.provisioningState();
 
@@ -290,7 +272,7 @@ public class AciCleanTask extends AsyncPeriodicWork {
 
     private void cleanLeakedContainer(final AciCloud cloud) {
         LOGGER.log(Level.INFO, "Starting to clean leaked containers for cloud " + cloud.getName());
-        Azure azureClient = null;
+        AzureResourceManager azureClient;
         try {
             azureClient = cloud.getAzureClient();
         } catch (Exception e) {
@@ -305,23 +287,17 @@ public class AciCleanTask extends AsyncPeriodicWork {
 
         Set<String> validContainerSet = getValidContainer();
 
-        List<GenericResource> resourceList = azureClient.genericResources().listByResourceGroup(resourceGroup);
-        for (final GenericResource resource : resourceList) {
+        for (final GenericResource resource : azureClient.genericResources().listByResourceGroup(resourceGroup)) {
             if (resource.resourceProviderNamespace().equalsIgnoreCase("Microsoft.ContainerInstance")
                     && resource.resourceType().equalsIgnoreCase("containerGroups")
                     && resource.tags().containsKey("JenkinsInstance")
                     && resource.tags().get("JenkinsInstance")
-                    .equalsIgnoreCase(Jenkins.getInstance().getLegacyInstanceId())) {
+                    .equalsIgnoreCase(Jenkins.get().getLegacyInstanceId())) {
                 if (!validContainerSet.contains(resource.name())) {
-                    AciCloud.getThreadPool().submit(new Runnable() {
-                        @Override
-                        public void run() {
-                            AciService.deleteAciContainerGroup(credentialsId,
-                                    resourceGroup,
-                                    resource.name(),
-                                    null);
-                        }
-                    });
+                    AciCloud.getThreadPool().submit(() -> AciService.deleteAciContainerGroup(credentialsId,
+                            resourceGroup,
+                            resource.name(),
+                            null));
                 }
             }
         }
@@ -329,11 +305,9 @@ public class AciCleanTask extends AsyncPeriodicWork {
 
     private Set<String> getValidContainer() {
         Set<String> result = new TreeSet<>();
-        if (Jenkins.getInstance() != null) {
-            for (Computer computer : Jenkins.getInstance().getComputers()) {
-                if (computer instanceof AciComputer) {
-                    result.add(computer.getName());
-                }
+        for (Computer computer : Jenkins.get().getComputers()) {
+            if (computer instanceof AciComputer) {
+                result.add(computer.getName());
             }
         }
         return result;

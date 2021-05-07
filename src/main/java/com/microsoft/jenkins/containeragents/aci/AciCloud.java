@@ -1,18 +1,22 @@
 package com.microsoft.jenkins.containeragents.aci;
 
-import com.microsoft.azure.management.containerinstance.ContainerGroup;
-import com.microsoft.azure.util.AzureCredentials;
-import com.microsoft.jenkins.azurecommons.telemetry.AppInsightsConstants;
-import com.microsoft.jenkins.containeragents.ContainerPlugin;
+import com.azure.resourcemanager.AzureResourceManager;
+import com.azure.resourcemanager.containerinstance.models.ContainerGroup;
+import com.cloudbees.plugins.credentials.CredentialsMatchers;
+import com.cloudbees.plugins.credentials.CredentialsProvider;
+import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
+import com.microsoft.azure.util.AzureBaseCredentials;
 import com.microsoft.jenkins.containeragents.strategy.ProvisionRetryStrategy;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
-import com.microsoft.azure.management.Azure;
 import com.microsoft.jenkins.containeragents.util.Constants;
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
 import hudson.model.Item;
 import hudson.model.Label;
+import hudson.security.ACL;
 import hudson.slaves.Cloud;
 import hudson.slaves.EnvironmentVariablesNodeProperty;
 import hudson.slaves.NodeProvisioner;
@@ -28,9 +32,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
@@ -51,6 +53,12 @@ public class AciCloud extends Cloud {
 
     private transient ProvisionRetryStrategy provisionRetryStrategy = new ProvisionRetryStrategy();
 
+    private transient Supplier<AzureResourceManager> azureClient = createAzureClientSupplier();
+
+    private Supplier<AzureResourceManager> createAzureClientSupplier() {
+        return Suppliers.memoize(() -> AzureContainerUtils.getAzureClient(credentialsId));
+    }
+
     @DataBoundConstructor
     public AciCloud(String name,
                     String credentialsId,
@@ -62,17 +70,17 @@ public class AciCloud extends Cloud {
         this.templates = templates;
     }
 
-    public Azure getAzureClient() throws Exception {
-        return AzureContainerUtils.getAzureClient(credentialsId);
+    public AzureResourceManager getAzureClient() {
+        return azureClient.get();
     }
 
     @Override
-    public Collection<NodeProvisioner.PlannedNode> provision(Label label, int excessWorkload) {
+    public Collection<NodeProvisioner.PlannedNode> provision(CloudState cloudState, int excessWorkload) {
         try {
             LOGGER.log(Level.INFO, "Start ACI container for label {0} workLoad {1}",
-                    new Object[] {label, excessWorkload});
+                    new Object[] {cloudState.getLabel(), excessWorkload});
             List<NodeProvisioner.PlannedNode> r = new ArrayList<>();
-            final AciContainerTemplate template = getFirstTemplate(label);
+            final AciContainerTemplate template = getFirstTemplate(cloudState.getLabel());
             LOGGER.log(Level.INFO, "Using ACI Container template: {0}", template.getName());
             for (int i = 1; i <= excessWorkload; i++) {
 
@@ -80,8 +88,6 @@ public class AciCloud extends Cloud {
 
                 r.add(new TrackedPlannedNode(agent.getId(), 1, Computer.threadPoolForRemoting.submit(
                         () -> {
-                            final Map<String, String> properties = new HashMap<>();
-
                             try {
                                 LOGGER.log(Level.INFO, "Add ACI node: {0}", agent.getNodeName());
                                 Jenkins.get().addNode(agent);
@@ -89,12 +95,6 @@ public class AciCloud extends Cloud {
                                 //start a timeWatcher
                                 StopWatch stopWatch = new StopWatch();
                                 stopWatch.start();
-
-                                //BI properties
-                                properties.put(AppInsightsConstants.AZURE_SUBSCRIPTION_ID,
-                                        AzureCredentials.getServicePrincipal(credentialsId).getSubscriptionId());
-                                properties.put(Constants.AI_ACI_NAME, agent.getNodeName());
-                                properties.put(Constants.AI_ACI_CPU_CORE, template.getCpu());
 
                                 //Deploy ACI and wait
                                 template.provisionAgents(AciCloud.this, agent, stopWatch);
@@ -115,16 +115,10 @@ public class AciCloud extends Cloud {
 
                                 provisionRetryStrategy.success(template.getName());
 
-                                //Send BI
-                                ContainerPlugin.sendEvent(Constants.AI_ACI_AGENT, "Provision", properties);
-
                                 return agent;
                             } catch (Exception e) {
                                 LOGGER.log(Level.WARNING, "AciCloud: Provision agent {0} failed: {1}",
                                         new Object[] {agent.getNodeName(), e.getMessage()});
-
-                                properties.put("Message", e.getMessage());
-                                ContainerPlugin.sendEvent(Constants.AI_ACI_AGENT, "ProvisionFailed", properties);
 
                                 agent.terminate();
 
@@ -144,14 +138,15 @@ public class AciCloud extends Cloud {
     }
 
     @Override
-    public boolean canProvision(Label label) {
-        AciContainerTemplate template = getFirstTemplate(label);
+    public boolean canProvision(CloudState cloudState) {
+        AciContainerTemplate template = getFirstTemplate(cloudState.getLabel());
         if (template == null) {
             return false;
         }
+
         if (!provisionRetryStrategy.isEnabled(template.getName())) {
             LOGGER.log(Level.WARNING, "Cannot provision: template for label {0} is not available now, "
-                    + "because it failed to provision last time. ", label);
+                    + "because it failed to provision last time. ", cloudState.getLabel());
             return false;
         }
         return true;
@@ -167,9 +162,10 @@ public class AciCloud extends Cloud {
     }
 
     public void addIpEnv(AciAgent agent) throws Exception {
-        Azure azureClient = getAzureClient();
+        AzureResourceManager azureResourceManager = getAzureClient();
 
-        String ip = azureClient.containerGroups().getByResourceGroup(resourceGroup, agent.getNodeName()).ipAddress();
+        String ip = azureResourceManager.containerGroups()
+                .getByResourceGroup(resourceGroup, agent.getNodeName()).ipAddress();
 
         EnvironmentVariablesNodeProperty ipEnv = new EnvironmentVariablesNodeProperty(
                 new EnvironmentVariablesNodeProperty.Entry("IP", ip)
@@ -180,9 +176,10 @@ public class AciCloud extends Cloud {
     }
 
     public void addHost(AciAgent agent) throws Exception {
-        Azure azureClient = getAzureClient();
+        AzureResourceManager azureResourceManager = getAzureClient();
 
-        String ip = azureClient.containerGroups().getByResourceGroup(resourceGroup, agent.getNodeName()).ipAddress();
+        String ip = azureResourceManager.containerGroups()
+                .getByResourceGroup(resourceGroup, agent.getNodeName()).ipAddress();
 
         agent.setHost(ip);
         agent.save();
@@ -191,7 +188,7 @@ public class AciCloud extends Cloud {
     private void waitToOnline(AciAgent agent, int startupTimeout, StopWatch stopWatch)
             throws Exception {
         LOGGER.log(Level.INFO, "Waiting agent {0} to online", agent.getNodeName());
-        Azure azureClient = getAzureClient();
+        AzureResourceManager azureResourceManager = getAzureClient();
 
         while (true) {
             if (AzureContainerUtils.isTimeout(startupTimeout, stopWatch.getTime())) {
@@ -206,7 +203,7 @@ public class AciCloud extends Cloud {
                 throw new IllegalStateException("Agent node has been deleted");
             }
             ContainerGroup containerGroup =
-                    azureClient.containerGroups().getByResourceGroup(resourceGroup, agent.getNodeName());
+                    azureResourceManager.containerGroups().getByResourceGroup(resourceGroup, agent.getNodeName());
 
             if (containerGroup.containers().containsKey(agent.getNodeName())
                     && containerGroup.containers().get(agent.getNodeName()).instanceView().currentState().state()
@@ -264,7 +261,29 @@ public class AciCloud extends Cloud {
         }
 
         public ListBoxModel doFillCredentialsIdItems(@AncestorInPath Item owner) {
-            return AzureContainerUtils.listCredentialsIdItems(owner);
+            StandardListBoxModel result = new StandardListBoxModel();
+            result.add("--- Select Azure Credentials ---", "");
+
+            if (owner == null) {
+                if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
+                    return result;
+                }
+            } else {
+                if (!owner.hasPermission(Item.EXTENDED_READ)
+                        && !owner.hasPermission(CredentialsProvider.USE_ITEM)) {
+                    return result;
+                }
+            }
+            return result
+                    .includeEmptyValue()
+                    .includeMatchingAs(
+                            ACL.SYSTEM,
+                            owner,
+                            AzureBaseCredentials.class,
+                            Collections.emptyList(),
+                            CredentialsMatchers.instanceOf(
+                                    AzureBaseCredentials.class));
+
         }
 
         public ListBoxModel doFillResourceGroupItems(@QueryParameter String credentialsId) throws IOException {
