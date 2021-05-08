@@ -27,6 +27,8 @@ public class AciContainerTemplateFluent<T extends AciContainerTemplateFluent<T>>
 
     private String rootFs;
 
+    private String ipType;
+
     private int timeout;
 
     private List<AciPort> ports = new ArrayList<>();
@@ -59,7 +61,13 @@ public class AciContainerTemplateFluent<T extends AciContainerTemplateFluent<T>>
         retentionStrategy = new ContainerOnceRetentionStrategy();
         cpu = "1";
         memory = "1.5";
+        ipType = "Public";
         launchMethodType = Constants.LAUNCH_METHOD_JNLP;
+    }
+
+    public T withIpTyoe(Boolean ipType) {
+        this.ipType = ipType;
+        return (T) this;
     }
 
     public T withName(String name) {
@@ -200,6 +208,10 @@ public class AciContainerTemplateFluent<T extends AciContainerTemplateFluent<T>>
 
     public String getLabel() {
         return label;
+    }
+
+    public String getIpType() {
+        return ipType;
     }
 
     public String getImage() {

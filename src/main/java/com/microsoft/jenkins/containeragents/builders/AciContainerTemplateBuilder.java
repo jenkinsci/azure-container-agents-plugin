@@ -19,6 +19,7 @@ public class AciContainerTemplateBuilder extends AciContainerTemplateFluent<AciC
         this.fluent.withLabel(template.getLabel());
         this.fluent.withImage(template.getImage());
         this.fluent.withOsType(template.getOsType());
+        this.fluent.withIpType(template.getIpType());
         this.fluent.withCommand(template.getCommand());
         this.fluent.withRootFs(template.getRootFs());
         this.fluent.withTimeout(template.getTimeout());
@@ -51,6 +52,7 @@ public class AciContainerTemplateBuilder extends AciContainerTemplateFluent<AciC
         this.fluent.withLabel(template.getLabel());
         this.fluent.withImage(template.getImage());
         this.fluent.withOsType(template.getOsType());
+        this.fluent.withIpType(template.getIpType());
         this.fluent.withCommand(template.getCommand());
         this.fluent.withRootFs(template.getRootFs());
         this.fluent.withTimeout(template.getTimeout());
@@ -81,6 +83,7 @@ public class AciContainerTemplateBuilder extends AciContainerTemplateFluent<AciC
                 fluent.getImage(),
                 fluent.getCommand(),
                 fluent.getRootFs(),
+                fluent.getIpType(),
                 fluent.getPorts(),
                 fluent.getPrivateRegistryCredentials(),
                 fluent.getEnvVars(),
