@@ -1,5 +1,5 @@
 <?jelly escape-by-default='true'?>
-<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:c="/lib/credentials" xmlns:ui="/lib/azure">
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:c="/lib/credentials" xmlns:ui="/lib/azure-container-agents">
 
     <f:entry field="name" title="${%Name}">
         <f:textbox/>
