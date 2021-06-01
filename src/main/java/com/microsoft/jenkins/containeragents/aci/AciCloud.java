@@ -133,7 +133,7 @@ public class AciCloud extends Cloud {
 
                                 provisionRetryStrategy.failure(template.getName());
 
-                                throw new Exception(e);
+                                throw e;
                             }
                         }
                 )));
