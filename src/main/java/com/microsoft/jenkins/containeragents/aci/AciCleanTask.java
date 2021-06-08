@@ -251,7 +251,7 @@ public class AciCleanTask extends AsyncPeriodicWork {
                 }
             } catch (Exception e) {
                 LOGGER.log(Level.WARNING,
-                        "AzureAciCleanUpTask: cleanDeployments: Failed to get/delete deployment: {0}",
+                        "AzureAciCleanUpTask: cleanDeployments: Failed to get/delete deployment",
                         e);
                 // Check the number of attempts remaining. If greater than 0, decrement
                 // and add back into the queue.
