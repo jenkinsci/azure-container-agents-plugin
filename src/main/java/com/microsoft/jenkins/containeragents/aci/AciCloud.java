@@ -80,6 +80,10 @@ public class AciCloud extends Cloud {
     }
 
     public AzureResourceManager getAzureClient() {
+        if (azureClient == null) {
+            azureClient = createAzureClientSupplier();
+        }
+
         return azureClient.get();
     }
 
@@ -133,7 +137,7 @@ public class AciCloud extends Cloud {
 
                                 provisionRetryStrategy.failure(template.getName());
 
-                                throw new Exception(e);
+                                throw e;
                             }
                         }
                 )));

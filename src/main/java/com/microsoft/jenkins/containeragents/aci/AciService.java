@@ -139,8 +139,6 @@ public final class AciService {
                     Thread.sleep(retryInterval);
                 }
             }
-        } catch (Exception e) {
-            throw new Exception(e.getMessage());
         }
     }
 

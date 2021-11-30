@@ -1,5 +1,5 @@
 <?jelly escape-by-default='true'?>
-<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:c="/lib/credentials" xmlns:ui="/lib/azure">
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form" xmlns:c="/lib/credentials">
 
     <f:entry field="name" title="${%Name}">
         <f:textbox/>
@@ -49,7 +49,8 @@
                                     deleteCaption="${%Delete_Volume}"/>
     </f:entry>
 
-    <ui:dropdownList selectedName="launchMethodType" title="${%Launch_Method}" name="launchMethodTypeContent">
+    <!-- TODO this doesn't seem to be written correctly, when page is refreshed inbound agent is always displayed -->
+    <f:dropdownList title="${%Launch_Method}" name="launchMethodTypeContent">
         <f:dropdownListBlock title="${%Inbound agent}" value="jnlp" selected="${instance == null || instance.isJnlp()}"/>
 
         <f:dropdownListBlock title="SSH" value="ssh" selected="${instance != null &amp;&amp; instance.isJnlp() == false}">
@@ -60,7 +61,7 @@
                 <f:textbox default="22"/>
             </f:entry>
         </f:dropdownListBlock>
-    </ui:dropdownList>
+    </f:dropdownList>
 
     <f:advanced>
 

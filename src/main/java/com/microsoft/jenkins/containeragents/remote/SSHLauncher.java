@@ -7,7 +7,6 @@ import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
-import com.microsoft.jenkins.azurecommons.remote.SSHClient;
 import com.microsoft.jenkins.containeragents.helper.RetryTask;
 import hudson.model.Slave;
 import hudson.model.TaskListener;
@@ -106,9 +105,7 @@ public class SSHLauncher extends ComputerLauncher {
                     new Channel.Listener() {
                 @Override
                 public void onClosed(Channel channel, IOException cause) {
-                    if (channelExec != null) {
-                        channelExec.disconnect();
-                    }
+                    channelExec.disconnect();
                 }
             });
             LOGGER.log(Level.INFO, "SSHLauncher: launched agent successfully");
