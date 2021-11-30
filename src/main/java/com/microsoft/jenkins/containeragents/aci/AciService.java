@@ -200,7 +200,7 @@ public final class AciService {
         ObjectNode diagnosticsNode = mapper.createObjectNode();
         ObjectNode logAnalyticsNode = mapper.createObjectNode();
         logAnalyticsNode.put("workspaceId", credentials.getUsername());
-        logAnalyticsNode.put("logType", "ContainerInsights");
+        logAnalyticsNode.put("logType", "ContainerInstanceLogs");
         logAnalyticsNode.put("workspaceKey", "[parameters('workspaceKey')]");
         diagnosticsNode.set("logAnalytics", logAnalyticsNode);
         ((ObjectNode) tmp.get("resources").get(0).get("properties"))
