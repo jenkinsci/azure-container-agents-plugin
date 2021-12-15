@@ -65,7 +65,7 @@ public class AciContainerTemplateFluent<T extends AciContainerTemplateFluent<T>>
         launchMethodType = Constants.LAUNCH_METHOD_JNLP;
     }
 
-    public T withIpTyoe(Boolean ipType) {
+    public T withIpType(String ipType) {
         this.ipType = ipType;
         return (T) this;
     }

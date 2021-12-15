@@ -53,7 +53,7 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
     private String rootFs;
 
     private String ipType;
-    
+
     private int timeout;
 
     private List<AciPort> ports;

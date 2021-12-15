@@ -53,7 +53,7 @@
     <f:dropdownList selectedName="ipType" title="${%IP_Type}" name="ipType">
         <f:dropdownListBlock title="Private" value="Private" selected="${instance == null || instance.ipType()}"/>
 
-        <f:dropdownListBlock title="Public" value="Public" selected="${instance != null &amp;&amp; instance.ipType() == false}">
+        <f:dropdownListBlock title="Public" value="Public" selected="${instance != null &amp;&amp; instance.ipType() == false}"/>
     </f:dropdownList>
 
     <!-- TODO this doesn't seem to be written correctly, when page is refreshed inbound agent is always displayed -->
