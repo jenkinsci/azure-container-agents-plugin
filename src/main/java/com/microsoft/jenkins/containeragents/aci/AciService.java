@@ -59,6 +59,7 @@ public final class AciService {
             variables.put("containerName", agent.getNodeName());
             variables.put("containerImage", template.getImage());
             variables.put("osType", template.getOsType());
+            variables.put("ipType", mapIpType(template.isUsePrivateIpAddress()));
             variables.put("cpu", template.getCpu());
             variables.put("memory", template.getMemory());
             variables.put("jenkinsInstance",
@@ -140,6 +141,10 @@ public final class AciService {
                 }
             }
         }
+    }
+
+    private static String mapIpType(boolean usePrivateIpAddress) {
+        return usePrivateIpAddress ? "Private" : "Public";
     }
 
     private static void addPortNode(JsonNode tmp, ObjectMapper mapper, String port) {
