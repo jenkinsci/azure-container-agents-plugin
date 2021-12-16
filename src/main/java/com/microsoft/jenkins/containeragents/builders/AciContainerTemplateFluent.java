@@ -27,7 +27,7 @@ public class AciContainerTemplateFluent<T extends AciContainerTemplateFluent<T>>
 
     private String rootFs;
 
-    private String ipType;
+    private boolean usePrivateIpAddress;
 
     private int timeout;
 
@@ -61,12 +61,12 @@ public class AciContainerTemplateFluent<T extends AciContainerTemplateFluent<T>>
         retentionStrategy = new ContainerOnceRetentionStrategy();
         cpu = "1";
         memory = "1.5";
-        ipType = "Public";
+        usePrivateIpAddress = false;
         launchMethodType = Constants.LAUNCH_METHOD_JNLP;
     }
 
-    public T withIpType(String ipType) {
-        this.ipType = ipType;
+    public T withUsePrivateIpAddress(boolean usePrivateIpAddress) {
+        this.usePrivateIpAddress = usePrivateIpAddress;
         return (T) this;
     }
 
@@ -210,9 +210,7 @@ public class AciContainerTemplateFluent<T extends AciContainerTemplateFluent<T>>
         return label;
     }
 
-    public String getIpType() {
-        return ipType;
-    }
+
 
     public String getImage() {
         return image;
@@ -272,5 +270,9 @@ public class AciContainerTemplateFluent<T extends AciContainerTemplateFluent<T>>
 
     public String getSshPort() {
         return sshPort;
+    }
+
+    public boolean isUsePrivateIpAddress() {
+        return usePrivateIpAddress;
     }
 }

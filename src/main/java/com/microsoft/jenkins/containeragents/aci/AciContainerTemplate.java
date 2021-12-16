@@ -52,7 +52,7 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
 
     private String rootFs;
 
-    private String ipType;
+    private boolean usePrivateIpAddress;
 
     private int timeout;
 
@@ -86,7 +86,7 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
                                 String image,
                                 String command,
                                 String rootFs,
-                                String ipType,
+                                boolean usePrivateIpAddress,
                                 List<AciPort> ports,
                                 List<DockerRegistryEndpoint> privateRegistryCredentials,
                                 List<PodEnvVar> envVars,
@@ -99,7 +99,7 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
         this.image = image;
         this.osType = osType;
         this.command = command;
-        this.ipType = ipType;
+        this.usePrivateIpAddress = usePrivateIpAddress;
         this.rootFs = rootFs;
         if (ports == null) {
             this.ports = new ArrayList<>();
@@ -168,10 +168,6 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
         return rootFs;
     }
 
-    public String getIpType() {
-        return ipType;
-    }
-
     public List<AciPort> getPorts() {
         return ports;
     }
@@ -231,6 +227,14 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
             this.sshCredentialsId = StringUtils.defaultString(launchMethodTypeContent.getSshCredentialsId());
             this.sshPort = StringUtils.defaultString(launchMethodTypeContent.getSshPort(), "22");
         }
+    }
+
+    public boolean isUsePrivateIpAddress() {
+        return usePrivateIpAddress;
+    }
+
+    public void setUsePrivateIpAddress(boolean usePrivateIpAddress) {
+        this.usePrivateIpAddress = usePrivateIpAddress;
     }
 
     @Extension
