@@ -86,7 +86,6 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
                                 String image,
                                 String command,
                                 String rootFs,
-                                boolean usePrivateIpAddress,
                                 List<AciPort> ports,
                                 List<DockerRegistryEndpoint> privateRegistryCredentials,
                                 List<PodEnvVar> envVars,
@@ -99,7 +98,6 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
         this.image = image;
         this.osType = osType;
         this.command = command;
-        this.usePrivateIpAddress = usePrivateIpAddress;
         this.rootFs = rootFs;
         if (ports == null) {
             this.ports = new ArrayList<>();
@@ -228,11 +226,11 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
             this.sshPort = StringUtils.defaultString(launchMethodTypeContent.getSshPort(), "22");
         }
     }
-
     public boolean isUsePrivateIpAddress() {
         return usePrivateIpAddress;
     }
 
+    @DataBoundSetter
     public void setUsePrivateIpAddress(boolean usePrivateIpAddress) {
         this.usePrivateIpAddress = usePrivateIpAddress;
     }

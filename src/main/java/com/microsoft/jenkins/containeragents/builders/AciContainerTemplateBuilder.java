@@ -83,7 +83,6 @@ public class AciContainerTemplateBuilder extends AciContainerTemplateFluent<AciC
                 fluent.getImage(),
                 fluent.getCommand(),
                 fluent.getRootFs(),
-                fluent.isUsePrivateIpAddress(),
                 fluent.getPorts(),
                 fluent.getPrivateRegistryCredentials(),
                 fluent.getEnvVars(),
@@ -94,6 +93,7 @@ public class AciContainerTemplateBuilder extends AciContainerTemplateFluent<AciC
         template.setLaunchMethodType(fluent.getLaunchMethodType());
         template.setLaunchMethodTypeContent(new LaunchMethodTypeContent(fluent.getSshCredentialsId(),
                 fluent.getSshPort()));
+        template.setUsePrivateIpAddress(fluent.isUsePrivateIpAddress());
         return template;
     }
 }
