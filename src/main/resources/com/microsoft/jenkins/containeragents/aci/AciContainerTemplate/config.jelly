@@ -49,8 +49,8 @@
                                     deleteCaption="${%Delete_Volume}"/>
     </f:entry>
 
-    <f:entry title="Use private IP Address" description="checked = yes, unchecked = no">
-        <f:checkbox name="privateIpAdress" field="usePrivateIpAddress" default="false" value="${privateIpAddress}"/>
+    <f:entry title="${%Use_Private_IP}" name= "usePrivateIpAddress" field="usePrivateIpAddress">
+        <f:checkbox />
     </f:entry>
 
     <!-- TODO this doesn't seem to be written correctly, when page is refreshed inbound agent is always displayed -->
