@@ -2,6 +2,7 @@ package com.microsoft.jenkins.containeragents.builders;
 
 import com.microsoft.jenkins.containeragents.PodEnvVar;
 import com.microsoft.jenkins.containeragents.aci.AciPort;
+import com.microsoft.jenkins.containeragents.aci.AciPrivateIpAddress;
 import com.microsoft.jenkins.containeragents.aci.volumes.AzureFileVolume;
 import com.microsoft.jenkins.containeragents.strategy.ContainerIdleRetentionStrategy;
 import com.microsoft.jenkins.containeragents.strategy.ContainerOnceRetentionStrategy;
@@ -27,7 +28,7 @@ public class AciContainerTemplateFluent<T extends AciContainerTemplateFluent<T>>
 
     private String rootFs;
 
-    private boolean usePrivateIpAddress;
+    private AciPrivateIpAddress privateIpAddress;
 
     private int timeout;
 
@@ -61,12 +62,11 @@ public class AciContainerTemplateFluent<T extends AciContainerTemplateFluent<T>>
         retentionStrategy = new ContainerOnceRetentionStrategy();
         cpu = "1";
         memory = "1.5";
-        usePrivateIpAddress = false;
         launchMethodType = Constants.LAUNCH_METHOD_JNLP;
     }
 
-    public T withUsePrivateIpAddress(boolean usePrivateIpAddress) {
-        this.usePrivateIpAddress = usePrivateIpAddress;
+    public T withPrivateIpAddress(AciPrivateIpAddress privateIpAddress) {
+        this.privateIpAddress = privateIpAddress;
         return (T) this;
     }
 
@@ -272,7 +272,7 @@ public class AciContainerTemplateFluent<T extends AciContainerTemplateFluent<T>>
         return sshPort;
     }
 
-    public boolean isUsePrivateIpAddress() {
-        return usePrivateIpAddress;
+    public AciPrivateIpAddress getPrivateIpAddress() {
+        return privateIpAddress;
     }
 }

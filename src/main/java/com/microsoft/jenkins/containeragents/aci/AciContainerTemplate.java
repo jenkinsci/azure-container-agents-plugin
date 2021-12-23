@@ -52,7 +52,7 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
 
     private String rootFs;
 
-    private boolean usePrivateIpAddress;
+    private AciPrivateIpAddress privateIpAddress;
 
     private int timeout;
 
@@ -226,13 +226,13 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
             this.sshPort = StringUtils.defaultString(launchMethodTypeContent.getSshPort(), "22");
         }
     }
-    public boolean isUsePrivateIpAddress() {
-        return usePrivateIpAddress;
+    public AciPrivateIpAddress getPrivateIpAddress() {
+        return privateIpAddress;
     }
 
     @DataBoundSetter
-    public void setUsePrivateIpAddress(boolean usePrivateIpAddress) {
-        this.usePrivateIpAddress = usePrivateIpAddress;
+    public void setPrivateIpAddress(AciPrivateIpAddress privateIpAddress) {
+        this.privateIpAddress = privateIpAddress;
     }
 
     @Extension
