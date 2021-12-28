@@ -39,16 +39,17 @@ public final class AciDeploymentTemplateBuilder {
 
     private static final String DEPLOY_TEMPLATE_FILENAME
             = "/com/microsoft/jenkins/containeragents/aci/deployTemplate.json";
-
+    private static final String NETWORK_PROFILE_SNIPPET_FILENAME
+            = "/com/microsoft/jenkins/containeragents/aci/networkProfileSnippet.json";
     private AciDeploymentTemplateBuilder() {
         //
     }
 
     @NotNull
     public static AciDeploymentTemplate buildDeploymentTemplate(AciCloud cloud, AciContainerTemplate template,
-                                                                           AciAgent agent) throws IOException {
-        AciDeploymentTemplate deploymentTemplate;
+                                                                AciAgent agent) throws IOException {
         try (InputStream stream = AciService.class.getResourceAsStream(DEPLOY_TEMPLATE_FILENAME)) {
+            AciPrivateIpAddress privateIpAddress = template.getPrivateIpAddress();
 
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode tmp = mapper.readTree(stream);
@@ -58,7 +59,11 @@ public final class AciDeploymentTemplateBuilder {
             variables.put("containerName", agent.getNodeName());
             variables.put("containerImage", template.getImage());
             variables.put("osType", template.getOsType());
-            variables.put("ipType", mapIpType(template.getPrivateIpAddress()));
+            variables.put("ipType", mapIpType(privateIpAddress));
+            if (privateIpAddress != null) {
+                variables.put("vnetName", privateIpAddress.getVnet());
+                variables.put("subnetName", privateIpAddress.getSubnet());
+            }
             variables.put("cpu", template.getCpu());
             variables.put("memory", template.getMemory());
             variables.put("jenkinsInstance",
@@ -92,9 +97,37 @@ public final class AciDeploymentTemplateBuilder {
                 addAzureFileVolumeNode(tmp, mapper, volume);
             }
 
-            deploymentTemplate = new AciDeploymentTemplate(tmp, parameters);
+            addNetworkProfile(tmp, mapper, privateIpAddress);
+
+            return new AciDeploymentTemplate(tmp, parameters);
         }
-        return deploymentTemplate;
+    }
+
+    private static void addNetworkProfile(JsonNode tmp, ObjectMapper mapper, AciPrivateIpAddress privateIpAddress)
+            throws IOException {
+        if (privateIpAddress == null) {
+            return;
+        }
+
+        ObjectNode networkProfileNode = mapper.createObjectNode();
+        networkProfileNode.put("id",
+                "[resourceId('Microsoft.Network/networkProfiles', variables('containerName'))]");
+
+
+        ArrayNode resourcesArray = (ArrayNode) tmp.get("resources");
+
+        ObjectNode containerGroupItem = (ObjectNode) resourcesArray.get(0);
+        ObjectNode propertiesNode = (ObjectNode) containerGroupItem.get("properties");
+        propertiesNode.set("networkProfile", networkProfileNode);
+        ArrayNode dependencyArrayNode = mapper.createArrayNode();
+        dependencyArrayNode.add("[resourceId('Microsoft.Network/networkProfiles', variables('containerName'))]");
+        containerGroupItem.set("dependsOn", dependencyArrayNode);
+
+        try (InputStream networkProfileSnippetStream =
+                     AciService.class.getResourceAsStream(NETWORK_PROFILE_SNIPPET_FILENAME)) {
+            JsonNode networkProfileItem = mapper.readTree(networkProfileSnippetStream);
+            resourcesArray.add(networkProfileItem);
+        }
     }
 
     private static String mapIpType(AciPrivateIpAddress privateIpAddress) {
