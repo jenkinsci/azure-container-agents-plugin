@@ -49,7 +49,6 @@ public final class AciDeploymentTemplateBuilder {
     public static AciDeploymentTemplate buildDeploymentTemplate(AciCloud cloud, AciContainerTemplate template,
                                                                 AciAgent agent) throws IOException {
         try (InputStream stream = AciService.class.getResourceAsStream(DEPLOY_TEMPLATE_FILENAME)) {
-            AciPrivateIpAddress privateIpAddress = template.getPrivateIpAddress();
 
             final ObjectMapper mapper = new ObjectMapper();
             final JsonNode tmp = mapper.readTree(stream);
@@ -59,6 +58,7 @@ public final class AciDeploymentTemplateBuilder {
             variables.put("containerName", agent.getNodeName());
             variables.put("containerImage", template.getImage());
             variables.put("osType", template.getOsType());
+            AciPrivateIpAddress privateIpAddress = template.getPrivateIpAddress();
             variables.put("ipType", mapIpType(privateIpAddress));
             if (privateIpAddress != null) {
                 variables.put("vnetName", privateIpAddress.getVnet());
@@ -73,10 +73,9 @@ public final class AciDeploymentTemplateBuilder {
             addCommandNode(tmp, template.getCommand(), agent);
 
             for (AciPort port : template.getPorts()) {
-                if (StringUtils.isBlank(port.getPort())) {
-                    continue;
+                if (StringUtils.isNotBlank(port.getPort())) {
+                    addPortNode(tmp, mapper, port.getPort());
                 }
-                addPortNode(tmp, mapper, port.getPort());
             }
             if (template.getLaunchMethodType().equals(Constants.LAUNCH_METHOD_SSH)) {
                 addPortNode(tmp, mapper, String.valueOf(template.getSshPort()));
@@ -89,12 +88,11 @@ public final class AciDeploymentTemplateBuilder {
             }
 
             for (AzureFileVolume volume : template.getVolumes()) {
-                if (StringUtils.isBlank(volume.getMountPath())
-                        || StringUtils.isBlank(volume.getShareName())
-                        || StringUtils.isBlank(volume.getCredentialsId())) {
-                    continue;
+                if (StringUtils.isNotBlank(volume.getMountPath())
+                        && StringUtils.isNotBlank(volume.getShareName())
+                        && StringUtils.isNotBlank(volume.getCredentialsId())) {
+                    addAzureFileVolumeNode(tmp, mapper, volume);
                 }
-                addAzureFileVolumeNode(tmp, mapper, volume);
             }
 
             addNetworkProfile(tmp, mapper, privateIpAddress);
