@@ -1,5 +1,6 @@
 package com.microsoft.jenkins.containeragents.aci;
 
+import com.azure.core.management.exception.ManagementException;
 import com.azure.resourcemanager.AzureResourceManager;
 import com.azure.resourcemanager.containerinstance.models.ContainerGroup;
 import com.azure.resourcemanager.resources.models.Deployment;
@@ -18,6 +19,10 @@ import java.util.logging.Logger;
 public final class AciService {
     private static final Logger LOGGER = Logger.getLogger(AciService.class.getName());
 
+    private AciService() {
+        //
+    }
+
     public static void createDeployment(final AciCloud cloud,
                                         final AciContainerTemplate template,
                                         final AciAgent agent,
@@ -31,49 +36,49 @@ public final class AciService {
         deploymentRegistrar.registerDeployment(cloud.getName(), cloud.getResourceGroup(), deployName);
 
         final AzureResourceManager azureClient = cloud.getAzureClient();
-            azureClient.deployments()
-                    .define(deployName)
-                    .withExistingResourceGroup(cloud.getResourceGroup())
-                    .withTemplate(deploymentTemplate.deploymentTemplateAsString())
-                    .withParameters(deploymentTemplate.templateParameterAsString())
-                    .withMode(DeploymentMode.INCREMENTAL)
-                    .beginCreate();
+        azureClient.deployments()
+                .define(deployName)
+                .withExistingResourceGroup(cloud.getResourceGroup())
+                .withTemplate(deploymentTemplate.deploymentTemplateAsString())
+                .withParameters(deploymentTemplate.templateParameterAsString())
+                .withMode(DeploymentMode.INCREMENTAL)
+                .beginCreate();
 
-            //register deployName
-            agent.setDeployName(deployName);
+        //register deployName
+        agent.setDeployName(deployName);
 
-            //Wait deployment to success
+        //Wait deployment to success
 
-            final int retryInterval = 10 * 1000;
+        final int retryInterval = 10 * 1000;
 
-            LOGGER.log(Level.INFO, "Waiting for deployment {0}", deployName);
-            while (true) {
-                if (AzureContainerUtils.isTimeout(template.getTimeout(), stopWatch.getTime())) {
-                    throw new TimeoutException("Deployment timeout");
-                }
-                Deployment deployment
-                        = azureClient.deployments().getByResourceGroup(cloud.getResourceGroup(), deployName);
-
-                if (deployment.provisioningState().equalsIgnoreCase("succeeded")) {
-                    LOGGER.log(Level.INFO, "Deployment {0} succeed", deployName);
-                    break;
-                } else if (deployment.provisioningState().equalsIgnoreCase("Failed")) {
-                    throw new Exception(String.format("Deployment %s status: Failed", deployName));
-                } else {
-                    // If half of time passed, we need to inspect what happened from logs
-                    if (AzureContainerUtils.isHalfTimePassed(template.getTimeout(), stopWatch.getTime())) {
-                        ContainerGroup containerGroup
-                                = azureClient.containerGroups()
-                                .getByResourceGroup(cloud.getResourceGroup(), agent.getNodeName());
-                        if (containerGroup != null) {
-                            LOGGER.log(Level.INFO, "Logs from container {0}: {1}",
-                                    new Object[]{agent.getNodeName(),
-                                            containerGroup.getLogContent(agent.getNodeName())});
-                        }
-                    }
-                    Thread.sleep(retryInterval);
-                }
+        LOGGER.log(Level.INFO, "Waiting for deployment {0}", deployName);
+        while (true) {
+            if (AzureContainerUtils.isTimeout(template.getTimeout(), stopWatch.getTime())) {
+                throw new TimeoutException("Deployment timeout");
             }
+            Deployment deployment
+                    = azureClient.deployments().getByResourceGroup(cloud.getResourceGroup(), deployName);
+
+            if (deployment.provisioningState().equalsIgnoreCase("succeeded")) {
+                LOGGER.log(Level.INFO, "Deployment {0} succeed", deployName);
+                break;
+            } else if (deployment.provisioningState().equalsIgnoreCase("Failed")) {
+                throw new Exception(String.format("Deployment %s status: Failed", deployName));
+            } else {
+                // If half of time passed, we need to inspect what happened from logs
+                if (AzureContainerUtils.isHalfTimePassed(template.getTimeout(), stopWatch.getTime())) {
+                    ContainerGroup containerGroup
+                            = azureClient.containerGroups()
+                            .getByResourceGroup(cloud.getResourceGroup(), agent.getNodeName());
+                    if (containerGroup != null) {
+                        LOGGER.log(Level.INFO, "Logs from container {0}: {1}",
+                                new Object[]{agent.getNodeName(),
+                                        containerGroup.getLogContent(agent.getNodeName())});
+                    }
+                }
+                Thread.sleep(retryInterval);
+            }
+        }
     }
 
     private static String getDeploymentName(AciContainerTemplate template) {
@@ -120,8 +125,36 @@ public final class AciService {
         }
     }
 
-    private AciService() {
-        //
+    public static void deleteNetworkprofile(String credentialsId,
+                                            String resourceGroup,
+                                            String networkProfileName) {
+        AzureResourceManager azureClient;
+
+        try {
+            azureClient = AzureContainerUtils.getAzureClient(credentialsId);
+                boolean retryDeleting;
+                do {
+                    try {
+                        azureClient.networkProfiles().deleteByResourceGroup(resourceGroup, networkProfileName);
+                        retryDeleting = false;
+                    } catch (ManagementException e) {
+                        if (e.getValue().getCode().equals("NetworkProfileAlreadyInUseWithContainerNics")) {
+                            LOGGER.log(Level.WARNING, "ACI Network Profile {0} is already in use. Waiting for retry",
+                                    networkProfileName);
+                            final int retryInterval = 10 * 1000;
+                            Thread.sleep(retryInterval);
+                            retryDeleting = true;
+                        } else {
+                            throw e;
+                        }
+                    }
+                }
+                while (retryDeleting);
+                LOGGER.log(Level.INFO, "Delete ACI Network Profile: {0} successfully", networkProfileName);
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, String.format("Delete ACI Network Profile: %s failed or it does not exist",
+                    networkProfileName), e);
+        }
     }
 
 }
