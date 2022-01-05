@@ -67,6 +67,11 @@
             <artifactId>cloud-stats</artifactId>
             <version>0.26</version>
         </dependency>
+        <dependency>
+            <groupId>io.jenkins.plugins</groupId>
+            <artifactId>plugin-util-api</artifactId>
+            <version>2.5.0</version>
+        </dependency>
         <!-- jenkins plugins -->
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -100,7 +105,7 @@
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>jackson2-api</artifactId>
         </dependency>
-        
+
         <!-- Jenkins modules (scope should be provided -->
         <dependency>
             <groupId>org.jenkins-ci.modules</groupId>
@@ -112,12 +117,6 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-inline</artifactId>
-            <version>3.8.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

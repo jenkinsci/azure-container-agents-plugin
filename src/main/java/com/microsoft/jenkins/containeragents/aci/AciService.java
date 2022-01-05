@@ -29,7 +29,7 @@ public final class AciService {
                                         final StopWatch stopWatch) throws Exception {
         String deployName = getDeploymentName(template);
         AciDeploymentTemplate deploymentTemplate =
-                AciDeploymentTemplateBuilder.buildDeploymentTemplate(cloud, template, agent);
+                new AciDeploymentTemplateBuilder().buildDeploymentTemplate(cloud, template, agent);
 
         // register the deployment for cleanup
         AciCleanTask.DeploymentRegistrar deploymentRegistrar = AciCleanTask.DeploymentRegistrar.getInstance();

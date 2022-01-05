@@ -18,10 +18,11 @@ import com.microsoft.jenkins.containeragents.aci.volumes.AzureFileVolume;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
 import com.microsoft.jenkins.containeragents.util.Constants;
 import com.microsoft.jenkins.containeragents.util.DockerRegistryUtils;
+import com.microsoft.jenkins.containeragents.util.CustomJenkinsFacade;
 import hudson.EnvVars;
 import hudson.security.ACL;
 import hudson.slaves.SlaveComputer;
-import jenkins.model.Jenkins;
+import io.jenkins.plugins.util.JenkinsFacade;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.main.modules.instance_identity.InstanceIdentity;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
@@ -41,12 +42,23 @@ public final class AciDeploymentTemplateBuilder {
             = "/com/microsoft/jenkins/containeragents/aci/deployTemplate.json";
     private static final String NETWORK_PROFILE_SNIPPET_FILENAME
             = "/com/microsoft/jenkins/containeragents/aci/networkProfileSnippet.json";
-    private AciDeploymentTemplateBuilder() {
-        //
+
+    private final JenkinsFacade jenkins;
+    private final CustomJenkinsFacade jenkinsHelper;
+
+    public AciDeploymentTemplateBuilder() {
+        this(new JenkinsFacade(), new CustomJenkinsFacade());
     }
 
+    AciDeploymentTemplateBuilder(JenkinsFacade jenkins, CustomJenkinsFacade jenkinsHelper) {
+        this.jenkins = jenkins;
+        this.jenkinsHelper = jenkinsHelper;
+    }
+
+
+
     @NotNull
-    public static AciDeploymentTemplate buildDeploymentTemplate(AciCloud cloud, AciContainerTemplate template,
+    public AciDeploymentTemplate buildDeploymentTemplate(AciCloud cloud, AciContainerTemplate template,
                                                                 AciAgent agent) throws IOException {
         try (InputStream stream = AciService.class.getResourceAsStream(DEPLOY_TEMPLATE_FILENAME)) {
 
@@ -67,7 +79,7 @@ public final class AciDeploymentTemplateBuilder {
             variables.put("cpu", template.getCpu());
             variables.put("memory", template.getMemory());
             variables.put("jenkinsInstance",
-                    Jenkins.get().getLegacyInstanceId());
+                   jenkinsHelper.getInstanceId());
 
             addLogAnalytics(tmp, parameters, mapper, cloud);
             addCommandNode(tmp, template.getCommand(), agent);
@@ -101,7 +113,7 @@ public final class AciDeploymentTemplateBuilder {
         }
     }
 
-    private static void addNetworkProfile(JsonNode tmp, ObjectMapper mapper, AciPrivateIpAddress privateIpAddress)
+    private void addNetworkProfile(JsonNode tmp, ObjectMapper mapper, AciPrivateIpAddress privateIpAddress)
             throws IOException {
         if (privateIpAddress == null) {
             return;
@@ -128,11 +140,11 @@ public final class AciDeploymentTemplateBuilder {
         }
     }
 
-    private static String mapIpType(AciPrivateIpAddress privateIpAddress) {
+    private String mapIpType(AciPrivateIpAddress privateIpAddress) {
         return privateIpAddress != null ? "Private" : "Public";
     }
 
-    private static void addPortNode(JsonNode tmp, ObjectMapper mapper, String port) {
+    private void addPortNode(JsonNode tmp, ObjectMapper mapper, String port) {
         JsonNode propertiesNode = tmp.get("resources").get(0).get("properties");
         ArrayNode containerPortsNodes = (ArrayNode) propertiesNode.get("containers")
                 .get(0).get("properties").get("ports");
@@ -148,7 +160,7 @@ public final class AciDeploymentTemplateBuilder {
         ipPortsNodes.add(newIpPortNode);
     }
 
-    private static void addCommandNode(JsonNode tmp, String[] commands) {
+    private void addCommandNode(JsonNode tmp, String[] commands) {
         ArrayNode commandNode = (ArrayNode) tmp.get("resources").get(0)
                 .get("properties").get("containers").get(0)
                 .get("properties").get("command");
@@ -158,7 +170,7 @@ public final class AciDeploymentTemplateBuilder {
         }
     }
 
-    private static void addCommandNode(JsonNode tmp, String command, AciAgent agent) {
+    private void addCommandNode(JsonNode tmp, String command, AciAgent agent) {
         if (StringUtils.isBlank(command)) {
             return;
         }
@@ -166,7 +178,7 @@ public final class AciDeploymentTemplateBuilder {
         addCommandNode(tmp, StringUtils.split(replaceCommand, ' '));
     }
 
-    private static void addLogAnalytics(JsonNode tmp, ObjectNode parameters,
+    private void addLogAnalytics(JsonNode tmp, ObjectNode parameters,
                                         ObjectMapper mapper, AciCloud aciCloud) {
 
         if (StringUtils.isBlank(aciCloud.getLogAnalyticsCredentialsId())) {
@@ -176,7 +188,7 @@ public final class AciDeploymentTemplateBuilder {
         StandardUsernamePasswordCredentials credentials = CredentialsMatchers.firstOrNull(
                 CredentialsProvider.lookupCredentials(
                         StandardUsernamePasswordCredentials.class,
-                        Jenkins.get(),
+                        jenkinsHelper.getJenkins(),
                         ACL.SYSTEM,
                         Collections.emptyList()),
                 CredentialsMatchers.withId(aciCloud.getLogAnalyticsCredentialsId()));
@@ -197,21 +209,21 @@ public final class AciDeploymentTemplateBuilder {
                 .set("diagnostics", diagnosticsNode);
     }
 
-    private static void putParameter(ObjectNode template, String name, String value, ObjectMapper mapper) {
+    private void putParameter(ObjectNode template, String name, String value, ObjectMapper mapper) {
         ObjectNode objectNode = mapper.createObjectNode();
         objectNode.put("value", value);
 
         template.set(name, objectNode);
     }
 
-    private static void defineParameter(JsonNode template, String name, String value, ObjectMapper mapper) {
+    private void defineParameter(JsonNode template, String name, String value, ObjectMapper mapper) {
         ObjectNode objectNode = mapper.createObjectNode();
         objectNode.put("type", value);
 
         ((ObjectNode) template.get("parameters")).set(name, objectNode);
     }
 
-    private static void addImageRegistryCredentialNode(JsonNode tmp,
+    private void addImageRegistryCredentialNode(JsonNode tmp,
                                                        ObjectMapper mapper,
                                                        DockerRegistryEndpoint endpoint) {
         if (StringUtils.isBlank(endpoint.getCredentialsId())) {
@@ -220,7 +232,7 @@ public final class AciDeploymentTemplateBuilder {
         StandardUsernamePasswordCredentials credentials = CredentialsMatchers.firstOrNull(
                 CredentialsProvider.lookupCredentials(
                         StandardUsernamePasswordCredentials.class,
-                        Jenkins.get(),
+                        jenkinsHelper.getJenkins(),
                         ACL.SYSTEM,
                         Collections.emptyList()),
                 CredentialsMatchers.withId(endpoint.getCredentialsId()));
@@ -239,7 +251,7 @@ public final class AciDeploymentTemplateBuilder {
         credentialNode.add(newCredentialNode);
     }
 
-    private static void addEnvNode(JsonNode tmp, ObjectMapper mapper, List<PodEnvVar> envVars) {
+    private void addEnvNode(JsonNode tmp, ObjectMapper mapper, List<PodEnvVar> envVars) {
         ArrayNode envVarNode = (ArrayNode) tmp.get("resources").get(0)
                 .get("properties").get("containers").get(0).get("properties").get("environmentVariables");
 
@@ -254,7 +266,7 @@ public final class AciDeploymentTemplateBuilder {
         }
     }
 
-    private static void addAzureFileVolumeNode(JsonNode tmp, ObjectMapper mapper, AzureFileVolume volume) {
+    private void addAzureFileVolumeNode(JsonNode tmp, ObjectMapper mapper, AzureFileVolume volume) {
         ArrayNode volumeMountsNode = (ArrayNode) tmp.get("resources").get(0)
                 .get("properties").get("containers").get(0).get("properties").get("volumeMounts");
         ArrayNode volumesNode = (ArrayNode) tmp.get("resources").get(0).get("properties").get("volumes");
@@ -278,8 +290,8 @@ public final class AciDeploymentTemplateBuilder {
         volumesNode.add(newVolumesNode);
     }
 
-    private static String commandReplace(String command, AciAgent agent) {
-        String serverUrl = Jenkins.get().getRootUrl();
+    private String commandReplace(String command, AciAgent agent) {
+        String serverUrl = jenkins.getAbsoluteUrl();
         String nodeName = agent.getNodeName();
 
         SlaveComputer computer = agent.getComputer();
@@ -294,7 +306,7 @@ public final class AciDeploymentTemplateBuilder {
         return arguments.expand(command);
     }
 
-    private static Map<String, String> buildCommand(String command, String serverUrl, String nodeName, String secret) {
+    private Map<String, String> buildCommand(String command, String serverUrl, String nodeName, String secret) {
         Map<String, String> arguments = new HashMap<>();
 
         if (command.contains("${rootUrl}")) {

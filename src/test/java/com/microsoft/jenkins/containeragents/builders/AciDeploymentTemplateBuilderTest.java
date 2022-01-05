@@ -5,16 +5,13 @@ import com.microsoft.jenkins.containeragents.aci.AciAgent;
 import com.microsoft.jenkins.containeragents.aci.AciCloud;
 import com.microsoft.jenkins.containeragents.aci.AciContainerTemplate;
 import com.microsoft.jenkins.containeragents.aci.AciPrivateIpAddress;
-import hudson.model.Descriptor;
+import com.microsoft.jenkins.containeragents.util.CustomJenkinsFacade;
 import hudson.slaves.RetentionStrategy;
 import hudson.slaves.SlaveComputer;
+import io.jenkins.plugins.util.JenkinsFacade;
 import jenkins.model.Jenkins;
 import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 
 import java.io.IOException;
 
@@ -27,22 +24,19 @@ import static org.mockito.Mockito.when;
 
 public class AciDeploymentTemplateBuilderTest {
 
-    static Jenkins jenkinsMock = mock(Jenkins.class);
-
     AciAgent agentMock = mock(AciAgent.class);
-
-
-    @BeforeClass
-    public static void setupClass(){
-        MockedStatic<Jenkins> staticMock = Mockito.mockStatic(Jenkins.class);
-        staticMock.when(() -> Jenkins.get()).thenReturn(jenkinsMock);
-        when(jenkinsMock.getLegacyInstanceId()).thenReturn("instanceId");
-    }
+    AciDeploymentTemplateBuilder builderUnderTest;
 
     @Before
     public void setup(){
         SlaveComputer slaveMock = mock(SlaveComputer.class);
         when(agentMock.getComputer()).thenReturn(slaveMock);
+
+        CustomJenkinsFacade customJenkinsFacadeMock = mock(CustomJenkinsFacade.class);
+        when(customJenkinsFacadeMock.getInstanceId()).thenReturn("instanceId");
+        when(customJenkinsFacadeMock.getJenkins()).thenReturn(mock(Jenkins.class));
+
+        builderUnderTest = new AciDeploymentTemplateBuilder(mock(JenkinsFacade.class), customJenkinsFacadeMock);
     }
 
     @Test
@@ -52,7 +46,7 @@ public class AciDeploymentTemplateBuilderTest {
         AciContainerTemplate template = new AciContainerTemplate("containerName", "label", 100, "linux", "helloworld", "command", "rootFs", emptyList(), emptyList(), emptyList(), emptyList(), new RetentionStrategy.Always(), "cpu", "memory" );
         template.setPrivateIpAddress(new AciPrivateIpAddress("vnet", "subnet"));
 
-        AciDeploymentTemplateBuilder.AciDeploymentTemplate aciDeploymentTemplate = AciDeploymentTemplateBuilder.buildDeploymentTemplate(cloud, template, agentMock);
+        AciDeploymentTemplateBuilder.AciDeploymentTemplate aciDeploymentTemplate = builderUnderTest.buildDeploymentTemplate(cloud, template, agentMock);
 
         assertThat(aciDeploymentTemplate.deploymentTemplateAsString(), containsString("\"vnetName\":\"vnet\","));
         assertThat(aciDeploymentTemplate.deploymentTemplateAsString(), containsString("\"subnetName\":\"subnet\""));
@@ -65,7 +59,7 @@ public class AciDeploymentTemplateBuilderTest {
 
         AciContainerTemplate template = new AciContainerTemplate("containerName", "label", 100, "linux", "helloworld", "command", "rootFs", emptyList(), emptyList(), emptyList(), emptyList(), new RetentionStrategy.Always(), "cpu", "memory" );
 
-        AciDeploymentTemplateBuilder.AciDeploymentTemplate aciDeploymentTemplate = AciDeploymentTemplateBuilder.buildDeploymentTemplate(cloud, template, agentMock);
+        AciDeploymentTemplateBuilder.AciDeploymentTemplate aciDeploymentTemplate = builderUnderTest.buildDeploymentTemplate(cloud, template, agentMock);
 
         assertThat(aciDeploymentTemplate.deploymentTemplateAsString(), not(containsString("\"vnetName\": \"vnet\",")));
         assertThat(aciDeploymentTemplate.deploymentTemplateAsString(), not(containsString("\"subnetName\": \"subnet\"")));
