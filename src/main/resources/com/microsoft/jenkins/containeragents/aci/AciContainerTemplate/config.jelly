@@ -49,14 +49,7 @@
                                     deleteCaption="${%Delete_Volume}"/>
     </f:entry>
 
-    <f:optionalBlock name="privateIpAddress" title="${%Use_Private_IP}" field="privateIpAddress" checked="${!empty instance.privateIpAddress}">
-            <f:entry title="Name of the VNET" >
-                <f:textbox field="vnet" value="${instance.privateIpAddress.vnet}"/>
-            </f:entry>
-            <f:entry title="Name of the subnet" >
-                <f:textbox field="subnet" value="${instance.privateIpAddress.subnet}" />
-            </f:entry>
-    </f:optionalBlock>
+    <f:optionalProperty field="privateIpAddress" title="${%Use_Private_IP_Address}" />
 
     <!-- TODO this doesn't seem to be written correctly, when page is refreshed inbound agent is always displayed -->
     <f:dropdownList title="${%Launch_Method}" name="launchMethodTypeContent">

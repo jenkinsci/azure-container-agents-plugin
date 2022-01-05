@@ -5,12 +5,7 @@ import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import org.kohsuke.stapler.DataBoundConstructor;
 
-import java.io.Serializable;
-
-public class AciPrivateIpAddress extends AbstractDescribableImpl<AciPrivateIpAddress> implements Serializable {
-
-    private static final long serialVersionUID = -2085331194292057035L;
-
+public class AciPrivateIpAddress extends AbstractDescribableImpl<AciPrivateIpAddress>  {
     private String vnet;
 
     private String subnet;
