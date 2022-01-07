@@ -18,7 +18,7 @@ import com.microsoft.jenkins.containeragents.aci.volumes.AzureFileVolume;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
 import com.microsoft.jenkins.containeragents.util.Constants;
 import com.microsoft.jenkins.containeragents.util.DockerRegistryUtils;
-import com.microsoft.jenkins.containeragents.util.InstanceIdentityFacade;
+import com.microsoft.jenkins.containeragents.util.CustomJenkinsFacade;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.model.ItemGroup;
@@ -45,15 +45,15 @@ public final class AciDeploymentTemplateBuilder {
             = "/com/microsoft/jenkins/containeragents/aci/networkProfileSnippet.json";
 
     private final JenkinsFacade jenkins;
-    private final InstanceIdentityFacade instanceIdentityFacade;
+    private final CustomJenkinsFacade customJenkinsFacade;
 
     public AciDeploymentTemplateBuilder() {
-        this(new JenkinsFacade(), new InstanceIdentityFacade());
+        this(new JenkinsFacade(), new CustomJenkinsFacade());
     }
 
-    AciDeploymentTemplateBuilder(JenkinsFacade jenkins, InstanceIdentityFacade instanceIdentityFacade) {
+    AciDeploymentTemplateBuilder(JenkinsFacade jenkins, CustomJenkinsFacade customJenkinsFacade) {
         this.jenkins = jenkins;
-        this.instanceIdentityFacade = instanceIdentityFacade;
+        this.customJenkinsFacade = customJenkinsFacade;
     }
 
     @NonNull
@@ -78,7 +78,7 @@ public final class AciDeploymentTemplateBuilder {
             variables.put("cpu", template.getCpu());
             variables.put("memory", template.getMemory());
             variables.put("jenkinsInstance",
-                   instanceIdentityFacade.getInstanceId());
+                   customJenkinsFacade.getLegacyInstanceId());
 
             addLogAnalytics(tmp, parameters, mapper, cloud);
             addCommandNode(tmp, template.getCommand(), agent);
