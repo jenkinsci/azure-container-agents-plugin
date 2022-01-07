@@ -294,10 +294,15 @@ public class AciCleanTask extends AsyncPeriodicWork {
                     && resource.tags().get("JenkinsInstance")
                     .equalsIgnoreCase(Jenkins.get().getLegacyInstanceId())) {
                 if (!validContainerSet.contains(resource.name())) {
-                    AciCloud.getThreadPool().submit(() -> AciService.deleteAciContainerGroup(credentialsId,
-                            resourceGroup,
-                            resource.name(),
-                            null));
+                    AciCloud.getThreadPool().submit(() -> {
+                        AciService.deleteAciContainerGroup(credentialsId,
+                                resourceGroup,
+                                resource.name(),
+                                null);
+                        AciService.deleteNetworkProfile(credentialsId,
+                                resourceGroup,
+                                resource.name());
+                    });
                 }
             }
         }

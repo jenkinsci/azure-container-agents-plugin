@@ -49,6 +49,8 @@
                                     deleteCaption="${%Delete_Volume}"/>
     </f:entry>
 
+    <f:optionalProperty field="privateIpAddress" title="${%Use_Private_IP_Address}" />
+
     <!-- TODO this doesn't seem to be written correctly, when page is refreshed inbound agent is always displayed -->
     <f:dropdownList title="${%Launch_Method}" name="launchMethodTypeContent">
         <f:dropdownListBlock title="${%Inbound agent}" value="jnlp" selected="${instance == null || instance.isJnlp()}"/>

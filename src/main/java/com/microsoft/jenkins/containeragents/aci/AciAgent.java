@@ -95,10 +95,15 @@ public class AciAgent extends AbstractCloudSlave implements ISSHLaunchable, Trac
             return;
         }
 
-        Computer.threadPoolForRemoting.execute(() -> AciService.deleteAciContainerGroup(credentialsId,
-                resourceGroup,
-                AciAgent.this.getNodeName(),
-                deployName));
+        Computer.threadPoolForRemoting.execute(() -> {
+            AciService.deleteAciContainerGroup(credentialsId,
+                    resourceGroup,
+                    AciAgent.this.getNodeName(),
+                    deployName);
+            AciService.deleteNetworkProfile(credentialsId,
+                    resourceGroup,
+                    AciAgent.this.getNodeName());
+        });
     }
 
     static String generateAgentName(AciContainerTemplate template) {

@@ -2,6 +2,7 @@ package com.microsoft.jenkins.containeragents.builders;
 
 import com.microsoft.jenkins.containeragents.PodEnvVar;
 import com.microsoft.jenkins.containeragents.aci.AciPort;
+import com.microsoft.jenkins.containeragents.aci.AciPrivateIpAddress;
 import com.microsoft.jenkins.containeragents.aci.volumes.AzureFileVolume;
 import com.microsoft.jenkins.containeragents.strategy.ContainerIdleRetentionStrategy;
 import com.microsoft.jenkins.containeragents.strategy.ContainerOnceRetentionStrategy;
@@ -26,6 +27,8 @@ public class AciContainerTemplateFluent<T extends AciContainerTemplateFluent<T>>
     private String command;
 
     private String rootFs;
+
+    private AciPrivateIpAddress privateIpAddress;
 
     private int timeout;
 
@@ -60,6 +63,11 @@ public class AciContainerTemplateFluent<T extends AciContainerTemplateFluent<T>>
         cpu = "1";
         memory = "1.5";
         launchMethodType = Constants.LAUNCH_METHOD_JNLP;
+    }
+
+    public T withPrivateIpAddress(AciPrivateIpAddress privateIpAddress) {
+        this.privateIpAddress = privateIpAddress;
+        return (T) this;
     }
 
     public T withName(String name) {
@@ -202,6 +210,8 @@ public class AciContainerTemplateFluent<T extends AciContainerTemplateFluent<T>>
         return label;
     }
 
+
+
     public String getImage() {
         return image;
     }
@@ -260,5 +270,9 @@ public class AciContainerTemplateFluent<T extends AciContainerTemplateFluent<T>>
 
     public String getSshPort() {
         return sshPort;
+    }
+
+    public AciPrivateIpAddress getPrivateIpAddress() {
+        return privateIpAddress;
     }
 }

@@ -1,0 +1,24 @@
+{ "type": "Microsoft.Network/networkProfiles",
+  "apiVersion": "2020-11-01",
+  "name": "[variables('containerName')]",
+  "location": "[resourceGroup().location]",
+  "properties": {
+    "containerNetworkInterfaceConfigurations": [
+      {
+        "name": "[variables('containerName')]",
+        "properties": {
+          "ipConfigurations": [
+            {
+              "name": "[variables('containerName')]",
+              "properties": {
+                "subnet": {
+                  "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'), variables('subnetName'))]"
+                }
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

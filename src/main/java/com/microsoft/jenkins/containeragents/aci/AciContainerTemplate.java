@@ -52,6 +52,8 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
 
     private String rootFs;
 
+    private AciPrivateIpAddress privateIpAddress;
+
     private int timeout;
 
     private List<AciPort> ports;
@@ -223,6 +225,14 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
             this.sshCredentialsId = StringUtils.defaultString(launchMethodTypeContent.getSshCredentialsId());
             this.sshPort = StringUtils.defaultString(launchMethodTypeContent.getSshPort(), "22");
         }
+    }
+    public AciPrivateIpAddress getPrivateIpAddress() {
+        return privateIpAddress;
+    }
+
+    @DataBoundSetter
+    public void setPrivateIpAddress(AciPrivateIpAddress privateIpAddress) {
+        this.privateIpAddress = privateIpAddress;
     }
 
     @Extension
