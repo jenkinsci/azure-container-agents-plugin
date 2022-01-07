@@ -18,9 +18,10 @@ import com.microsoft.jenkins.containeragents.aci.volumes.AzureFileVolume;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
 import com.microsoft.jenkins.containeragents.util.Constants;
 import com.microsoft.jenkins.containeragents.util.DockerRegistryUtils;
-import com.microsoft.jenkins.containeragents.util.CustomJenkinsFacade;
+import com.microsoft.jenkins.containeragents.util.InstanceIdentityFacade;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
+import hudson.model.ItemGroup;
 import hudson.security.ACL;
 import hudson.slaves.SlaveComputer;
 import io.jenkins.plugins.util.JenkinsFacade;
@@ -44,15 +45,15 @@ public final class AciDeploymentTemplateBuilder {
             = "/com/microsoft/jenkins/containeragents/aci/networkProfileSnippet.json";
 
     private final JenkinsFacade jenkins;
-    private final CustomJenkinsFacade jenkinsHelper;
+    private final InstanceIdentityFacade instanceIdentityFacade;
 
     public AciDeploymentTemplateBuilder() {
-        this(new JenkinsFacade(), new CustomJenkinsFacade());
+        this(new JenkinsFacade(), new InstanceIdentityFacade());
     }
 
-    AciDeploymentTemplateBuilder(JenkinsFacade jenkins, CustomJenkinsFacade jenkinsHelper) {
+    AciDeploymentTemplateBuilder(JenkinsFacade jenkins, InstanceIdentityFacade instanceIdentityFacade) {
         this.jenkins = jenkins;
-        this.jenkinsHelper = jenkinsHelper;
+        this.instanceIdentityFacade = instanceIdentityFacade;
     }
 
     @NonNull
@@ -77,7 +78,7 @@ public final class AciDeploymentTemplateBuilder {
             variables.put("cpu", template.getCpu());
             variables.put("memory", template.getMemory());
             variables.put("jenkinsInstance",
-                   jenkinsHelper.getInstanceId());
+                   instanceIdentityFacade.getInstanceId());
 
             addLogAnalytics(tmp, parameters, mapper, cloud);
             addCommandNode(tmp, template.getCommand(), agent);
@@ -186,7 +187,7 @@ public final class AciDeploymentTemplateBuilder {
         StandardUsernamePasswordCredentials credentials = CredentialsMatchers.firstOrNull(
                 CredentialsProvider.lookupCredentials(
                         StandardUsernamePasswordCredentials.class,
-                        jenkinsHelper.getJenkins(),
+                        (ItemGroup) null,
                         ACL.SYSTEM,
                         Collections.emptyList()),
                 CredentialsMatchers.withId(aciCloud.getLogAnalyticsCredentialsId()));
@@ -230,7 +231,7 @@ public final class AciDeploymentTemplateBuilder {
         StandardUsernamePasswordCredentials credentials = CredentialsMatchers.firstOrNull(
                 CredentialsProvider.lookupCredentials(
                         StandardUsernamePasswordCredentials.class,
-                        jenkinsHelper.getJenkins(),
+                        (ItemGroup) null,
                         ACL.SYSTEM,
                         Collections.emptyList()),
                 CredentialsMatchers.withId(endpoint.getCredentialsId()));

@@ -100,7 +100,7 @@ public class AciAgent extends AbstractCloudSlave implements ISSHLaunchable, Trac
                     resourceGroup,
                     AciAgent.this.getNodeName(),
                     deployName);
-            AciService.deleteNetworkprofile(credentialsId,
+            AciService.deleteNetworkProfile(credentialsId,
                     resourceGroup,
                     AciAgent.this.getNodeName());
         });

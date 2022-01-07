@@ -125,7 +125,7 @@ public final class AciService {
         }
     }
 
-    public static void deleteNetworkprofile(String credentialsId,
+    public static void deleteNetworkProfile(String credentialsId,
                                             String resourceGroup,
                                             String networkProfileName) {
         AzureResourceManager azureClient;
@@ -139,9 +139,10 @@ public final class AciService {
                         retryDeleting = false;
                     } catch (ManagementException e) {
                         if (e.getValue().getCode().equals("NetworkProfileAlreadyInUseWithContainerNics")) {
-                            LOGGER.log(Level.WARNING, "ACI Network Profile {0} is already in use. Waiting for retry",
-                                    networkProfileName);
                             final int retryInterval = 10 * 1000;
+                            LOGGER.log(Level.WARNING,
+                                    "ACI Network Profile {0} is already in use. Waiting for retry in {1} seconds",
+                                    new Object[]{networkProfileName, retryInterval});
                             Thread.sleep(retryInterval);
                             retryDeleting = true;
                         } else {

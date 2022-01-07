@@ -5,11 +5,10 @@ import com.microsoft.jenkins.containeragents.aci.AciAgent;
 import com.microsoft.jenkins.containeragents.aci.AciCloud;
 import com.microsoft.jenkins.containeragents.aci.AciContainerTemplate;
 import com.microsoft.jenkins.containeragents.aci.AciPrivateIpAddress;
-import com.microsoft.jenkins.containeragents.util.CustomJenkinsFacade;
+import com.microsoft.jenkins.containeragents.util.InstanceIdentityFacade;
 import hudson.slaves.RetentionStrategy;
 import hudson.slaves.SlaveComputer;
 import io.jenkins.plugins.util.JenkinsFacade;
-import jenkins.model.Jenkins;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -32,11 +31,10 @@ public class AciDeploymentTemplateBuilderTest {
         SlaveComputer slaveMock = mock(SlaveComputer.class);
         when(agentMock.getComputer()).thenReturn(slaveMock);
 
-        CustomJenkinsFacade customJenkinsFacadeMock = mock(CustomJenkinsFacade.class);
-        when(customJenkinsFacadeMock.getInstanceId()).thenReturn("instanceId");
-        when(customJenkinsFacadeMock.getJenkins()).thenReturn(mock(Jenkins.class));
+        InstanceIdentityFacade instanceIdentityFacadeMock = mock(InstanceIdentityFacade.class);
+        when(instanceIdentityFacadeMock.getInstanceId()).thenReturn("instanceId");
 
-        builderUnderTest = new AciDeploymentTemplateBuilder(mock(JenkinsFacade.class), customJenkinsFacadeMock);
+        builderUnderTest = new AciDeploymentTemplateBuilder(mock(JenkinsFacade.class), instanceIdentityFacadeMock);
     }
 
     @Test
