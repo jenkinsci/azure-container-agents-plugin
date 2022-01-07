@@ -133,18 +133,23 @@ public final class AciService {
         try {
             azureClient = AzureContainerUtils.getAzureClient(credentialsId);
                 boolean retryDeleting;
+                int retryCounter = 0;
                 do {
                     try {
                         azureClient.networkProfiles().deleteByResourceGroup(resourceGroup, networkProfileName);
                         retryDeleting = false;
                     } catch (ManagementException e) {
-                        if (e.getValue().getCode().equals("NetworkProfileAlreadyInUseWithContainerNics")) {
+                        final int maxRetry = 10;
+                        if (e.getValue().getCode().equals("NetworkProfileAlreadyInUseWithContainerNics")
+                                && retryCounter < maxRetry) {
                             final int retryInterval = 10 * 1000;
                             LOGGER.log(Level.WARNING,
-                                    "ACI Network Profile {0} is already in use. Waiting for retry in {1} seconds",
-                                    new Object[]{networkProfileName, retryInterval});
+                                    "ACI Network Profile {0} is already in use. Waiting for retry in {1} seconds. "
+                                            + "It was retry number {2} of {3}.",
+                                    new Object[]{networkProfileName, retryInterval, retryCounter, maxRetry});
                             Thread.sleep(retryInterval);
                             retryDeleting = true;
+                            retryCounter++;
                         } else {
                             throw e;
                         }
