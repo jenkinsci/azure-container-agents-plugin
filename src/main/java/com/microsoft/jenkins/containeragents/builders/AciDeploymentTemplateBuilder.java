@@ -19,6 +19,7 @@ import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
 import com.microsoft.jenkins.containeragents.util.Constants;
 import com.microsoft.jenkins.containeragents.util.DockerRegistryUtils;
 import com.microsoft.jenkins.containeragents.util.CustomJenkinsFacade;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
 import hudson.security.ACL;
 import hudson.slaves.SlaveComputer;
@@ -26,7 +27,6 @@ import io.jenkins.plugins.util.JenkinsFacade;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.main.modules.instance_identity.InstanceIdentity;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -55,9 +55,7 @@ public final class AciDeploymentTemplateBuilder {
         this.jenkinsHelper = jenkinsHelper;
     }
 
-
-
-    @NotNull
+    @NonNull
     public AciDeploymentTemplate buildDeploymentTemplate(AciCloud cloud, AciContainerTemplate template,
                                                                 AciAgent agent) throws IOException {
         try (InputStream stream = AciService.class.getResourceAsStream(DEPLOY_TEMPLATE_FILENAME)) {
