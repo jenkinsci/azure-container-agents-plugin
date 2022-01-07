@@ -51,7 +51,6 @@
         <java.level>8</java.level>
         <maven.javadoc.skip>true</maven.javadoc.skip>
         <docker-commons.version>1.3.1</docker-commons.version>
-        <configuration-as-code.version>1.55</configuration-as-code.version>
     </properties>
 
     <dependencies>
@@ -126,13 +125,11 @@
         <dependency>
             <groupId>io.jenkins</groupId>
             <artifactId>configuration-as-code</artifactId>
-            <version>${configuration-as-code.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.jenkins.configuration-as-code</groupId>
             <artifactId>test-harness</artifactId>
-            <version>${configuration-as-code.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

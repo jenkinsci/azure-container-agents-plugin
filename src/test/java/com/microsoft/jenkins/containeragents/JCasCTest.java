@@ -2,7 +2,6 @@ package com.microsoft.jenkins.containeragents;
 
 import com.microsoft.jenkins.containeragents.aci.AciCloud;
 import com.microsoft.jenkins.containeragents.aci.AciContainerTemplate;
-import hudson.slaves.Cloud;
 import io.jenkins.plugins.casc.misc.RoundTripAbstractTest;
 import jenkins.model.Jenkins;
 import org.jvnet.hudson.test.RestartableJenkinsRule;
