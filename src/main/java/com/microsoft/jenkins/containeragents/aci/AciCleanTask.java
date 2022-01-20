@@ -299,9 +299,6 @@ public class AciCleanTask extends AsyncPeriodicWork {
                                 resourceGroup,
                                 resource.name(),
                                 null);
-                        AciService.deleteNetworkProfile(credentialsId,
-                                resourceGroup,
-                                resource.name());
                     });
                 }
             }

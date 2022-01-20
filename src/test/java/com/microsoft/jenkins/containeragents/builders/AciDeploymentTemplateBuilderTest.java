@@ -48,7 +48,7 @@ public class AciDeploymentTemplateBuilderTest {
 
         assertThat(aciDeploymentTemplate.deploymentTemplateAsString(), containsString("\"vnetName\":\"vnet\","));
         assertThat(aciDeploymentTemplate.deploymentTemplateAsString(), containsString("\"subnetName\":\"subnet\""));
-        assertThat(aciDeploymentTemplate.deploymentTemplateAsString(), containsString("\"type\":\"Microsoft.Network/networkProfiles\""));
+        assertThat(aciDeploymentTemplate.deploymentTemplateAsString(), containsString("\"subnetIds\":"));
     }
 
     @Test
@@ -61,6 +61,6 @@ public class AciDeploymentTemplateBuilderTest {
 
         assertThat(aciDeploymentTemplate.deploymentTemplateAsString(), not(containsString("\"vnetName\": \"vnet\",")));
         assertThat(aciDeploymentTemplate.deploymentTemplateAsString(), not(containsString("\"subnetName\": \"subnet\"")));
-        assertThat(aciDeploymentTemplate.deploymentTemplateAsString(), not(containsString("\"type\":\"Microsoft.Network/networkProfiles\"")));
+        assertThat(aciDeploymentTemplate.deploymentTemplateAsString(), not(containsString("\"subnetIds\":")));
     }
 }
