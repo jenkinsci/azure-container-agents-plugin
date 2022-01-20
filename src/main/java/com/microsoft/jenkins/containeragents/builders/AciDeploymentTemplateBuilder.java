@@ -41,8 +41,6 @@ public final class AciDeploymentTemplateBuilder {
 
     private static final String DEPLOY_TEMPLATE_FILENAME
             = "/com/microsoft/jenkins/containeragents/aci/deployTemplate.json";
-    private static final String NETWORK_PROFILE_SNIPPET_FILENAME
-            = "/com/microsoft/jenkins/containeragents/aci/networkProfileSnippet.json";
 
     private final JenkinsFacade jenkins;
     private final CustomJenkinsFacade customJenkinsFacade;
@@ -106,37 +104,28 @@ public final class AciDeploymentTemplateBuilder {
                 }
             }
 
-            addNetworkProfile(tmp, mapper, privateIpAddress);
+            addSubnetIds(tmp, mapper, privateIpAddress);
 
             return new AciDeploymentTemplate(tmp, parameters);
         }
     }
 
-    private void addNetworkProfile(JsonNode tmp, ObjectMapper mapper, AciPrivateIpAddress privateIpAddress)
-            throws IOException {
+    private void addSubnetIds(JsonNode tmp, ObjectMapper mapper, AciPrivateIpAddress privateIpAddress) {
         if (privateIpAddress == null) {
             return;
         }
 
-        ObjectNode networkProfileNode = mapper.createObjectNode();
-        networkProfileNode.put("id",
-                "[resourceId('Microsoft.Network/networkProfiles', variables('containerName'))]");
-
+        ObjectNode subnetIdNode = mapper.createObjectNode();
+        subnetIdNode.put("id",
+                "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'),"
+                        + " variables('subnetName'))]");
+        ArrayNode subnetIdsArray = mapper.createArrayNode();
+        subnetIdsArray.add(subnetIdNode);
 
         ArrayNode resourcesArray = (ArrayNode) tmp.get("resources");
-
         ObjectNode containerGroupItem = (ObjectNode) resourcesArray.get(0);
         ObjectNode propertiesNode = (ObjectNode) containerGroupItem.get("properties");
-        propertiesNode.set("networkProfile", networkProfileNode);
-        ArrayNode dependencyArrayNode = mapper.createArrayNode();
-        dependencyArrayNode.add("[resourceId('Microsoft.Network/networkProfiles', variables('containerName'))]");
-        containerGroupItem.set("dependsOn", dependencyArrayNode);
-
-        try (InputStream networkProfileSnippetStream =
-                     AciService.class.getResourceAsStream(NETWORK_PROFILE_SNIPPET_FILENAME)) {
-            JsonNode networkProfileItem = mapper.readTree(networkProfileSnippetStream);
-            resourcesArray.add(networkProfileItem);
-        }
+        propertiesNode.set("subnetIds", subnetIdsArray);
     }
 
     private String mapIpType(AciPrivateIpAddress privateIpAddress) {

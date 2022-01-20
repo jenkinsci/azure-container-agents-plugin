@@ -1,6 +1,5 @@
 package com.microsoft.jenkins.containeragents.aci;
 
-import com.azure.core.management.exception.ManagementException;
 import com.azure.resourcemanager.AzureResourceManager;
 import com.azure.resourcemanager.containerinstance.models.ContainerGroup;
 import com.azure.resourcemanager.resources.models.Deployment;
@@ -122,44 +121,6 @@ public final class AciService {
             }
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, String.format("Delete ACI deployment: %s failed", deployName), e);
-        }
-    }
-
-    public static void deleteNetworkProfile(String credentialsId,
-                                            String resourceGroup,
-                                            String networkProfileName) {
-        AzureResourceManager azureClient;
-
-        try {
-            azureClient = AzureContainerUtils.getAzureClient(credentialsId);
-                boolean retryDeleting;
-                int retryCounter = 0;
-                do {
-                    try {
-                        azureClient.networkProfiles().deleteByResourceGroup(resourceGroup, networkProfileName);
-                        retryDeleting = false;
-                    } catch (ManagementException e) {
-                        final int maxRetry = 10;
-                        if (e.getValue().getCode().equals("NetworkProfileAlreadyInUseWithContainerNics")
-                                && retryCounter < maxRetry) {
-                            final int retryInterval = 10 * 1000;
-                            LOGGER.log(Level.WARNING,
-                                    "ACI Network Profile {0} is already in use. Waiting for retry in {1} seconds. "
-                                            + "It was retry number {2} of {3}.",
-                                    new Object[]{networkProfileName, retryInterval, retryCounter, maxRetry});
-                            Thread.sleep(retryInterval);
-                            retryDeleting = true;
-                            retryCounter++;
-                        } else {
-                            throw e;
-                        }
-                    }
-                }
-                while (retryDeleting);
-                LOGGER.log(Level.INFO, "Delete ACI Network Profile: {0} successfully", networkProfileName);
-        } catch (Exception e) {
-            LOGGER.log(Level.WARNING, String.format("Delete ACI Network Profile: %s failed or it does not exist",
-                    networkProfileName), e);
         }
     }
 
