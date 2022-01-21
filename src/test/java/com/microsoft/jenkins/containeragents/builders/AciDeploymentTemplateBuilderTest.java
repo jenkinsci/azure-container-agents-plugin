@@ -46,6 +46,24 @@ public class AciDeploymentTemplateBuilderTest {
 
         AciDeploymentTemplateBuilder.AciDeploymentTemplate aciDeploymentTemplate = builderUnderTest.buildDeploymentTemplate(cloud, template, agentMock);
 
+        assertThat(aciDeploymentTemplate.deploymentTemplateAsString(), containsString("\"vnetResourceGroupName\":\"resourceGroup\","));
+        assertThat(aciDeploymentTemplate.deploymentTemplateAsString(), containsString("\"vnetName\":\"vnet\","));
+        assertThat(aciDeploymentTemplate.deploymentTemplateAsString(), containsString("\"subnetName\":\"subnet\""));
+        assertThat(aciDeploymentTemplate.deploymentTemplateAsString(), containsString("\"subnetIds\":"));
+    }
+
+    @Test
+    public void templateWithVnetAndOwnRg() throws IOException {
+        AciCloud cloud = new AciCloud("testcloud", "credentialId", "resourceGroup", emptyList());
+
+        AciContainerTemplate template = new AciContainerTemplate("containerName", "label", 100, "linux", "helloworld", "command", "rootFs", emptyList(), emptyList(), emptyList(), emptyList(), new RetentionStrategy.Always(), "cpu", "memory" );
+        AciPrivateIpAddress privateIpAddress = new AciPrivateIpAddress("vnet", "subnet");
+        privateIpAddress.setResourceGroup("vnetResourceGroup");
+        template.setPrivateIpAddress(privateIpAddress);
+
+        AciDeploymentTemplateBuilder.AciDeploymentTemplate aciDeploymentTemplate = builderUnderTest.buildDeploymentTemplate(cloud, template, agentMock);
+
+        assertThat(aciDeploymentTemplate.deploymentTemplateAsString(), containsString("\"vnetResourceGroupName\":\"vnetResourceGroup\","));
         assertThat(aciDeploymentTemplate.deploymentTemplateAsString(), containsString("\"vnetName\":\"vnet\","));
         assertThat(aciDeploymentTemplate.deploymentTemplateAsString(), containsString("\"subnetName\":\"subnet\""));
         assertThat(aciDeploymentTemplate.deploymentTemplateAsString(), containsString("\"subnetIds\":"));
@@ -59,6 +77,7 @@ public class AciDeploymentTemplateBuilderTest {
 
         AciDeploymentTemplateBuilder.AciDeploymentTemplate aciDeploymentTemplate = builderUnderTest.buildDeploymentTemplate(cloud, template, agentMock);
 
+        assertThat(aciDeploymentTemplate.deploymentTemplateAsString(), not(containsString("\"vnetResourceGroupName\"")));
         assertThat(aciDeploymentTemplate.deploymentTemplateAsString(), not(containsString("\"vnetName\": \"vnet\",")));
         assertThat(aciDeploymentTemplate.deploymentTemplateAsString(), not(containsString("\"subnetName\": \"subnet\"")));
         assertThat(aciDeploymentTemplate.deploymentTemplateAsString(), not(containsString("\"subnetIds\":")));

@@ -70,6 +70,8 @@ public final class AciDeploymentTemplateBuilder {
             AciPrivateIpAddress privateIpAddress = template.getPrivateIpAddress();
             variables.put("ipType", mapIpType(privateIpAddress));
             if (privateIpAddress != null) {
+                variables.put("vnetResourceGroupName", privateIpAddress.getResourceGroup() != null
+                        ? privateIpAddress.getResourceGroup() : cloud.getResourceGroup());
                 variables.put("vnetName", privateIpAddress.getVnet());
                 variables.put("subnetName", privateIpAddress.getSubnet());
             }
@@ -117,7 +119,8 @@ public final class AciDeploymentTemplateBuilder {
 
         ObjectNode subnetIdNode = mapper.createObjectNode();
         subnetIdNode.put("id",
-                "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('vnetName'),"
+                "[resourceId(variables('vnetResourceGroupName'), 'Microsoft.Network/virtualNetworks/subnets',"
+                        + " variables('vnetName'),"
                         + " variables('subnetName'))]");
         ArrayNode subnetIdsArray = mapper.createArrayNode();
         subnetIdsArray.add(subnetIdNode);
