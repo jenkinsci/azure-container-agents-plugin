@@ -4,11 +4,14 @@ import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.DataBoundSetter;
 
 public class AciPrivateIpAddress extends AbstractDescribableImpl<AciPrivateIpAddress>  {
     private String vnet;
 
     private String subnet;
+
+    private String resourceGroup;
 
     @DataBoundConstructor
     public AciPrivateIpAddress(String vnet, String subnet) {
@@ -22,6 +25,16 @@ public class AciPrivateIpAddress extends AbstractDescribableImpl<AciPrivateIpAdd
 
     public String getSubnet() {
         return subnet;
+    }
+
+    public String getResourceGroup() {
+        return resourceGroup;
+    }
+
+
+    @DataBoundSetter
+    public void setResourceGroup(String resourceGroup) {
+        this.resourceGroup = resourceGroup;
     }
 
     @Extension

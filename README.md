@@ -36,6 +36,7 @@ You can install/update this plugin in Jenkins update center (Manage Jenkins -> M
 8. Add `Ports`, `Environment Variables` and `Volumes` as needed.
 9. Choose a retention strategy. You can get details by clicking the help icon.
 10. Specify `CPU Requirement` and `Memory Requirement`, ACI containers costs per second. Find more details in [Container Instances pricing](https://azure.microsoft.com/en-us/pricing/details/container-instances/).
+11. Decide if the container instance should use a private IP address or not. You can get details by clicking the help icon.
 
 ## Configure Azure Container Instance via Groovy Script
 

@@ -1,11 +1,12 @@
 <div>
     Select if the container instance should use a private ip address.
     <p>
-    If it use a private ip address, then information about the vnet and the subnet are mandatory.
+    If it uses a private ip address, then information about the vnet and the subnet are mandatory. The resource group is
+        optional. If it is not filled, then the resource group of container instance is used.
     </p>
     <p>
-    Important: Vnet and subnet has to be created before launching the Container agent and the subnet delegation must
-        be enabled
+    Important: Vnet and subnet has to be created in the correct resource group before launching the Container agent and
+        the subnet delegation must be enabled.
     (See also
     <a href="https://docs.microsoft.com/en-us/azure/virtual-network/manage-subnet-delegation">
         Azure documentation about subnet delegation

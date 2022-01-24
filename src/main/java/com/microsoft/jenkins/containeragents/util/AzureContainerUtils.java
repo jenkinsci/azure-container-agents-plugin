@@ -11,7 +11,6 @@ import com.microsoft.azure.util.AzureCredentials;
 import com.microsoft.jenkins.containeragents.Messages;
 import hudson.util.ListBoxModel;
 import io.jenkins.plugins.azuresdk.HttpClientRetriever;
-import jenkins.model.Jenkins;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 
@@ -87,24 +86,5 @@ public final class AzureContainerUtils {
                 .withHttpClient(HttpClientRetriever.get())
                 .authenticate(tokenCredential, profile)
                 .withSubscription(subscriptionId);
-    }
-
-    private static String getUserAgent() {
-        String version = null;
-        String instanceId = null;
-        try {
-            version = AzureContainerUtils.class.getPackage().getImplementationVersion();
-            instanceId = Jenkins.get().getLegacyInstanceId();
-        } catch (Exception e) {
-        }
-
-        if (version == null) {
-            version = "local";
-        }
-        if (instanceId == null) {
-            instanceId = "local";
-        }
-
-        return "AzureContainerService(Kubernetes)/" + version + "/" + instanceId;
     }
 }
