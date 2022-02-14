@@ -131,7 +131,7 @@ public class AciCloud extends Cloud {
                                 return agent;
                             } catch (Exception e) {
                                 LOGGER.log(Level.WARNING, "AciCloud: Provision agent {0} failed: {1}",
-                                        new Object[] {agent.getNodeName(), e.getMessage()});
+                                        new Object[] {agent.getNodeName(), e});
 
                                 agent.terminate();
 
@@ -177,8 +177,22 @@ public class AciCloud extends Cloud {
     public void addIpEnv(AciAgent agent) throws Exception {
         AzureResourceManager azureResourceManager = getAzureClient();
 
-        String ip = azureResourceManager.containerGroups()
-                .getByResourceGroup(resourceGroup, agent.getNodeName()).ipAddress();
+        // Workaround for https://github.com/Azure/azure-sdk-for-java/issues/27083
+        String ip = null;
+        boolean nullIsThrown;
+        do {
+            try {
+                ip = azureResourceManager.containerGroups()
+                        .getByResourceGroup(resourceGroup, agent.getNodeName()).ipAddress();
+                nullIsThrown = false;
+            } catch (NullPointerException e) {
+                LOGGER.log(Level.WARNING, "During asking for IP address of Agent {0} NullPointerException is thrown,"
+                        + "but it is ignored.", agent.getNodeName());
+                nullIsThrown = true;
+                final int retryInterval = 5 * 1000;
+                Thread.sleep(retryInterval);
+            }
+        } while (nullIsThrown);
 
         EnvironmentVariablesNodeProperty ipEnv = new EnvironmentVariablesNodeProperty(
                 new EnvironmentVariablesNodeProperty.Entry("IP", ip)
@@ -215,19 +229,25 @@ public class AciCloud extends Cloud {
             if (computer == null) {
                 throw new IllegalStateException("Agent node has been deleted");
             }
-            ContainerGroup containerGroup =
-                    azureResourceManager.containerGroups().getByResourceGroup(resourceGroup, agent.getNodeName());
+            try {
+                ContainerGroup containerGroup =
+                        azureResourceManager.containerGroups().getByResourceGroup(resourceGroup, agent.getNodeName());
 
-            if (containerGroup.containers().containsKey(agent.getNodeName())
-                    && containerGroup.containers().get(agent.getNodeName()).instanceView().currentState().state()
-                    .equals("Terminated")) {
+                if (containerGroup.containers().containsKey(agent.getNodeName())
+                        && containerGroup.containers().get(agent.getNodeName()).instanceView().currentState().state()
+                        .equals("Terminated")) {
 
-                // there doesn't seem to be anyway to get debug information with the current API version in the SDK
-                // logs and events just return nothing
-                // while debugging with the CLI the best way I could find was 'attaching' to the container
-                // see https://github.com/Azure/azure-libraries-for-java/issues/1379
-                throw new IllegalStateException("ACI container terminated, see the Azure portal / "
-                        + "CLI for more information");
+                    // there doesn't seem to be anyway to get debug information with the current API version in the SDK
+                    // logs and events just return nothing
+                    // while debugging with the CLI the best way I could find was 'attaching' to the container
+                    // see https://github.com/Azure/azure-libraries-for-java/issues/1379
+                    throw new IllegalStateException("ACI container terminated, see the Azure portal / "
+                            + "CLI for more information");
+                }
+            } catch (NullPointerException e) {
+              // workaround for https://github.com/Azure/azure-sdk-for-java/issues/27083
+                LOGGER.log(Level.WARNING, "Waiting for Agent {0} produces a NullPointerException, "
+                        + "but it is ignored.", agent.getNodeName());
             }
 
             if (computer.isOnline()) {
