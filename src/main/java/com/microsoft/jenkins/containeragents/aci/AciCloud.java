@@ -245,7 +245,7 @@ public class AciCloud extends Cloud {
                             + "CLI for more information");
                 }
             } catch (NullPointerException e) {
-//              // wokrkaround for https://github.com/Azure/azure-sdk-for-java/issues/27083
+              // workaround for https://github.com/Azure/azure-sdk-for-java/issues/27083
                 LOGGER.log(Level.WARNING, "Waiting for Agent {0} produces a NullPointerException, "
                         + "but it is ignored.", agent.getNodeName());
             }
