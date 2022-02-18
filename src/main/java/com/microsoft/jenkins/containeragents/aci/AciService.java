@@ -34,12 +34,16 @@ public final class AciService {
         AciCleanTask.DeploymentRegistrar deploymentRegistrar = AciCleanTask.DeploymentRegistrar.getInstance();
         deploymentRegistrar.registerDeployment(cloud.getName(), cloud.getResourceGroup(), deployName);
 
+        String armTemplateForDeployment = deploymentTemplate.deploymentTemplateAsString();
+        LOGGER.log(Level.FINE, "Deployment ARM Template: {0}", armTemplateForDeployment);
+        String armTemplateParameterForDeployment = deploymentTemplate.templateParameterAsString();
+        LOGGER.log(Level.FINE, "Deployment ARM Template Parameter: {0}", armTemplateParameterForDeployment);
         final AzureResourceManager azureClient = cloud.getAzureClient();
         azureClient.deployments()
                 .define(deployName)
                 .withExistingResourceGroup(cloud.getResourceGroup())
-                .withTemplate(deploymentTemplate.deploymentTemplateAsString())
-                .withParameters(deploymentTemplate.templateParameterAsString())
+                .withTemplate(armTemplateForDeployment)
+                .withParameters(armTemplateParameterForDeployment)
                 .withMode(DeploymentMode.INCREMENTAL)
                 .beginCreate();
 
