@@ -69,6 +69,23 @@ public class AciDeploymentTemplateBuilderTest {
     }
 
     @Test
+    public void templateWithVnetAndOwnButEmptyRg() throws IOException {
+        AciCloud cloud = new AciCloud("testcloud", "credentialId", "resourceGroup", emptyList());
+
+        AciContainerTemplate template = new AciContainerTemplate("containerName", "label", 100, "linux", "helloworld", "command", "rootFs", emptyList(), emptyList(), emptyList(), emptyList(), new RetentionStrategy.Always(), "cpu", "memory" );
+        AciPrivateIpAddress privateIpAddress = new AciPrivateIpAddress("vnet", "subnet");
+        privateIpAddress.setResourceGroup("");
+        template.setPrivateIpAddress(privateIpAddress);
+
+        AciDeploymentTemplateBuilder.AciDeploymentTemplate aciDeploymentTemplate = builderUnderTest.buildDeploymentTemplate(cloud, template, agentMock);
+
+        assertThat(aciDeploymentTemplate.deploymentTemplateAsString(), containsString("\"vnetResourceGroupName\":\"resourceGroup\","));
+        assertThat(aciDeploymentTemplate.deploymentTemplateAsString(), containsString("\"vnetName\":\"vnet\","));
+        assertThat(aciDeploymentTemplate.deploymentTemplateAsString(), containsString("\"subnetName\":\"subnet\""));
+        assertThat(aciDeploymentTemplate.deploymentTemplateAsString(), containsString("\"subnetIds\":"));
+    }
+
+    @Test
     public void templateWithoutVnet() throws IOException {
         AciCloud cloud = new AciCloud("testcloud", "credentialId", "resourceGroup", emptyList());
 

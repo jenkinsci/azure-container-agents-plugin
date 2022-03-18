@@ -68,6 +68,7 @@ public final class AciDeploymentTemplateBuilder {
             variables.put("ipType", mapIpType(privateIpAddress));
             if (privateIpAddress != null) {
                 variables.put("vnetResourceGroupName", privateIpAddress.getResourceGroup() != null
+                        && !privateIpAddress.getResourceGroup().isEmpty()
                         ? privateIpAddress.getResourceGroup() : cloud.getResourceGroup());
                 variables.put("vnetName", privateIpAddress.getVnet());
                 variables.put("subnetName", privateIpAddress.getSubnet());
