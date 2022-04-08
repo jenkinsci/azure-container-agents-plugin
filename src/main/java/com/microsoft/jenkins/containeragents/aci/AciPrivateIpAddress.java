@@ -1,5 +1,6 @@
 package com.microsoft.jenkins.containeragents.aci;
 
+import com.microsoft.jenkins.containeragents.aci.dns.AciDnsConfig;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
@@ -12,6 +13,8 @@ public class AciPrivateIpAddress extends AbstractDescribableImpl<AciPrivateIpAdd
     private String subnet;
 
     private String resourceGroup;
+
+    private AciDnsConfig dnsConfig;
 
     @DataBoundConstructor
     public AciPrivateIpAddress(String vnet, String subnet) {
@@ -31,11 +34,20 @@ public class AciPrivateIpAddress extends AbstractDescribableImpl<AciPrivateIpAdd
         return resourceGroup;
     }
 
-
     @DataBoundSetter
     public void setResourceGroup(String resourceGroup) {
         this.resourceGroup = resourceGroup;
     }
+
+    public AciDnsConfig getDnsConfig() {
+        return dnsConfig;
+    }
+
+    @DataBoundSetter
+    public void setDnsConfig(AciDnsConfig dnsConfig) {
+        this.dnsConfig = dnsConfig;
+    }
+
 
     @Extension
     public static class DescriptorImpl extends Descriptor<AciPrivateIpAddress> {
