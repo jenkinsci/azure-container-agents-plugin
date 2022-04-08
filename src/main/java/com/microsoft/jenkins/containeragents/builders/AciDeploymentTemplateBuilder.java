@@ -14,6 +14,7 @@ import com.microsoft.jenkins.containeragents.aci.AciContainerTemplate;
 import com.microsoft.jenkins.containeragents.aci.AciPort;
 import com.microsoft.jenkins.containeragents.aci.AciPrivateIpAddress;
 import com.microsoft.jenkins.containeragents.aci.AciService;
+import com.microsoft.jenkins.containeragents.aci.dns.AciDnsServer;
 import com.microsoft.jenkins.containeragents.aci.volumes.AzureFileVolume;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
 import com.microsoft.jenkins.containeragents.util.Constants;
@@ -104,9 +105,28 @@ public final class AciDeploymentTemplateBuilder {
             }
 
             addSubnetIds(tmp, mapper, privateIpAddress);
+            addDnsConfig(tmp, mapper, privateIpAddress);
 
             return new AciDeploymentTemplate(tmp, parameters);
         }
+    }
+
+    private void addDnsConfig(JsonNode tmp, ObjectMapper mapper, AciPrivateIpAddress privateIpAddress) {
+        if (privateIpAddress == null || privateIpAddress.getDnsConfig() == null
+                || privateIpAddress.getDnsConfig().getDnsServerNames().isEmpty()) {
+            return;
+        }
+        List<AciDnsServer> dnsServerNames = privateIpAddress.getDnsConfig().getDnsServerNames();
+        ArrayNode dnsServerArray = mapper.createArrayNode();
+        dnsServerNames.forEach(dnsServer -> dnsServerArray.add(dnsServer.getDnsServer()));
+
+        ObjectNode dnsServersNode = mapper.createObjectNode();
+        dnsServersNode.set("nameServers", dnsServerArray);
+
+        ArrayNode resourcesArray = (ArrayNode) tmp.get("resources");
+        ObjectNode containerGroupItem = (ObjectNode) resourcesArray.get(0);
+        ObjectNode propertiesNode = (ObjectNode) containerGroupItem.get("properties");
+        propertiesNode.set("dnsConfig", dnsServersNode);
     }
 
     private void addSubnetIds(JsonNode tmp, ObjectMapper mapper, AciPrivateIpAddress privateIpAddress) {
