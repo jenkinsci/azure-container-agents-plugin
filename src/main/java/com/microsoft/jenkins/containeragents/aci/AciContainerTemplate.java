@@ -95,7 +95,7 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
                                 String memory) {
         this.name = name;
         this.label = label;
-        this.image = image;
+        this.image = image.trim();
         this.osType = osType;
         this.command = command;
         this.rootFs = rootFs;

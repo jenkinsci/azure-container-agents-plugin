@@ -8,6 +8,7 @@ import org.kohsuke.stapler.DataBoundSetter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class AciDnsConfig extends AbstractDescribableImpl<AciDnsConfig> {
 
@@ -23,7 +24,9 @@ public class AciDnsConfig extends AbstractDescribableImpl<AciDnsConfig> {
 
     @DataBoundSetter
     public void setDnsServerNames(List<AciDnsServer> dnsServerNames) {
-        this.dnsServerNames = dnsServerNames;
+        this.dnsServerNames = dnsServerNames.stream()
+                .filter(aciDnsServer -> !aciDnsServer.getDnsServer().isEmpty())
+                .collect(Collectors.toList());
     }
 
 
