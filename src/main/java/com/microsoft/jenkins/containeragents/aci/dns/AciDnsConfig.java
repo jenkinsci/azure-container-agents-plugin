@@ -12,20 +12,20 @@ import java.util.stream.Collectors;
 
 public class AciDnsConfig extends AbstractDescribableImpl<AciDnsConfig> {
 
-    private List<AciDnsServer> dnsServerNames = new ArrayList<>();
+    private List<AciDnsServer> dnsServers = new ArrayList<>();
 
     @DataBoundConstructor
     public AciDnsConfig() {
     }
 
-    public List<AciDnsServer> getDnsServerNames() {
-        return dnsServerNames;
+    public List<AciDnsServer> getDnsServers() {
+        return dnsServers;
     }
 
     @DataBoundSetter
-    public void setDnsServerNames(List<AciDnsServer> dnsServerNames) {
-        this.dnsServerNames = dnsServerNames.stream()
-                .filter(aciDnsServer -> !aciDnsServer.getDnsServer().isEmpty())
+    public void setDnsServers(List<AciDnsServer> dnsServers) {
+        this.dnsServers = dnsServers.stream()
+                .filter(aciDnsServer -> !aciDnsServer.getAddress().isEmpty())
                 .collect(Collectors.toList());
     }
 

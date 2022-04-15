@@ -7,15 +7,15 @@ import org.kohsuke.stapler.DataBoundConstructor;
 
 public class AciDnsServer extends AbstractDescribableImpl<AciDnsServer> {
 
-    private String dnsServer;
+    private String address;
 
     @DataBoundConstructor
-    public AciDnsServer(String dnsServer) {
-        this.dnsServer = dnsServer;
+    public AciDnsServer(String address) {
+        this.address = address;
     }
 
-    public String getDnsServer() {
-        return dnsServer;
+    public String getAddress() {
+        return address;
     }
 
     @Extension

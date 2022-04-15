@@ -15,8 +15,8 @@ jenkins:
           vnet: "vnet"
           resourceGroup: "rg"
           dnsConfig:
-            dnsServerNames:
-            - dnsServer: "dnsServerName"
+            dnsServers:
+            - address: "dnsServerAddress"
         retentionStrategy: "containerOnce"
         rootFs: "/home/jenkins"
         timeout: 10

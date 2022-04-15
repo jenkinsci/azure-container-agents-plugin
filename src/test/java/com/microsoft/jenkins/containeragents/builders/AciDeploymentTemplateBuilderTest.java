@@ -95,7 +95,7 @@ public class AciDeploymentTemplateBuilderTest {
         AciContainerTemplate template = new AciContainerTemplate("containerName", "label", 100, "linux", "helloworld", "command", "rootFs", emptyList(), emptyList(), emptyList(), emptyList(), new RetentionStrategy.Always(), "cpu", "memory" );
         AciPrivateIpAddress privateIpAddress = new AciPrivateIpAddress("vnet", "subnet");
         AciDnsConfig dnsConfig = new AciDnsConfig();
-        dnsConfig.setDnsServerNames(Arrays.asList(new AciDnsServer("dnsName")));
+        dnsConfig.setDnsServers(Arrays.asList(new AciDnsServer("dnsName")));
         privateIpAddress.setDnsConfig(dnsConfig);
         template.setPrivateIpAddress(privateIpAddress);
 

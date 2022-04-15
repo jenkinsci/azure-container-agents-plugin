@@ -28,7 +28,7 @@ public class JCasCTest extends RoundTripAbstractTest {
         assertThat(aciContainerTemplate.getPrivateIpAddress().getSubnet(), equalTo("subnet"));
         assertThat(aciContainerTemplate.getPrivateIpAddress().getResourceGroup(), equalTo("rg"));
         assertThat(aciContainerTemplate.getPrivateIpAddress().getDnsConfig(), notNullValue());
-        assertThat(aciContainerTemplate.getPrivateIpAddress().getDnsConfig().getDnsServerNames(), not(empty()));
+        assertThat(aciContainerTemplate.getPrivateIpAddress().getDnsConfig().getDnsServers(), not(empty()));
     }
 
     @Override

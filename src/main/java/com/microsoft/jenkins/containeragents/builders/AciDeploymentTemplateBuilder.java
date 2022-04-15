@@ -113,12 +113,12 @@ public final class AciDeploymentTemplateBuilder {
 
     private void addDnsConfig(JsonNode tmp, ObjectMapper mapper, AciPrivateIpAddress privateIpAddress) {
         if (privateIpAddress == null || privateIpAddress.getDnsConfig() == null
-                || privateIpAddress.getDnsConfig().getDnsServerNames().isEmpty()) {
+                || privateIpAddress.getDnsConfig().getDnsServers().isEmpty()) {
             return;
         }
-        List<AciDnsServer> dnsServerNames = privateIpAddress.getDnsConfig().getDnsServerNames();
+        List<AciDnsServer> dnsServerNames = privateIpAddress.getDnsConfig().getDnsServers();
         ArrayNode dnsServerArray = mapper.createArrayNode();
-        dnsServerNames.forEach(dnsServer -> dnsServerArray.add(dnsServer.getDnsServer()));
+        dnsServerNames.forEach(dnsServer -> dnsServerArray.add(dnsServer.getAddress()));
 
         ObjectNode dnsServersNode = mapper.createObjectNode();
         dnsServersNode.set("nameServers", dnsServerArray);

@@ -13,9 +13,9 @@ public class AciDnsConfigTest {
     @Test
     public void emptyDnServerNamesAreIgnored(){
         AciDnsConfig configUnderTest = new AciDnsConfig();
-        configUnderTest.setDnsServerNames(Arrays.asList(new AciDnsServer("dnsServerName"), new AciDnsServer("")));
+        configUnderTest.setDnsServers(Arrays.asList(new AciDnsServer("dnsServerName"), new AciDnsServer("")));
 
-        assertThat(configUnderTest.getDnsServerNames(), hasSize(1));
+        assertThat(configUnderTest.getDnsServers(), hasSize(1));
     }
 
 }
