@@ -13,6 +13,10 @@ jenkins:
         privateIpAddress:
           subnet: "subnet"
           vnet: "vnet"
+          resourceGroup: "rg"
+          dnsConfig:
+            dnsServers:
+            - address: "dnsServerAddress"
         retentionStrategy: "containerOnce"
         rootFs: "/home/jenkins"
         timeout: 10

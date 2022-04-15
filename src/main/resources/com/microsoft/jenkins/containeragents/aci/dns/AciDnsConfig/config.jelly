@@ -1,0 +1,13 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+
+    <f:entry>
+        <f:repeatable field="dnsServerNames" minimum="0">
+            <f:entry title="DNS server name" field="dnsServer">
+                <f:textbox/>
+            </f:entry>
+        </f:repeatable>
+    </f:entry>
+
+
+</j:jelly>

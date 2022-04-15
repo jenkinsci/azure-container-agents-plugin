@@ -10,4 +10,7 @@
     <f:entry title="Name of the subnet" >
         <f:textbox field="subnet" />
     </f:entry>
+
+    <f:optionalProperty field="dnsConfig" title="DNS Configuration" />
+
 </j:jelly>

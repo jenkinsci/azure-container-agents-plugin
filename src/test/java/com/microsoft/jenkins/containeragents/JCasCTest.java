@@ -9,8 +9,10 @@ import org.jvnet.hudson.test.RestartableJenkinsRule;
 import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 
 public class JCasCTest extends RoundTripAbstractTest {
@@ -24,6 +26,9 @@ public class JCasCTest extends RoundTripAbstractTest {
         assertThat(aciContainerTemplate.getPrivateIpAddress(), notNullValue());
         assertThat(aciContainerTemplate.getPrivateIpAddress().getVnet(), equalTo("vnet"));
         assertThat(aciContainerTemplate.getPrivateIpAddress().getSubnet(), equalTo("subnet"));
+        assertThat(aciContainerTemplate.getPrivateIpAddress().getResourceGroup(), equalTo("rg"));
+        assertThat(aciContainerTemplate.getPrivateIpAddress().getDnsConfig(), notNullValue());
+        assertThat(aciContainerTemplate.getPrivateIpAddress().getDnsConfig().getDnsServers(), not(empty()));
     }
 
     @Override
