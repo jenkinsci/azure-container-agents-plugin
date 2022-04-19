@@ -226,6 +226,11 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
             this.sshPort = StringUtils.defaultString(launchMethodTypeContent.getSshPort(), "22");
         }
     }
+
+    public LaunchMethodTypeContent getLaunchMethodTypeContent() {
+        return new LaunchMethodTypeContent(sshCredentialsId, sshPort);
+    }
+
     public AciPrivateIpAddress getPrivateIpAddress() {
         return privateIpAddress;
     }
