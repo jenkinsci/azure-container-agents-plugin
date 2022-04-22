@@ -51,6 +51,7 @@
         <java.level>8</java.level>
         <maven.javadoc.skip>true</maven.javadoc.skip>
         <docker-commons.version>1.19</docker-commons.version>
+        <jenkins-test-harness.version>1742.v54b_55b_42b_6cb_</jenkins-test-harness.version> <!-- TODO https://github.com/jenkinsci/jenkins-test-harness/pull/426 -->
     </properties>
 
     <dependencies>
