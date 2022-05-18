@@ -90,7 +90,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>windows-azure-storage</artifactId>
-            <version>373.v582b31a65906</version>
+            <version>378.vb2cb9797e1e5</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
