@@ -1,7 +1,5 @@
 package com.microsoft.jenkins.containeragents;
 
-import com.gargoylesoftware.htmlunit.html.HtmlForm;
-import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.microsoft.jenkins.containeragents.aci.AciCloud;
 import com.microsoft.jenkins.containeragents.aci.AciContainerTemplate;
 import com.microsoft.jenkins.containeragents.aci.AciPrivateIpAddress;
@@ -24,24 +22,15 @@ public class AciCloudConfigTest {
 
     @Test
     public void configRoundTrip() throws Exception {
-        String cloudName = "aciTest";
-        AciCloud expectedAciCloud = createConfiguredAciCloud(cloudName);
+        AciCloud expectedAciCloud = createConfiguredAciCloud();
 
-        jenkins.jenkins.clouds.add(expectedAciCloud);
-        jenkins.jenkins.save();
-        JenkinsRule.WebClient testClient = jenkins.createWebClient();
-        HtmlPage cloudPage = testClient.goTo("configureClouds/");
-        HtmlForm configForm = cloudPage.getFormByName("config");
-        jenkins.submit(configForm);
+        AciCloud actualAciCloud = jenkins.configRoundtrip(expectedAciCloud);
 
-        AciCloud actualAciCloud = (AciCloud) jenkins.jenkins.getCloud(cloudName);
         jenkins.assertEqualDataBoundBeans(expectedAciCloud, actualAciCloud);
-
-
     }
 
     @NotNull
-    private AciCloud createConfiguredAciCloud(String cloudName) {
+    private AciCloud createConfiguredAciCloud() {
         AciContainerTemplate containerTemplate = new AciContainerTemplate("containerName", "label",
                 100, "Linux", "helloworld", "command", "rootFs", emptyList(),
                 emptyList(), emptyList(), emptyList(), new ContainerOnceRetentionStrategy(), "cpu", "memory" );
@@ -51,7 +40,7 @@ public class AciCloudConfigTest {
         dnsConfig.setDnsServers(Arrays.asList(new AciDnsServer("dnsServerAddress")));
         privateIpAddress.setDnsConfig(dnsConfig);
         containerTemplate.setPrivateIpAddress(privateIpAddress);
-        AciCloud acicloud = new AciCloud(cloudName, "", "", Arrays.asList(containerTemplate));
+        AciCloud acicloud = new AciCloud("aciTest", "", "", Arrays.asList(containerTemplate));
         acicloud.setLogAnalyticsCredentialsId("");
         return acicloud;
     }
