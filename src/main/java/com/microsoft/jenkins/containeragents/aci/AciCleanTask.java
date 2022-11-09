@@ -5,6 +5,7 @@ import com.azure.resourcemanager.AzureResourceManager;
 import com.azure.resourcemanager.resources.models.Deployment;
 import com.azure.resourcemanager.resources.models.GenericResource;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import hudson.Extension;
 import hudson.model.AsyncPeriodicWork;
 import hudson.model.Computer;
@@ -168,6 +169,7 @@ public class AciCleanTask extends AsyncPeriodicWork {
         cleanDeployments(SUCCESSFUL_DEPLOYMENT_TIMEOUT_IN_MINUTES, FAILING_DEPLOYMENT_TIMEOUT_IN_MINUTES);
     }
 
+    @SuppressFBWarnings(value = "DCN_NULLPOINTER_EXCEPTION", justification = "TODO needs triage")
     private void cleanDeployments(long successTimeoutInMinutes, long failTimeoutInMinutes) {
         DeploymentInfo firstBackInQueue = null;
         ConcurrentLinkedQueue<DeploymentInfo> deploymentsToClean
