@@ -8,7 +8,7 @@ import com.microsoft.jenkins.containeragents.aci.AciPrivateIpAddress;
 import com.microsoft.jenkins.containeragents.aci.dns.AciDnsConfig;
 import com.microsoft.jenkins.containeragents.aci.dns.AciDnsServer;
 import com.microsoft.jenkins.containeragents.strategy.ContainerOnceRetentionStrategy;
-import org.jetbrains.annotations.NotNull;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
@@ -40,7 +40,7 @@ public class AciCloudConfigTest {
 
     }
 
-    @NotNull
+    @NonNull
     private AciCloud createConfiguredAciCloud(String cloudName) {
         AciContainerTemplate containerTemplate = new AciContainerTemplate("containerName", "label",
                 100, "Linux", "helloworld", "command", "rootFs", emptyList(),
