@@ -34,7 +34,7 @@
         <changelist>9999-SNAPSHOT</changelist>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
         <jenkins.version>2.361.4</jenkins.version>
-        <docker-commons.version>1.21</docker-commons.version>
+        <docker-commons.version>419.v8e3cd84ef49c</docker-commons.version>
     </properties>
 
     <dependencies>
