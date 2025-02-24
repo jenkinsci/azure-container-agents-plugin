@@ -76,7 +76,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>windows-azure-storage</artifactId>
-            <version>378.vb2cb9797e1e5</version>
+            <version>469.v75a_3db_ea_d2b_a_</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
