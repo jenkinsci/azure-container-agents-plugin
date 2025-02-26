@@ -103,6 +103,7 @@ public class AciCloudIT {
                     "Storage Credential for Test",
                     aciRuleData.storageAccountCredential.getStorageAccountName(),
                     aciRuleData.storageAccountCredential.getStorageAccountKey(),
+                    "",
                     ""));
             r.jenkins.setSlaveAgentPort(Integer.parseInt(TestUtils.loadProperty("ACI_INBOUND_AGENT_PORT")));
 

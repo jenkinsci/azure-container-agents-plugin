@@ -17,6 +17,7 @@ import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.microsoft.azure.util.AzureCredentials;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
 import com.microsoftopentechnologies.windowsazurestorage.helper.AzureStorageAccount;
+import hudson.model.Descriptor;
 import hudson.util.Secret;
 import io.jenkins.plugins.azuresdk.HttpClientRetriever;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -75,7 +76,7 @@ public class AciRule implements TestRule, MethodRule {
         public String privateRegistryCredentialsId;
     }
 
-    public void before() {
+    public void before() throws Exception {
         prepareServicePrincipal();
         prepareResourceGroup();
         prepareStorageAccount();
@@ -90,7 +91,7 @@ public class AciRule implements TestRule, MethodRule {
         this.azureClient = getAzureClient(servicePrincipalCredentials);
     }
 
-    public void prepareImage(String imageEnv, String privateRegistryUrlEnv, String privateRegistryNameEnv, String privateRegistryKeyEnv) {
+    public void prepareImage(String imageEnv, String privateRegistryUrlEnv, String privateRegistryNameEnv, String privateRegistryKeyEnv) throws Exception {
         data.image = TestUtils.loadProperty(imageEnv, "jenkins/inbound-agent");
         data.privateRegistryUrl = TestUtils.loadProperty(privateRegistryUrlEnv);
 
@@ -184,6 +185,7 @@ public class AciRule implements TestRule, MethodRule {
                 "Storage Credential for Test",
                 accountName,
                 accountKey,
+                "",
                 "").getStorageCred();
     }
 

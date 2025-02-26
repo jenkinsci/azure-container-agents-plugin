@@ -24,7 +24,7 @@ import org.jenkinsci.plugins.cloudstats.ProvisioningActivity;
 import org.jenkinsci.plugins.cloudstats.TrackedItem;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
-import org.kohsuke.stapler.StaplerRequest;
+import org.kohsuke.stapler.StaplerRequest2;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -117,7 +117,7 @@ public class AciAgent extends AbstractCloudSlave implements ISSHLaunchable, Trac
     }
 
     @Override
-    public Node reconfigure(StaplerRequest req, JSONObject form) throws Descriptor.FormException {
+    public Node reconfigure(StaplerRequest2 req, JSONObject form) throws Descriptor.FormException {
         return this;
     }
 
