@@ -5,7 +5,7 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>4.88</version>
+        <version>5.7</version>
         <relativePath />
     </parent>
 
@@ -34,9 +34,8 @@
         <changelist>9999-SNAPSHOT</changelist>
         <gitHubRepo>jenkinsci/${project.artifactId}-plugin</gitHubRepo>
         <!-- https://www.jenkins.io/doc/developer/plugin-development/choosing-jenkins-baseline/ -->
-        <jenkins.baseline>2.387</jenkins.baseline>
-        <jenkins.version>${jenkins.baseline}.3</jenkins.version>
-        <docker-commons.version>445.v6b_646c962a_94</docker-commons.version>
+        <jenkins.baseline>2.479</jenkins.baseline>
+        <jenkins.version>${jenkins.baseline}.1</jenkins.version>
     </properties>
 
     <dependencies>
@@ -44,22 +43,23 @@
         <dependency>
             <groupId>io.jenkins.plugins</groupId>
             <artifactId>azure-sdk</artifactId>
-            <version>174.va_89c1df897d2</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>cloud-stats</artifactId>
-            <version>336.v788e4055508b_</version>
         </dependency>
         <dependency>
             <groupId>io.jenkins.plugins</groupId>
             <artifactId>plugin-util-api</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.jenkins.plugins</groupId>
+            <artifactId>commons-lang3-api</artifactId>
+        </dependency>
         <!-- jenkins plugins -->
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>docker-commons</artifactId>
-            <version>${docker-commons.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.google.code.findbugs</groupId>
@@ -70,13 +70,11 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>azure-credentials</artifactId>
-            <version>341.v4881e9f4ffea_</version>
         </dependency>
 
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>windows-azure-storage</artifactId>
-            <version>378.vb2cb9797e1e5</version>
         </dependency>
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
@@ -122,7 +120,7 @@
             <dependency>
                 <groupId>io.jenkins.tools.bom</groupId>
                 <artifactId>bom-${jenkins.baseline}.x</artifactId>
-                <version>2543.vfb_1a_5fb_9496d</version>
+                <version>4136.vca_c3202a_7fd1</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -179,7 +177,6 @@
                 </executions>
                 <configuration>
                     <configLocation>checkstyle.xml</configLocation>
-                    <encoding>UTF-8</encoding>
                     <consoleOutput>true</consoleOutput>
                 </configuration>
             </plugin>

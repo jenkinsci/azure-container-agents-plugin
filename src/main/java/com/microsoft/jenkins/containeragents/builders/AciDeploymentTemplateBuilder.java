@@ -21,11 +21,10 @@ import com.microsoft.jenkins.containeragents.util.Constants;
 import com.microsoft.jenkins.containeragents.util.DockerRegistryUtils;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.EnvVars;
-import hudson.model.ItemGroup;
 import hudson.security.ACL;
 import hudson.slaves.SlaveComputer;
 import io.jenkins.plugins.util.JenkinsFacade;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.main.modules.instance_identity.InstanceIdentity;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
 
@@ -194,10 +193,10 @@ public final class AciDeploymentTemplateBuilder {
         }
 
         StandardUsernamePasswordCredentials credentials = CredentialsMatchers.firstOrNull(
-                CredentialsProvider.lookupCredentials(
+                CredentialsProvider.lookupCredentialsInItemGroup(
                         StandardUsernamePasswordCredentials.class,
-                        (ItemGroup) null,
-                        ACL.SYSTEM,
+                        null,
+                        ACL.SYSTEM2,
                         Collections.emptyList()),
                 CredentialsMatchers.withId(aciCloud.getLogAnalyticsCredentialsId()));
         if (credentials == null) {
@@ -238,10 +237,10 @@ public final class AciDeploymentTemplateBuilder {
             return;
         }
         StandardUsernamePasswordCredentials credentials = CredentialsMatchers.firstOrNull(
-                CredentialsProvider.lookupCredentials(
+                CredentialsProvider.lookupCredentialsInItemGroup(
                         StandardUsernamePasswordCredentials.class,
-                        (ItemGroup) null,
-                        ACL.SYSTEM,
+                        null,
+                        ACL.SYSTEM2,
                         Collections.emptyList()),
                 CredentialsMatchers.withId(endpoint.getCredentialsId()));
         if (credentials == null) {

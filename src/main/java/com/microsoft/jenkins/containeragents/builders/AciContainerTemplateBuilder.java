@@ -26,9 +26,8 @@ public class AciContainerTemplateBuilder extends AciContainerTemplateFluent<AciC
         this.fluent.withPorts(template.getPorts());
         this.fluent.withCpu(template.getCpu());
         this.fluent.withMemory(template.getMemory());
-        if (template.getRetentionStrategy() instanceof ContainerIdleRetentionStrategy) {
-            this.fluent.withIdleRetentionStrategy(((ContainerIdleRetentionStrategy) template.getRetentionStrategy())
-                    .getIdleMinutes());
+        if (template.getRetentionStrategy() instanceof ContainerIdleRetentionStrategy strategy) {
+            this.fluent.withIdleRetentionStrategy(strategy.getIdleMinutes());
         } else {
             this.fluent.withOnceRetentionStrategy();
         }
@@ -59,9 +58,8 @@ public class AciContainerTemplateBuilder extends AciContainerTemplateFluent<AciC
         this.fluent.withPorts(template.getPorts());
         this.fluent.withCpu(template.getCpu());
         this.fluent.withMemory(template.getMemory());
-        if (template.getRetentionStrategy() instanceof ContainerIdleRetentionStrategy) {
-            this.fluent.withIdleRetentionStrategy(((ContainerIdleRetentionStrategy) template.getRetentionStrategy())
-                    .getIdleMinutes());
+        if (template.getRetentionStrategy() instanceof ContainerIdleRetentionStrategy strategy) {
+            this.fluent.withIdleRetentionStrategy(strategy.getIdleMinutes());
         } else {
             this.fluent.withOnceRetentionStrategy();
         }

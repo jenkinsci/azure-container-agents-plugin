@@ -25,11 +25,9 @@ abstract class UsernameAuth {
     }
 
     static UsernameAuth fromCredentials(StandardUsernameCredentials credentials) {
-        if (credentials instanceof StandardUsernamePasswordCredentials) {
-            StandardUsernamePasswordCredentials userPass = (StandardUsernamePasswordCredentials) credentials;
+        if (credentials instanceof StandardUsernamePasswordCredentials userPass) {
             return new UsernamePasswordAuth(userPass.getUsername(), userPass.getPassword().getPlainText());
-        } else if (credentials instanceof SSHUserPrivateKey) {
-            SSHUserPrivateKey userKey = (SSHUserPrivateKey) credentials;
+        } else if (credentials instanceof SSHUserPrivateKey userKey) {
             Secret passphraseSecret = userKey.getPassphrase();
             String passphrase = passphraseSecret == null ? null : passphraseSecret.getPlainText();
             return new UsernamePrivateKeyAuth(userKey.getUsername(), passphrase, userKey.getPrivateKeys());

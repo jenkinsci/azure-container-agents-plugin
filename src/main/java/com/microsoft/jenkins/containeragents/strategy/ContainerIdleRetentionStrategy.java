@@ -6,6 +6,7 @@
 
 package com.microsoft.jenkins.containeragents.strategy;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
@@ -29,7 +30,7 @@ import static java.util.logging.Level.WARNING;
 public class ContainerIdleRetentionStrategy extends CloudRetentionStrategy {
     private static final Logger LOGGER = Logger.getLogger(ContainerIdleRetentionStrategy.class.getName());
 
-    private int idleMinutes = 0;
+    private int idleMinutes;
     private static final transient int LAPSE = 5;
 
     @DataBoundConstructor
@@ -48,7 +49,7 @@ public class ContainerIdleRetentionStrategy extends CloudRetentionStrategy {
 
             // neverConnected will always be true after jenkins restart so that slave will not be deleted
             // So overwrite neverConnected if slave exists after restart
-            Computer computer = Jenkins.getInstance().toComputer();
+            Computer computer = Jenkins.get().toComputer();
             if (computer == null) {
                 return 1;
             }
@@ -87,6 +88,7 @@ public class ContainerIdleRetentionStrategy extends CloudRetentionStrategy {
 
 
     public static final class DescriptorImpl extends Descriptor<RetentionStrategy<?>> {
+        @NonNull
         @Override
         public String getDisplayName() {
             return "Container Idle Retention Strategy";

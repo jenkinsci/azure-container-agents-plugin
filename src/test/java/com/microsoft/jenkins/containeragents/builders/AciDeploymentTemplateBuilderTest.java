@@ -14,7 +14,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.List;
 
 import static java.util.Collections.emptyList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -95,7 +95,7 @@ public class AciDeploymentTemplateBuilderTest {
         AciContainerTemplate template = new AciContainerTemplate("containerName", "label", 100, "linux", "helloworld", "command", "rootFs", emptyList(), emptyList(), emptyList(), emptyList(), new RetentionStrategy.Always(), "cpu", "memory" );
         AciPrivateIpAddress privateIpAddress = new AciPrivateIpAddress("vnet", "subnet");
         AciDnsConfig dnsConfig = new AciDnsConfig();
-        dnsConfig.setDnsServers(Arrays.asList(new AciDnsServer("dnsName")));
+        dnsConfig.setDnsServers(List.of(new AciDnsServer("dnsName")));
         privateIpAddress.setDnsConfig(dnsConfig);
         template.setPrivateIpAddress(privateIpAddress);
 

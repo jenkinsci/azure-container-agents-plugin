@@ -11,7 +11,7 @@ import hudson.model.AsyncPeriodicWork;
 import hudson.model.Computer;
 import hudson.model.TaskListener;
 import jenkins.model.Jenkins;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -296,12 +296,10 @@ public class AciCleanTask extends AsyncPeriodicWork {
                     && resource.tags().get("JenkinsInstance")
                     .equalsIgnoreCase(Jenkins.get().getLegacyInstanceId())) {
                 if (!validContainerSet.contains(resource.name())) {
-                    AciCloud.getThreadPool().submit(() -> {
-                        AciService.deleteAciContainerGroup(credentialsId,
-                                resourceGroup,
-                                resource.name(),
-                                null);
-                    });
+                    AciCloud.getThreadPool().submit(() -> AciService.deleteAciContainerGroup(credentialsId,
+                            resourceGroup,
+                            resource.name(),
+                            null));
                 }
             }
         }

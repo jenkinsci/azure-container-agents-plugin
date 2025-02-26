@@ -13,7 +13,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
 
-import java.util.Arrays;
+import java.util.List;
 
 import static java.util.Collections.emptyList;
 
@@ -48,10 +48,10 @@ public class AciCloudConfigTest {
         AciPrivateIpAddress privateIpAddress = new AciPrivateIpAddress("vnet", "subnet");
         privateIpAddress.setResourceGroup("vnetResourceGroup");
         AciDnsConfig dnsConfig = new AciDnsConfig();
-        dnsConfig.setDnsServers(Arrays.asList(new AciDnsServer("dnsServerAddress")));
+        dnsConfig.setDnsServers(List.of(new AciDnsServer("dnsServerAddress")));
         privateIpAddress.setDnsConfig(dnsConfig);
         containerTemplate.setPrivateIpAddress(privateIpAddress);
-        AciCloud acicloud = new AciCloud(cloudName, "", "", Arrays.asList(containerTemplate));
+        AciCloud acicloud = new AciCloud(cloudName, "", "", List.of(containerTemplate));
         acicloud.setLogAnalyticsCredentialsId("");
         return acicloud;
     }

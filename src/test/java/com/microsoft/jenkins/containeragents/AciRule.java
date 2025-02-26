@@ -75,7 +75,7 @@ public class AciRule implements TestRule, MethodRule {
         public String privateRegistryCredentialsId;
     }
 
-    public void before() {
+    public void before() throws Exception {
         prepareServicePrincipal();
         prepareResourceGroup();
         prepareStorageAccount();
@@ -90,7 +90,7 @@ public class AciRule implements TestRule, MethodRule {
         this.azureClient = getAzureClient(servicePrincipalCredentials);
     }
 
-    public void prepareImage(String imageEnv, String privateRegistryUrlEnv, String privateRegistryNameEnv, String privateRegistryKeyEnv) {
+    public void prepareImage(String imageEnv, String privateRegistryUrlEnv, String privateRegistryNameEnv, String privateRegistryKeyEnv) throws Exception {
         data.image = TestUtils.loadProperty(imageEnv, "jenkins/inbound-agent");
         data.privateRegistryUrl = TestUtils.loadProperty(privateRegistryUrlEnv);
 
@@ -146,7 +146,7 @@ public class AciRule implements TestRule, MethodRule {
         String accountName;
         StorageAccountKey accountKey;
 
-        String randomString = RandomStringUtils.random(8, "abcdfghjklmnpqrstvwxz0123456789");
+        String randomString = RandomStringUtils.secure().next(8, "abcdfghjklmnpqrstvwxz0123456789");
         LOGGER.info("Creating storage account: " + randomString);
         StorageAccount storageAccount = azureClient.storageAccounts()
                 .define(accountName = randomString)
@@ -164,7 +164,7 @@ public class AciRule implements TestRule, MethodRule {
         ShareServiceClient shareServiceClient = new ShareServiceClientBuilder()
                 .connectionString(storageConnectionString)
                 .buildClient();
-        String theFileShareName = RandomStringUtils.random(8, "abcdfghjklmnpqrstvwxz0123456789");
+        String theFileShareName = RandomStringUtils.secure().next(8, "abcdfghjklmnpqrstvwxz0123456789");
         data.fileShareName = theFileShareName;
         ShareClient fileShare = shareServiceClient.getShareClient((theFileShareName));
         LOGGER.info("Creating file share: " + theFileShareName);
@@ -184,6 +184,7 @@ public class AciRule implements TestRule, MethodRule {
                 "Storage Credential for Test",
                 accountName,
                 accountKey,
+                "",
                 "").getStorageCred();
     }
 

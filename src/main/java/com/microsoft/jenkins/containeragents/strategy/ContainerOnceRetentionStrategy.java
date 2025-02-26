@@ -6,6 +6,7 @@
 
 package com.microsoft.jenkins.containeragents.strategy;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
@@ -52,7 +53,7 @@ public class ContainerOnceRetentionStrategy extends CloudRetentionStrategy imple
 
             // neverConnected will always be true if jenkins restart so that slave will not be deleted
             // So overwrite neverConnected if slave exists after restart
-            Computer computer = Jenkins.getInstance().toComputer();
+            Computer computer = Jenkins.get().toComputer();
             if (computer == null) {
                 return 1;
             }
@@ -100,7 +101,7 @@ public class ContainerOnceRetentionStrategy extends CloudRetentionStrategy imple
         } catch (Exception e) {
             LOGGER.info(e.getMessage());
         }
-        final AbstractCloudComputer<?> c = (AbstractCloudComputer) executor.getOwner();
+        final AbstractCloudComputer<?> c = (AbstractCloudComputer<?>) executor.getOwner();
         Queue.Executable exec = executor.getCurrentExecutable();
 
         LOGGER.log(Level.INFO, "terminating {0} since {1} seems to be finished", new Object[] {c.getName(), exec});
@@ -110,25 +111,17 @@ public class ContainerOnceRetentionStrategy extends CloudRetentionStrategy imple
     private void done(final AbstractCloudComputer<?> c) {
         c.setAcceptingTasks(false); // just in case
         synchronized (this) {
-            Computer.threadPoolForRemoting.submit(new Runnable() {
-                @Override
-                public void run() {
-                    Queue.withLock(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                AbstractCloudSlave node = c.getNode();
-                                if (node != null) {
-                                    node.terminate();
-                                }
-                            } catch (InterruptedException | IOException e) {
-                                LOGGER.log(Level.WARNING, "Failed to terminate {0}: {1}",
-                                        new Object[]{c.getName(), e});
-                            }
-                        }
-                    });
+            Computer.threadPoolForRemoting.submit(() -> Queue.withLock(() -> {
+                try {
+                    AbstractCloudSlave node = c.getNode();
+                    if (node != null) {
+                        node.terminate();
+                    }
+                } catch (InterruptedException | IOException e) {
+                    LOGGER.log(Level.WARNING, "Failed to terminate {0}: {1}",
+                            new Object[]{c.getName(), e});
                 }
-            });
+            }));
         }
 
     }
@@ -144,6 +137,7 @@ public class ContainerOnceRetentionStrategy extends CloudRetentionStrategy imple
 
 
     public static final class DescriptorImpl extends Descriptor<RetentionStrategy<?>> {
+        @NonNull
         @Override
         public String getDisplayName() {
             return "Container Once Retention Strategy";

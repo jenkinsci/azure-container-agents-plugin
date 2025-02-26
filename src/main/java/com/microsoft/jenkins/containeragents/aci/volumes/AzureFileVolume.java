@@ -4,6 +4,7 @@ import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.microsoftopentechnologies.windowsazurestorage.helper.AzureStorageAccount;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.ExtensionList;
 import hudson.model.AbstractDescribableImpl;
@@ -15,11 +16,13 @@ import jenkins.model.Jenkins;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.Collections;
 
 
 public class AzureFileVolume extends AbstractDescribableImpl<AzureFileVolume> implements Serializable {
+    @Serial
     private static final long serialVersionUID = 8879963354L;
 
     private final String mountPath;
@@ -64,6 +67,7 @@ public class AzureFileVolume extends AbstractDescribableImpl<AzureFileVolume> im
     @Extension
     public static class DescriptorImpl extends Descriptor<AzureFileVolume> {
 
+        @NonNull
         @Override
         public String getDisplayName() {
             return "Azure File Volume";
@@ -85,7 +89,7 @@ public class AzureFileVolume extends AbstractDescribableImpl<AzureFileVolume> im
             return result
                     .includeEmptyValue()
                     .includeMatchingAs(
-                            ACL.SYSTEM,
+                            ACL.SYSTEM2,
                             item,
                             AzureStorageAccount.class,
                             Collections.emptyList(),
