@@ -1,9 +1,7 @@
 package com.microsoft.jenkins.containeragents.aci;
 
-import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
 import com.cloudbees.plugins.credentials.common.StandardUsernameCredentials;
-import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import com.microsoft.jenkins.containeragents.Messages;
 import com.microsoft.jenkins.containeragents.PodEnvVar;
 import com.microsoft.jenkins.containeragents.remote.LaunchMethodTypeContent;
@@ -11,6 +9,7 @@ import com.microsoft.jenkins.containeragents.strategy.ContainerIdleRetentionStra
 import com.microsoft.jenkins.containeragents.strategy.ContainerOnceRetentionStrategy;
 import com.microsoft.jenkins.containeragents.aci.volumes.AzureFileVolume;
 import com.microsoft.jenkins.containeragents.util.Constants;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
@@ -21,7 +20,7 @@ import hudson.security.ACL;
 import hudson.slaves.RetentionStrategy;
 import hudson.util.FormValidation;
 import hudson.util.ListBoxModel;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.jenkinsci.plugins.docker.commons.credentials.DockerRegistryEndpoint;
 import org.kohsuke.stapler.AncestorInPath;
@@ -32,6 +31,7 @@ import org.kohsuke.stapler.QueryParameter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Logger;
 
@@ -64,11 +64,11 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
 
     private RetentionStrategy<?> retentionStrategy;
 
-    private List<PodEnvVar> envVars = new ArrayList<>();
+    private List<PodEnvVar> envVars;
 
-    private List<DockerRegistryEndpoint> privateRegistryCredentials = new ArrayList<>();
+    private List<DockerRegistryEndpoint> privateRegistryCredentials;
 
-    private List<AzureFileVolume> volumes = new ArrayList<>();
+    private List<AzureFileVolume> volumes;
 
     private String launchMethodType;
 
@@ -99,30 +99,14 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
         this.osType = osType;
         this.command = command;
         this.rootFs = rootFs;
-        if (ports == null) {
-            this.ports = new ArrayList<>();
-        } else {
-            this.ports = ports;
-        }
+        this.ports = Objects.requireNonNullElseGet(ports, ArrayList::new);
         this.cpu = cpu;
         this.memory = memory;
         this.timeout = timeout;
         this.retentionStrategy = retentionStrategy;
-        if (envVars == null) {
-            this.envVars = new ArrayList<>();
-        } else {
-            this.envVars = envVars;
-        }
-        if (privateRegistryCredentials == null) {
-            this.privateRegistryCredentials = new ArrayList<>();
-        } else {
-            this.privateRegistryCredentials = privateRegistryCredentials;
-        }
-        if (volumes == null) {
-            this.volumes = new ArrayList<>();
-        } else {
-            this.volumes = volumes;
-        }
+        this.envVars = Objects.requireNonNullElseGet(envVars, ArrayList::new);
+        this.privateRegistryCredentials = Objects.requireNonNullElseGet(privateRegistryCredentials, ArrayList::new);
+        this.volumes = Objects.requireNonNullElseGet(volumes, ArrayList::new);
         setAvailable(true);
     }
 
@@ -243,6 +227,7 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
     @Extension
     public static class DescriptorImpl extends Descriptor<AciContainerTemplate> {
 
+        @NonNull
         @Override
         public String getDisplayName() {
             return "Aci Container Template";
@@ -270,10 +255,11 @@ public class AciContainerTemplate extends AbstractDescribableImpl<AciContainerTe
         public ListBoxModel doFillSshCredentialsIdItems(@AncestorInPath Item owner) {
             StandardListBoxModel listBoxModel = new StandardListBoxModel();
             listBoxModel.add("--- Select Azure Container Service Credentials ---", "");
-            listBoxModel.withAll(CredentialsProvider.lookupCredentials(StandardUsernameCredentials.class,
+            listBoxModel.includeAs(
+                    ACL.SYSTEM2,
                     owner,
-                    ACL.SYSTEM,
-                    Collections.<DomainRequirement>emptyList()));
+                    StandardUsernameCredentials.class,
+                    Collections.emptyList());
             return listBoxModel;
         }
 

@@ -19,7 +19,7 @@ import hudson.slaves.Cloud;
 import hudson.slaves.JNLPLauncher;
 import jenkins.model.Jenkins;
 import net.sf.json.JSONObject;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jenkinsci.plugins.cloudstats.ProvisioningActivity;
 import org.jenkinsci.plugins.cloudstats.TrackedItem;
 import org.kohsuke.stapler.DataBoundConstructor;
@@ -57,7 +57,7 @@ public class AciAgent extends AbstractCloudSlave implements ISSHLaunchable, Trac
     public AciAgent(AciCloud cloud, AciContainerTemplate template) throws Descriptor.FormException, IOException {
         super(generateAgentName(template), template.getRootFs(),
                 template.getLaunchMethodType().equals(Constants.LAUNCH_METHOD_JNLP)
-                ? new JNLPLauncher(true)
+                ? new JNLPLauncher()
                 : new SSHLauncher());
 
         setLabelString(template.getLabel());
@@ -79,7 +79,7 @@ public class AciAgent extends AbstractCloudSlave implements ISSHLaunchable, Trac
     }
 
     @Override
-    protected void _terminate(TaskListener listener) throws IOException, InterruptedException {
+    protected void _terminate(TaskListener listener) {
         final Computer computer = toComputer();
         if (computer == null || StringUtils.isEmpty(cloudName)) {
             return;
@@ -95,12 +95,10 @@ public class AciAgent extends AbstractCloudSlave implements ISSHLaunchable, Trac
             return;
         }
 
-        Computer.threadPoolForRemoting.execute(() -> {
-            AciService.deleteAciContainerGroup(credentialsId,
-                    resourceGroup,
-                    AciAgent.this.getNodeName(),
-                    deployName);
-        });
+        Computer.threadPoolForRemoting.execute(() -> AciService.deleteAciContainerGroup(credentialsId,
+                resourceGroup,
+                AciAgent.this.getNodeName(),
+                deployName));
     }
 
     static String generateAgentName(AciContainerTemplate template) {
@@ -117,17 +115,17 @@ public class AciAgent extends AbstractCloudSlave implements ISSHLaunchable, Trac
     }
 
     @Override
-    public Node reconfigure(StaplerRequest2 req, JSONObject form) throws Descriptor.FormException {
+    public Node reconfigure(@NonNull StaplerRequest2 req, JSONObject form) {
         return this;
     }
 
     @Override
     public StandardUsernameCredentials getSshCredential() throws IllegalArgumentException {
         StandardUsernameCredentials credentials = CredentialsMatchers.firstOrNull(
-                CredentialsProvider.lookupCredentials(
+                CredentialsProvider.lookupCredentialsInItemGroup(
                         StandardUsernameCredentials.class,
                         Jenkins.get(),
-                        ACL.SYSTEM,
+                        ACL.SYSTEM2,
                         Collections.emptyList()),
                 CredentialsMatchers.withId(sshCredentialsId));
         if (credentials == null) {
@@ -165,6 +163,7 @@ public class AciAgent extends AbstractCloudSlave implements ISSHLaunchable, Trac
     @Extension
     public static final class DescriptorImpl extends SlaveDescriptor {
 
+        @NonNull
         @Override
         public String getDisplayName() {
             return "Aci Agent";

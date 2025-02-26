@@ -17,7 +17,6 @@ import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl;
 import com.microsoft.azure.util.AzureCredentials;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
 import com.microsoftopentechnologies.windowsazurestorage.helper.AzureStorageAccount;
-import hudson.model.Descriptor;
 import hudson.util.Secret;
 import io.jenkins.plugins.azuresdk.HttpClientRetriever;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -147,7 +146,7 @@ public class AciRule implements TestRule, MethodRule {
         String accountName;
         StorageAccountKey accountKey;
 
-        String randomString = RandomStringUtils.random(8, "abcdfghjklmnpqrstvwxz0123456789");
+        String randomString = RandomStringUtils.secure().next(8, "abcdfghjklmnpqrstvwxz0123456789");
         LOGGER.info("Creating storage account: " + randomString);
         StorageAccount storageAccount = azureClient.storageAccounts()
                 .define(accountName = randomString)
@@ -165,7 +164,7 @@ public class AciRule implements TestRule, MethodRule {
         ShareServiceClient shareServiceClient = new ShareServiceClientBuilder()
                 .connectionString(storageConnectionString)
                 .buildClient();
-        String theFileShareName = RandomStringUtils.random(8, "abcdfghjklmnpqrstvwxz0123456789");
+        String theFileShareName = RandomStringUtils.secure().next(8, "abcdfghjklmnpqrstvwxz0123456789");
         data.fileShareName = theFileShareName;
         ShareClient fileShare = shareServiceClient.getShareClient((theFileShareName));
         LOGGER.info("Creating file share: " + theFileShareName);

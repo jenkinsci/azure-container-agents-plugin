@@ -15,7 +15,7 @@ import hudson.slaves.ComputerLauncher;
 import hudson.slaves.SlaveComputer;
 import hudson.util.Secret;
 import jenkins.model.Jenkins;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -23,7 +23,6 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
-import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -33,7 +32,7 @@ public class SSHLauncher extends ComputerLauncher {
     private static final int RETRY_INTERVAL = 10;
 
     @Override
-    public void launch(SlaveComputer computer, TaskListener listener) throws IOException, InterruptedException {
+    public void launch(SlaveComputer computer, TaskListener listener) throws InterruptedException {
         if (computer == null) {
             LOGGER.log(Level.WARNING, "SSHLauncher: computer is null");
             return;
@@ -62,14 +61,11 @@ public class SSHLauncher extends ComputerLauncher {
         LOGGER.log(Level.INFO, "SSHLauncher: Start to connect node {0} : {1} via SSH",
                 new Object[]{node.getDisplayName(), host});
         try {
-            SSHClient sshClient = new RetryTask<SSHClient>(new Callable<SSHClient>() {
-                @Override
-                public SSHClient call() throws Exception {
-                    return new SSHClient(host, port, credentials).connect().withLogger(logger);
-                }
-            }, new SSHRetryStrategy(RETRY_LIMIT, RETRY_INTERVAL)).call();
+            SSHClient sshClient = new RetryTask<>(
+                    () -> new SSHClient(host, port, credentials).connect().withLogger(logger),
+                    new SSHRetryStrategy(RETRY_LIMIT, RETRY_INTERVAL)).call();
 
-            InputStream inputStream = new ByteArrayInputStream(Jenkins.getInstance().getJnlpJars("agent.jar")
+            InputStream inputStream = new ByteArrayInputStream(Jenkins.get().getJnlpJars("agent.jar")
                     .readFully());
             sshClient.copyTo(inputStream, "agent.jar");
             LOGGER.log(Level.INFO, "SSHLauncher: Copy agent.jar to remote host successfully");
@@ -84,14 +80,11 @@ public class SSHLauncher extends ComputerLauncher {
         // Will reuse commons-plugin whenever it moved to a jar package.
         Session session = null;
         try {
-            session = new RetryTask<Session>(new Callable<Session>() {
-                @Override
-                public Session call() throws Exception {
-                    Session session = getSession(credentials, host, port);
+            session = new RetryTask<>(() -> {
+                Session session1 = getSession(credentials, host, port);
 
-                    session.connect();
-                    return session;
-                }
+                session1.connect();
+                return session1;
             }, new SSHRetryStrategy(RETRY_LIMIT, RETRY_INTERVAL)).call();
 
             final ChannelExec channelExec = (ChannelExec) session.openChannel("exec");
@@ -122,8 +115,7 @@ public class SSHLauncher extends ComputerLauncher {
 
     private Session getSession(StandardUsernameCredentials credentials, String host, int port) throws JSchException {
         JSch jsch = new JSch();
-        if (credentials instanceof SSHUserPrivateKey) {
-            SSHUserPrivateKey sshUserPrivateKey = (SSHUserPrivateKey) credentials;
+        if (credentials instanceof SSHUserPrivateKey sshUserPrivateKey) {
             Secret passphraseSecret = sshUserPrivateKey.getPassphrase();
             String passphrase = passphraseSecret == null
                     ? null
@@ -145,9 +137,8 @@ public class SSHLauncher extends ComputerLauncher {
         Properties config = new Properties();
         config.put("StrictHostKeyChecking", "no");
         session.setConfig(config);
-        if (credentials instanceof StandardUsernamePasswordCredentials) {
-            session.setPassword(((StandardUsernamePasswordCredentials) credentials)
-                    .getPassword().getPlainText());
+        if (credentials instanceof StandardUsernamePasswordCredentials usernamePasswordCredentials) {
+            session.setPassword(usernamePasswordCredentials.getPassword().getPlainText());
         }
         return session;
     }

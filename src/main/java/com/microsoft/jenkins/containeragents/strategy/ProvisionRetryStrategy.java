@@ -14,7 +14,7 @@ public class ProvisionRetryStrategy {
             records.put(name, record);
         } else {
             int nextInterval = record.getInterval();
-            nextInterval = (nextInterval * 2 > MAX_INTERVAL) ? MAX_INTERVAL : nextInterval * 2;
+            nextInterval = Math.min(nextInterval * 2, MAX_INTERVAL);
             record.setInterval(nextInterval);
         }
         record.setLastFail(System.currentTimeMillis());

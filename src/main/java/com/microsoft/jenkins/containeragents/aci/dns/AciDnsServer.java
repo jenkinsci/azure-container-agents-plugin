@@ -1,5 +1,6 @@
 package com.microsoft.jenkins.containeragents.aci.dns;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
@@ -21,6 +22,7 @@ public class AciDnsServer extends AbstractDescribableImpl<AciDnsServer> {
     @Extension
     public static class DescriptorImpl extends Descriptor<AciDnsServer> {
 
+        @NonNull
         @Override
         public String getDisplayName() {
             return "Aci DNS Server";

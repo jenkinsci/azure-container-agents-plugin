@@ -1,19 +1,6 @@
 package com.microsoft.jenkins.containeragents;
 
-import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
-import hudson.model.FreeStyleBuild;
-import hudson.model.FreeStyleProject;
-import hudson.model.Node;
-import hudson.model.Result;
-import hudson.model.labels.LabelAtom;
-import hudson.slaves.NodeProvisioner;
-import org.apache.commons.lang.StringUtils;
-import org.junit.Assert;
-import org.jvnet.hudson.test.JenkinsRule;
-
-import java.util.List;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import org.apache.commons.lang3.StringUtils;
 
 public final class TestUtils {
 

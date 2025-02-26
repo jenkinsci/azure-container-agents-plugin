@@ -74,8 +74,7 @@ public class SSHClient implements AutoCloseable {
 
         this.jsch = new JSch();
         this.credentials = auth;
-        if (auth instanceof UsernamePrivateKeyAuth) {
-            UsernamePrivateKeyAuth userPrivateKey = (UsernamePrivateKeyAuth) auth;
+        if (auth instanceof UsernamePrivateKeyAuth userPrivateKey) {
             byte[] passphraseBytes = userPrivateKey.getPassPhraseBytes();
 
             int seq = 0;
@@ -125,9 +124,8 @@ public class SSHClient implements AutoCloseable {
         Properties config = new Properties();
         config.put("StrictHostKeyChecking", "no");
         session.setConfig(config);
-        if (credentials instanceof UsernamePasswordAuth) {
-            session.setPassword(
-                    ((UsernamePasswordAuth) credentials).getPassword());
+        if (credentials instanceof UsernamePasswordAuth usernamePasswordAuth) {
+            session.setPassword(usernamePasswordAuth.getPassword());
         }
         session.connect();
         return this;
@@ -142,12 +140,7 @@ public class SSHClient implements AutoCloseable {
      */
     public void copyTo(final File sourceFile, final String remotePath) throws JSchException {
         log("copy file {0} to {1}:{2}", sourceFile, host, remotePath);
-        withChannelSftp(new ChannelSftpConsumer() {
-            @Override
-            public void apply(ChannelSftp channel) throws JSchException, SftpException {
-                channel.put(sourceFile.getAbsolutePath(), remotePath);
-            }
-        });
+        withChannelSftp(channel -> channel.put(sourceFile.getAbsolutePath(), remotePath));
     }
 
     /**
@@ -159,12 +152,7 @@ public class SSHClient implements AutoCloseable {
      */
     public void copyTo(final InputStream in, final String remotePath) throws JSchException {
         try {
-            withChannelSftp(new ChannelSftpConsumer() {
-                @Override
-                public void apply(ChannelSftp channel) throws JSchException, SftpException {
-                    channel.put(in, remotePath);
-                }
-            });
+            withChannelSftp(channel -> channel.put(in, remotePath));
         } finally {
             try {
                 in.close();
@@ -183,12 +171,7 @@ public class SSHClient implements AutoCloseable {
      */
     public void copyFrom(final String remotePath, final File destFile) throws JSchException {
         log("copy file {0}:{1} to {2}", host, remotePath, destFile);
-        withChannelSftp(new ChannelSftpConsumer() {
-            @Override
-            public void apply(ChannelSftp channel) throws JSchException, SftpException {
-                channel.get(remotePath, destFile.getAbsolutePath());
-            }
-        });
+        withChannelSftp(channel -> channel.get(remotePath, destFile.getAbsolutePath()));
     }
 
     /**
@@ -199,12 +182,7 @@ public class SSHClient implements AutoCloseable {
      * @throws JSchException if the underlying SSH session fails.
      */
     public void copyFrom(final String remotePath, final OutputStream out) throws JSchException {
-        withChannelSftp(new ChannelSftpConsumer() {
-            @Override
-            public void apply(ChannelSftp channel) throws JSchException, SftpException {
-                channel.get(remotePath, out);
-            }
-        });
+        withChannelSftp(channel -> channel.get(remotePath, out));
     }
 
     protected void withChannelSftp(ChannelSftpConsumer consumer) throws JSchException {
@@ -297,7 +275,7 @@ public class SSHClient implements AutoCloseable {
                 }
                 int exitCode = channel.getExitStatus();
                 log("<=== command exit status: {0}", exitCode);
-                String serverOutput = output.toString(StandardCharsets.UTF_8.name());
+                String serverOutput = output.toString(StandardCharsets.UTF_8);
                 log("<=== {0}", serverOutput);
                 if (exitCode != 0) {
                     throw new ExitStatusException(exitCode, serverOutput);
@@ -393,12 +371,12 @@ public class SSHClient implements AutoCloseable {
 
     private void log(String message, Object... args) {
         if (logger != null) {
-            logger.println(String.format(message, args));
+            logger.printf((message) + "%n", args);
         }
     }
 
     private interface ChannelSftpConsumer {
-        void apply(ChannelSftp channel) throws JSchException, SftpException;
+        void apply(ChannelSftp channel) throws SftpException;
     }
 
     public static class ExitStatusException extends Exception {

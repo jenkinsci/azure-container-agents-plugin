@@ -8,6 +8,7 @@ import com.microsoft.azure.util.AzureCredentials;
 import com.microsoft.jenkins.containeragents.aci.AciCloud;
 import hudson.ExtensionList;
 import hudson.util.ListBoxModel;
+import hudson.util.Secret;
 import org.junit.Rule;
 import org.junit.Test;
 import org.jvnet.hudson.test.JenkinsRule;
@@ -73,7 +74,7 @@ public class AciCloudQuickIT {
                     "Azure Credentials for Azure Container Agent Test",
                     servicePrincipal.subscriptionId,
                     servicePrincipal.clientId,
-                    servicePrincipal.clientSecret
+                    Secret.fromString(servicePrincipal.clientSecret)
             );
             azureCredentials.setTenant(servicePrincipal.tenantId);
             credentials.add(azureCredentials);

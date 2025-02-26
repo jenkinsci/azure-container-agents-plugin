@@ -7,15 +7,18 @@
 package com.microsoft.jenkins.containeragents;
 
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import java.io.Serial;
 import java.io.Serializable;
 
 public class PodImagePullSecrets extends AbstractDescribableImpl<PodImagePullSecrets> implements Serializable {
 
+    @Serial
     private static final long serialVersionUID = 694763293814718338L;
     private String name;
 
@@ -31,6 +34,7 @@ public class PodImagePullSecrets extends AbstractDescribableImpl<PodImagePullSec
 
     @Extension
     public static class DescriptorImpl extends Descriptor<PodImagePullSecrets> {
+        @NonNull
         @Override
         public String getDisplayName() {
             return "Container Pod Image Pull Secrets";

@@ -1,6 +1,7 @@
 package com.microsoft.jenkins.containeragents.aci;
 
 import com.microsoft.jenkins.containeragents.aci.dns.AciDnsConfig;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
@@ -52,6 +53,7 @@ public class AciPrivateIpAddress extends AbstractDescribableImpl<AciPrivateIpAdd
     @Extension
     public static class DescriptorImpl extends Descriptor<AciPrivateIpAddress> {
 
+        @NonNull
         @Override
         public String getDisplayName() {
             return "Aci Private IP Address";

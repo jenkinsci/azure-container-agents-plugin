@@ -12,6 +12,7 @@ import com.microsoft.azure.util.AzureBaseCredentials;
 import com.microsoft.jenkins.containeragents.strategy.ProvisionRetryStrategy;
 import com.microsoft.jenkins.containeragents.util.AzureContainerUtils;
 import com.microsoft.jenkins.containeragents.util.Constants;
+import edu.umd.cs.findbugs.annotations.NonNull;
 import hudson.Extension;
 import hudson.model.Computer;
 import hudson.model.Descriptor;
@@ -272,6 +273,7 @@ public class AciCloud extends Cloud {
 
     @Extension
     public static class DescriptorImpl extends Descriptor<Cloud> {
+        @NonNull
         @Override
         public String getDisplayName() {
             return "Azure Container Instance";
@@ -294,7 +296,7 @@ public class AciCloud extends Cloud {
             return result
                     .includeEmptyValue()
                     .includeMatchingAs(
-                            ACL.SYSTEM,
+                            ACL.SYSTEM2,
                             owner,
                             AzureBaseCredentials.class,
                             Collections.emptyList(),
@@ -324,7 +326,7 @@ public class AciCloud extends Cloud {
             return result
                     .includeEmptyValue()
                     .includeMatchingAs(
-                            ACL.SYSTEM,
+                            ACL.SYSTEM2,
                             owner,
                             StandardUsernamePasswordCredentials.class,
                             Collections.emptyList(),

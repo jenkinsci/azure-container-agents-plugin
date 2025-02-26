@@ -11,8 +11,8 @@ import com.microsoft.azure.util.AzureCredentials;
 import com.microsoft.jenkins.containeragents.Messages;
 import hudson.util.ListBoxModel;
 import io.jenkins.plugins.azuresdk.HttpClientRetriever;
-import org.apache.commons.lang.RandomStringUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
