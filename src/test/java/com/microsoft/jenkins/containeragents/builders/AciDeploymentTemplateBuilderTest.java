@@ -1,6 +1,5 @@
 package com.microsoft.jenkins.containeragents.builders;
 
-
 import com.microsoft.jenkins.containeragents.aci.AciAgent;
 import com.microsoft.jenkins.containeragents.aci.AciCloud;
 import com.microsoft.jenkins.containeragents.aci.AciContainerTemplate;
@@ -10,8 +9,8 @@ import com.microsoft.jenkins.containeragents.aci.dns.AciDnsServer;
 import hudson.slaves.RetentionStrategy;
 import hudson.slaves.SlaveComputer;
 import io.jenkins.plugins.util.JenkinsFacade;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
@@ -23,13 +22,13 @@ import static org.hamcrest.core.StringContains.containsString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class AciDeploymentTemplateBuilderTest {
+class AciDeploymentTemplateBuilderTest {
 
-    AciAgent agentMock = mock(AciAgent.class);
-    AciDeploymentTemplateBuilder builderUnderTest;
+    private final AciAgent agentMock = mock(AciAgent.class);
+    private AciDeploymentTemplateBuilder builderUnderTest;
 
-    @Before
-    public void setup(){
+    @BeforeEach
+    void setup() {
         SlaveComputer slaveMock = mock(SlaveComputer.class);
         when(agentMock.getComputer()).thenReturn(slaveMock);
 
@@ -40,7 +39,7 @@ public class AciDeploymentTemplateBuilderTest {
     }
 
     @Test
-    public void templateWithVnet() throws IOException {
+    void templateWithVnet() throws IOException {
         AciCloud cloud = new AciCloud("testcloud", "credentialId", "resourceGroup", emptyList());
 
         AciContainerTemplate template = new AciContainerTemplate("containerName", "label", 100, "linux", "helloworld", "command", "rootFs", emptyList(), emptyList(), emptyList(), emptyList(), new RetentionStrategy.Always(), "cpu", "memory" );
@@ -55,7 +54,7 @@ public class AciDeploymentTemplateBuilderTest {
     }
 
     @Test
-    public void templateWithVnetAndOwnRg() throws IOException {
+    void templateWithVnetAndOwnRg() throws IOException {
         AciCloud cloud = new AciCloud("testcloud", "credentialId", "resourceGroup", emptyList());
 
         AciContainerTemplate template = new AciContainerTemplate("containerName", "label", 100, "linux", "helloworld", "command", "rootFs", emptyList(), emptyList(), emptyList(), emptyList(), new RetentionStrategy.Always(), "cpu", "memory" );
@@ -72,7 +71,7 @@ public class AciDeploymentTemplateBuilderTest {
     }
 
     @Test
-    public void templateWithVnetAndOwnButEmptyRg() throws IOException {
+    void templateWithVnetAndOwnButEmptyRg() throws IOException {
         AciCloud cloud = new AciCloud("testcloud", "credentialId", "resourceGroup", emptyList());
 
         AciContainerTemplate template = new AciContainerTemplate("containerName", "label", 100, "linux", "helloworld", "command", "rootFs", emptyList(), emptyList(), emptyList(), emptyList(), new RetentionStrategy.Always(), "cpu", "memory" );
@@ -89,7 +88,7 @@ public class AciDeploymentTemplateBuilderTest {
     }
 
     @Test
-    public void templateWithVnetAndDnsConfig() throws IOException {
+    void templateWithVnetAndDnsConfig() throws IOException {
         AciCloud cloud = new AciCloud("testcloud", "credentialId", "resourceGroup", emptyList());
 
         AciContainerTemplate template = new AciContainerTemplate("containerName", "label", 100, "linux", "helloworld", "command", "rootFs", emptyList(), emptyList(), emptyList(), emptyList(), new RetentionStrategy.Always(), "cpu", "memory" );
@@ -106,7 +105,7 @@ public class AciDeploymentTemplateBuilderTest {
     }
 
     @Test
-    public void templateWithVnetAndDnsConfigWithoutDnsServer() throws IOException {
+    void templateWithVnetAndDnsConfigWithoutDnsServer() throws IOException {
         AciCloud cloud = new AciCloud("testcloud", "credentialId", "resourceGroup", emptyList());
 
         AciContainerTemplate template = new AciContainerTemplate("containerName", "label", 100, "linux", "helloworld", "command", "rootFs", emptyList(), emptyList(), emptyList(), emptyList(), new RetentionStrategy.Always(), "cpu", "memory" );
@@ -121,7 +120,7 @@ public class AciDeploymentTemplateBuilderTest {
 
 
     @Test
-    public void templateWithVnetWithoutDnsConfig() throws IOException {
+    void templateWithVnetWithoutDnsConfig() throws IOException {
         AciCloud cloud = new AciCloud("testcloud", "credentialId", "resourceGroup", emptyList());
 
         AciContainerTemplate template = new AciContainerTemplate("containerName", "label", 100, "linux", "helloworld", "command", "rootFs", emptyList(), emptyList(), emptyList(), emptyList(), new RetentionStrategy.Always(), "cpu", "memory" );
@@ -133,7 +132,7 @@ public class AciDeploymentTemplateBuilderTest {
     }
 
     @Test
-    public void templateWithoutVnet() throws IOException {
+    void templateWithoutVnet() throws IOException {
         AciCloud cloud = new AciCloud("testcloud", "credentialId", "resourceGroup", emptyList());
 
         AciContainerTemplate template = new AciContainerTemplate("containerName", "label", 100, "linux", "helloworld", "command", "rootFs", emptyList(), emptyList(), emptyList(), emptyList(), new RetentionStrategy.Always(), "cpu", "memory" );

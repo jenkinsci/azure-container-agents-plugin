@@ -9,21 +9,19 @@ import com.microsoft.jenkins.containeragents.aci.dns.AciDnsConfig;
 import com.microsoft.jenkins.containeragents.aci.dns.AciDnsServer;
 import com.microsoft.jenkins.containeragents.strategy.ContainerOnceRetentionStrategy;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
 import java.util.List;
 
 import static java.util.Collections.emptyList;
 
-public class AciCloudConfigTest {
-
-    @Rule
-    public JenkinsRule jenkins = new JenkinsRule();
+@WithJenkins
+class AciCloudConfigTest {
 
     @Test
-    public void configRoundTrip() throws Exception {
+    void configRoundTrip(JenkinsRule jenkins) throws Exception {
         String cloudName = "aciTest";
         AciCloud expectedAciCloud = createConfiguredAciCloud(cloudName);
 
@@ -36,8 +34,6 @@ public class AciCloudConfigTest {
 
         AciCloud actualAciCloud = (AciCloud) jenkins.jenkins.getCloud(cloudName);
         jenkins.assertEqualDataBoundBeans(expectedAciCloud, actualAciCloud);
-
-
     }
 
     @NonNull

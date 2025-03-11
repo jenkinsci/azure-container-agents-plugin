@@ -36,12 +36,11 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertThrows;
 
-
 public class AciRule implements TestRule, MethodRule {
 
     private static final Logger LOGGER = Logger.getLogger(AciRule.class.getName());
 
-    public AciData data = new AciData();
+    public final AciData data = new AciData();
     protected Description testDescription;
 
     public AzureResourceManager azureClient = null;
@@ -59,7 +58,7 @@ public class AciRule implements TestRule, MethodRule {
     }
 
     public static class AciData implements Serializable {
-        public String label = AzureContainerUtils.generateName("AciTemplateTest",3);
+        public final String label = AzureContainerUtils.generateName("AciTemplateTest",3);
         public String storageAccountCredentialsId;
         public String fileShareName;
         public AzureStorageAccount.StorageAccountCredential storageAccountCredential;
@@ -67,8 +66,8 @@ public class AciRule implements TestRule, MethodRule {
         public final SimpleServicePrincipal servicePrincipal = new SimpleServicePrincipal();
 
         public final String cloudName = AzureContainerUtils.generateName("AzureContainerTest", 5);
-        public String location = loadProperty("ACI_AGENT_TEST_AZURE_LOCATION", "East US");
-        public String resourceGroup = AzureContainerUtils.generateName(loadProperty("ACI_AGENT_TEST_RESOURCE_GROUP", "AzureContainerTest"), 3);
+        public final String location = loadProperty("ACI_AGENT_TEST_AZURE_LOCATION", "East US");
+        public final String resourceGroup = AzureContainerUtils.generateName(loadProperty("ACI_AGENT_TEST_RESOURCE_GROUP", "AzureContainerTest"), 3);
 
         public String image;
         public String privateRegistryUrl;

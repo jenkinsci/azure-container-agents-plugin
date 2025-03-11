@@ -2,9 +2,10 @@ package com.microsoft.jenkins.containeragents;
 
 import com.microsoft.jenkins.containeragents.aci.AciCloud;
 import com.microsoft.jenkins.containeragents.aci.AciContainerTemplate;
-import io.jenkins.plugins.casc.misc.RoundTripAbstractTest;
+import io.jenkins.plugins.casc.misc.junit.jupiter.AbstractRoundTripTest;
 import jenkins.model.Jenkins;
-import org.jvnet.hudson.test.RestartableJenkinsRule;
+import org.jvnet.hudson.test.JenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
 import java.util.List;
 
@@ -15,9 +16,11 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 
-public class JCasCTest extends RoundTripAbstractTest {
+@WithJenkins
+class JCasCTest extends AbstractRoundTripTest {
+
     @Override
-    protected void assertConfiguredAsExpected(RestartableJenkinsRule j, String configContent) {
+    protected void assertConfiguredAsExpected(JenkinsRule j, String configContent) {
         AciCloud aciCloud = (AciCloud) Jenkins.get().getCloud("Aci");
         List<AciContainerTemplate> templates = aciCloud.getTemplates();
         assertThat(templates, hasSize(1));
