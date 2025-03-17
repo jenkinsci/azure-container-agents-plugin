@@ -1,6 +1,5 @@
 package com.microsoft.jenkins.containeragents;
 
-
 import com.cloudbees.plugins.credentials.Credentials;
 import com.cloudbees.plugins.credentials.CredentialsScope;
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider;

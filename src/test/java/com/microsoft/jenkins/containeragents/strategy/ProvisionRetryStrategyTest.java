@@ -1,53 +1,57 @@
 package com.microsoft.jenkins.containeragents.strategy;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ProvisionRetryStrategyTest {
+class ProvisionRetryStrategyTest {
 
-    ProvisionRetryStrategy strategy = new ProvisionRetryStrategy();
+    private final ProvisionRetryStrategy strategy = new ProvisionRetryStrategy();
 
     @Test
-    public void testSuccess() {
+    void testSuccess() {
         final String templateName = "TEMPLATE1";
         strategy.getRecords().put(templateName, new ProvisionRetryStrategy.Record());
-        Assert.assertTrue(strategy.getRecords().containsKey(templateName));
+        assertTrue(strategy.getRecords().containsKey(templateName));
         strategy.success(templateName);
-        Assert.assertFalse(strategy.getRecords().containsKey(templateName));
+        assertFalse(strategy.getRecords().containsKey(templateName));
     }
 
     @Test
-    public void testFailure() {
+    void testFailure() {
         final String templateName = "TEMPLATE2";
         strategy.failure(templateName);
         ProvisionRetryStrategy.Record record = strategy.getRecords().get(templateName);
-        Assert.assertNotNull(record);
+        assertNotNull(record);
         final int interval = record.getInterval();
-        Assert.assertThat(interval, greaterThan(0));
+        assertThat(interval, greaterThan(0));
         strategy.failure(templateName);
-        Assert.assertEquals(interval * 2, record.getInterval());
+        assertEquals(interval * 2, record.getInterval());
     }
 
     @Test
-    public void testIsEnabled() {
+    void testIsEnabled() {
         final String templateName = "TEMPLATE3";
-        Assert.assertTrue(strategy.isEnabled(templateName));
+        assertTrue(strategy.isEnabled(templateName));
         strategy.failure(templateName);
-        Assert.assertFalse(strategy.isEnabled(templateName));
+        assertFalse(strategy.isEnabled(templateName));
         strategy.success(templateName);
-        Assert.assertTrue(strategy.isEnabled(templateName));
+        assertTrue(strategy.isEnabled(templateName));
 
 
         strategy.failure(templateName);
-        Assert.assertFalse(strategy.isEnabled(templateName));
+        assertFalse(strategy.isEnabled(templateName));
         long interval = strategy.getNextRetryTime(templateName) - System.currentTimeMillis();
         try {
             Thread.sleep(interval + 500);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        Assert.assertTrue(strategy.isEnabled(templateName));
+        assertTrue(strategy.isEnabled(templateName));
     }
 }

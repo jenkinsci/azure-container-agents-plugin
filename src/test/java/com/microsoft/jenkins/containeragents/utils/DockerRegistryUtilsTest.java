@@ -1,13 +1,14 @@
 package com.microsoft.jenkins.containeragents.utils;
 
 import com.microsoft.jenkins.containeragents.util.DockerRegistryUtils;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class DockerRegistryUtilsTest {
+class DockerRegistryUtilsTest {
+
     @Test
-    public void testFormatUrlToWithProtocol() {
+    void testFormatUrlToWithProtocol() {
         assertEquals("", DockerRegistryUtils.formatUrlToWithProtocol(""));
         assertEquals("https://example.io", DockerRegistryUtils.formatUrlToWithProtocol("example.io"));
         assertEquals("HTTPS://example.io", DockerRegistryUtils.formatUrlToWithProtocol("HTTPS://example.io"));
@@ -15,7 +16,7 @@ public class DockerRegistryUtilsTest {
     }
 
     @Test
-    public void testFormatUrlToWithoutProtocol() {
+    void testFormatUrlToWithoutProtocol() {
         assertEquals("", DockerRegistryUtils.formatUrlToWithoutProtocol(""));
         assertEquals("example.io", DockerRegistryUtils.formatUrlToWithoutProtocol("HTTPS://example.io"));
         assertEquals("example.io", DockerRegistryUtils.formatUrlToWithoutProtocol("HTTP://example.io"));
