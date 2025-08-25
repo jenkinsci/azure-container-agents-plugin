@@ -21,11 +21,9 @@ import hudson.util.Secret;
 import io.jenkins.plugins.azuresdk.HttpClientRetriever;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.rules.MethodRule;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.FrameworkMethod;
-import org.junit.runners.model.Statement;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 
 import java.io.Serializable;
 import java.util.UUID;
@@ -34,14 +32,13 @@ import java.util.logging.Logger;
 import static com.microsoft.jenkins.containeragents.TestUtils.loadProperty;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class AciRule implements TestRule, MethodRule {
+public class AciExtension implements BeforeEachCallback, AfterEachCallback {
 
-    private static final Logger LOGGER = Logger.getLogger(AciRule.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(AciExtension.class.getName());
 
     public final AciData data = new AciData();
-    protected Description testDescription;
 
     public AzureResourceManager azureClient = null;
 
@@ -74,7 +71,8 @@ public class AciRule implements TestRule, MethodRule {
         public String privateRegistryCredentialsId;
     }
 
-    public void before() throws Exception {
+    @Override
+    public void beforeEach(ExtensionContext context) throws Exception {
         prepareServicePrincipal();
         prepareResourceGroup();
         prepareStorageAccount();
@@ -124,7 +122,8 @@ public class AciRule implements TestRule, MethodRule {
     }
 
 
-    public void after() {
+    @Override
+    public void afterEach(ExtensionContext context) {
         cleanResourceGroup();
     }
 
@@ -197,27 +196,5 @@ public class AciRule implements TestRule, MethodRule {
                 () -> azureClient.resourceGroups().getByName(resourceGroup));
 
         assertThat(managementException.getResponse().getStatusCode(), is(404));
-    }
-
-    @Override
-    public Statement apply(Statement base, FrameworkMethod method, Object target) {
-        return apply(base, Description.createTestDescription(method.getMethod().getDeclaringClass(), method.getName(), method.getAnnotations()));
-    }
-
-    @Override
-    public Statement apply(final Statement base, final Description description) {
-        return new Statement() {
-            @Override
-            public void evaluate() throws Throwable {
-                testDescription = description;
-                before();
-                try {
-                    base.evaluate();
-                } finally {
-                    after();
-                    testDescription = null;
-                }
-            }
-        };
     }
 }
