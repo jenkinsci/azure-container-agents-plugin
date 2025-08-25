@@ -22,10 +22,10 @@ import hudson.slaves.Cloud;
 import hudson.slaves.NodeProvisioner;
 import hudson.tasks.Shell;
 import hudson.util.Secret;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.jvnet.hudson.test.JenkinsRule;
-import org.jvnet.hudson.test.RealJenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.RealJenkinsExtension;
 
 import java.util.List;
 import java.util.concurrent.Future;
@@ -33,29 +33,29 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import static com.microsoft.jenkins.containeragents.TestUtils.loadProperty;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
-public class AciCloudIT {
+class AciCloudIT {
 
-    @Rule
-    public AciRule aciRule = new AciRule();
+    @RegisterExtension
+    private final AciExtension aciExtension = new AciExtension();
 
-    @Rule
-    public RealJenkinsRule rr = new RealJenkinsRule();
+    @RegisterExtension
+    private final RealJenkinsExtension rr = new RealJenkinsExtension();
 
     @Test
-    public void testProvisionInboundAgent() throws Throwable {
-        rr.then(new InboundAgentOK(aciRule.data));
+    void testProvisionInboundAgent() throws Throwable {
+        rr.then(new InboundAgentOK(aciExtension.data));
     }
 
-    private static class InboundAgentOK implements RealJenkinsRule.Step {
+    private static class InboundAgentOK implements RealJenkinsExtension.Step {
 
-        private final AciRule.AciData aciRuleData;
+        private final AciExtension.AciData aciRuleData;
         private static final Logger LOGGER = Logger.getLogger(InboundAgentOK.class.getName());
         private AzureCredentials azureCredentials;
 
-        public InboundAgentOK(AciRule.AciData aciRuleData) {
+        public InboundAgentOK(AciExtension.AciData aciRuleData) {
             this.aciRuleData = aciRuleData;
         }
 
@@ -65,8 +65,7 @@ public class AciCloudIT {
 
             List<NodeProvisioner.PlannedNode> plannedNodes = (List<NodeProvisioner.PlannedNode>) r.jenkins.clouds.get(0).provision(new Cloud.CloudState(new LabelAtom(aciRuleData.label), 0), 1);
             Node node = plannedNodes.get(0).future.get();
-            assertTrue(node instanceof AciAgent);
-            AciAgent agent = (AciAgent) node;
+            AciAgent agent = assertInstanceOf(AciAgent.class, node);
 
             //Test running job on slave
             FreeStyleProject project = r.createFreeStyleProject(AzureContainerUtils.generateName("AciTestJob", 5));
@@ -77,7 +76,7 @@ public class AciCloudIT {
 
             //Test deleting remote agent and deployment
             AciService.deleteAciContainerGroup(aciRuleData.servicePrincipal.credentialsId, aciRuleData.resourceGroup, agent.getNodeName(), agent.getDeployName());
-            assertNull(AciRule.getAzureClient(azureCredentials).containerGroups().getByResourceGroup(aciRuleData.resourceGroup, agent.getNodeName()));
+            assertNull(AciExtension.getAzureClient(azureCredentials).containerGroups().getByResourceGroup(aciRuleData.resourceGroup, agent.getNodeName()));
 
             //Test deleting Jenkins node
             agent.terminate();
