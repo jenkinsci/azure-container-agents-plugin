@@ -9,13 +9,12 @@ import com.microsoft.jenkins.containeragents.aci.AciCloud;
 import hudson.ExtensionList;
 import hudson.util.ListBoxModel;
 import hudson.util.Secret;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.jvnet.hudson.test.JenkinsRule;
-import org.jvnet.hudson.test.RealJenkinsRule;
+import org.jvnet.hudson.test.junit.jupiter.RealJenkinsExtension;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static com.microsoft.jenkins.containeragents.TestUtils.loadProperty;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -26,22 +25,22 @@ import static org.hamcrest.Matchers.not;
 
 /**
  * Contains quick smoke test(s) that can be used to prove classloading works
- * Uses a {@link RealJenkinsRule} to use an actual Jenkins instance.
+ * Uses a {@link RealJenkinsExtension} to use an actual Jenkins instance.
  */
-public class AciCloudQuickIT {
+class AciCloudQuickIT {
 
-    @Rule
-    public RealJenkinsRule rr = new RealJenkinsRule();
+    @RegisterExtension
+    private final RealJenkinsExtension rr = new RealJenkinsExtension();
 
     @Test
-    public void testFetchResourceGroups() throws Throwable {
+    void testFetchResourceGroups() throws Throwable {
         String expectedResourceGroup = loadProperty("ACI_EXPECTED_RESOURCE_GROUP");
         assertThat(expectedResourceGroup, is(not(emptyString())));
 
         rr.then(new FetchResourceGroupsOK(new SimpleServicePrincipal(), expectedResourceGroup));
     }
 
-    private static class FetchResourceGroupsOK implements RealJenkinsRule.Step {
+    private static class FetchResourceGroupsOK implements RealJenkinsExtension.Step {
 
         private final SimpleServicePrincipal servicePrincipal;
         private final String expectedResourceGroup;
@@ -61,7 +60,7 @@ public class AciCloudQuickIT {
             List<String> resourceGroups = resourceGroupItems
                     .stream()
                     .map(option -> option.name)
-                    .collect(Collectors.toList());
+                    .toList();
 
             assertThat(resourceGroups, hasItem(expectedResourceGroup));
         }

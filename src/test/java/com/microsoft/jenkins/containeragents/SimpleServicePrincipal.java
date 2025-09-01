@@ -6,6 +6,7 @@ import java.util.UUID;
 import static com.microsoft.jenkins.containeragents.TestUtils.loadProperty;
 
 public class SimpleServicePrincipal implements Serializable {
+
     public final String credentialsId = UUID.randomUUID().toString();
 
     public final String subscriptionId = loadProperty("ACS_AGENT_TEST_SUBSCRIPTION_ID");
