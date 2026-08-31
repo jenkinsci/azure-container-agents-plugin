@@ -28,7 +28,7 @@ class AciCloudConfigTest {
         jenkins.jenkins.clouds.add(expectedAciCloud);
         jenkins.jenkins.save();
         JenkinsRule.WebClient testClient = jenkins.createWebClient();
-        HtmlPage cloudPage = testClient.goTo("configureClouds/");
+        HtmlPage cloudPage = testClient.goTo(expectedAciCloud.getUrl() + "configure");
         HtmlForm configForm = cloudPage.getFormByName("config");
         jenkins.submit(configForm);
 
